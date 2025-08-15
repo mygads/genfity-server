@@ -87,15 +87,15 @@ EOF
 
 # Generate configurations for each service
 if [ -n "${WUZAPI_DOMAIN}" ] && [ -n "${WUZAPI_PORT}" ] && [ -n "${WUZAPI_CONTAINER}" ]; then
-    generate_service_config "wuzapi" "${WUZAPI_DOMAIN}" "${WUZAPI_PORT}" "${WUZAPI_CONTAINER}"
+    generate_service_config "wa" "${WUZAPI_DOMAIN}" "${WUZAPI_PORT}" "${WUZAPI_CONTAINER}"
 else
-    echo "Warning: WuzAPI configuration incomplete, skipping..."
+    echo "Warning: Genfity WA configuration incomplete, skipping..."
 fi
 
 if [ -n "${EVENTAPI_DOMAIN}" ] && [ -n "${EVENTAPI_PORT}" ] && [ -n "${EVENTAPI_CONTAINER}" ]; then
-    generate_service_config "eventapi" "${EVENTAPI_DOMAIN}" "${EVENTAPI_PORT}" "${EVENTAPI_CONTAINER}"
+    generate_service_config "chat-ai" "${EVENTAPI_DOMAIN}" "${EVENTAPI_PORT}" "${EVENTAPI_CONTAINER}"
 else
-    echo "Warning: Event API configuration incomplete, skipping..."
+    echo "Warning: Genfity Chat AI configuration incomplete, skipping..."
 fi
 
 echo "=== Nginx Configuration Generation Complete ==="

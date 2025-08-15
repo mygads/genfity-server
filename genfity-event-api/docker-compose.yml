@@ -12,7 +12,6 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_SSLMODE=${DB_SSLMODE}
       - PORT=${PORT}
-      - ENV=${ENV}
       - TZ=${TZ}
       - GIN_MODE=${GIN_MODE}
       - WEBHOOK_VERIFY_TOKEN=${WEBHOOK_VERIFY_TOKEN}
