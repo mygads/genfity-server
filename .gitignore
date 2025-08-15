@@ -1,0 +1,196 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# Exclude example files from being ignored
+!.env.example
+
+# Go specific
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# Dependency directories
+vendor/
+
+# Go build cache
+.cache/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Docker volumes and data
+postgres-data/
+redis-data/
+mongodb-data/
+
+# SSL certificates and keys
+ssl/
+certs/
+*.pem
+*.key
+*.crt
+*.csr
+
+# Nginx generated configs (keep examples)
+nginx/sites-available/*.conf
+!nginx/sites-available/*.conf.example
+
+# Logs
+*.log
+logs/
+log/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Database dumps
+*.sql
+*.dump
+
+# Node.js (if any frontend tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if any Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Documentation build
+docs/_build/
+site/
+
+# Coverage reports
+coverage.html
+coverage.xml
+*.cover
+.coverage
+
+# Test artifacts
+test-results/
+coverage/
+
+# Local development overrides
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Runtime data
+pids/
+*.pid
+*.seed
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env.test
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Windows specific
+desktop.ini
+$RECYCLE.BIN/
+
+# Linux specific
+*~
+
+# macOS specific
+.AppleDouble
+.LSOverride
+Icon
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Custom project ignores
+# Add any project-specific files to ignore here
+config/local.yml
+scripts/local/
+bin/
+build/
+dist/

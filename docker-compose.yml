@@ -11,13 +11,13 @@ volumes:
 
 services:
   postgres:
-    image: postgres:16-alpine
-    container_name: genfity-postgres
+    image: postgres:16
+    container_name: genfity-db-postgres
     environment:
-      POSTGRES_USER: genfity_user
-      POSTGRES_PASSWORD: genfity_password
-      POSTGRES_DB: genfity_db
-      POSTGRES_MULTIPLE_DATABASES: wuzapi_db,event_api_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_MULTIPLE_DATABASES}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
@@ -27,7 +27,7 @@ services:
       - genfity-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U genfity_user -d genfity_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -65,3 +65,26 @@ services:
     profiles:
       - prod
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+  # Config Generator - Generates nginx configuration from .env
+  nginx-config-generator:
+    image: alpine:latest
+    container_name: genfity-nginx-config-generator
+    volumes:
+      - ./nginx/sites-available:/etc/nginx/sites-available
+      - ./scripts:/scripts
+    environment:
+      - WUZAPI_DOMAIN=${WUZAPI_DOMAIN}
+      - WUZAPI_PORT=${WUZAPI_PORT}
+      - WUZAPI_CONTAINER=${WUZAPI_CONTAINER}
+      - EVENTAPI_DOMAIN=${EVENTAPI_DOMAIN}
+      - EVENTAPI_PORT=${EVENTAPI_PORT}
+      - EVENTAPI_CONTAINER=${EVENTAPI_CONTAINER}
+    command: >
+      sh -c "
+        echo 'Generating nginx configuration from environment variables...'
+        /scripts/generate-nginx-config.sh
+        echo 'Nginx configuration generated successfully!'
+      "
+    profiles:
+      - prod

@@ -1,243 +1,266 @@
 # Genfity Server Management Script for Windows
-# Use: .\deploy.ps1 [command] [options]
+# Simple modular deployment management
 
 param(
     [Parameter(Position=0)]
-    [ValidateSet("dev", "prod", "stop", "restart", "logs", "status", "clean", "setup-ssl", "help")]
+    [ValidateSet("dev", "prod", "stop", "restart", "logs", "status", "clean", "config", "help")]
     [string]$Command = "help",
     
-    [Parameter()]
-    [ValidateSet("all", "wuzapi", "eventapi")]
+    [Parameter(Position=1)]
+    [ValidateSet("all", "infrastructure", "wuzapi", "eventapi")]
     [string]$Service = "all"
 )
 
-# Colors for output (Windows PowerShell)
-function Write-ColorOutput($ForegroundColor) {
-    $fc = $host.UI.RawUI.ForegroundColor
-    $host.UI.RawUI.ForegroundColor = $ForegroundColor
-    if ($args) {
-        Write-Output $args
-    } else {
-        $input | Write-Output
-    }
-    $host.UI.RawUI.ForegroundColor = $fc
-}
-
-function Write-Green { Write-ColorOutput Green $args }
-function Write-Yellow { Write-ColorOutput Yellow $args }
-function Write-Red { Write-ColorOutput Red $args }
-function Write-Blue { Write-ColorOutput Blue $args }
+function Write-Green { Write-Host $args -ForegroundColor Green }
+function Write-Yellow { Write-Host $args -ForegroundColor Yellow }
+function Write-Red { Write-Host $args -ForegroundColor Red }
+function Write-Blue { Write-Host $args -ForegroundColor Blue }
 
 function Show-Usage {
     Write-Green "=== Genfity Deployment Manager ==="
     Write-Host ""
-    Write-Host "Usage: .\deploy.ps1 [COMMAND] [-Service SERVICE]"
+    Write-Host "Usage: .\deploy.ps1 [COMMAND] [SERVICE]"
     Write-Host ""
     Write-Host "Commands:"
-    Write-Blue "  dev          "; Write-Host "Start development environment (DB + Apps only)"
-    Write-Blue "  prod         "; Write-Host "Start production environment (DB + Apps + Nginx + SSL)"
-    Write-Blue "  stop         "; Write-Host "Stop all services"
-    Write-Blue "  restart      "; Write-Host "Restart all services"
-    Write-Blue "  logs         "; Write-Host "Show logs for all services"
-    Write-Blue "  status       "; Write-Host "Show status of all services"
-    Write-Blue "  clean        "; Write-Host "Stop and remove all containers, networks, and volumes"
-    Write-Blue "  setup-ssl    "; Write-Host "Setup SSL certificates (production only)"
+    Write-Blue "  dev [service]     "; Write-Host "Start development environment"
+    Write-Blue "  prod [service]    "; Write-Host "Start production environment (with SSL/proxy)"
+    Write-Blue "  stop [service]    "; Write-Host "Stop services"
+    Write-Blue "  restart [service] "; Write-Host "Restart services"
+    Write-Blue "  logs [service]    "; Write-Host "Show logs"
+    Write-Blue "  status            "; Write-Host "Show status of all services"
+    Write-Blue "  clean             "; Write-Host "Remove all containers, networks, and volumes"
+    Write-Blue "  config            "; Write-Host "Generate nginx configuration from .env"
     Write-Host ""
-    Write-Host "Options:"
-    Write-Blue "  -Service     "; Write-Host "Specify service (wuzapi|eventapi|all) - default: all"
+    Write-Host "Services:"
+    Write-Blue "  all               "; Write-Host "All services (default)"
+    Write-Blue "  infrastructure    "; Write-Host "PostgreSQL + Nginx + SSL only"
+    Write-Blue "  wuzapi            "; Write-Host "WuzAPI service (+ infrastructure if needed)"
+    Write-Blue "  eventapi          "; Write-Host "Event API service (+ infrastructure if needed)"
     Write-Host ""
     Write-Host "Examples:"
-    Write-Host "  .\deploy.ps1 dev                    # Start development environment"
-    Write-Host "  .\deploy.ps1 prod                   # Start production environment"
-    Write-Host "  .\deploy.ps1 dev -Service wuzapi    # Start only wuzapi in dev mode"
-    Write-Host "  .\deploy.ps1 stop                   # Stop all services"
-    Write-Host "  .\deploy.ps1 logs -Service eventapi # Show logs for event-api only"
+    Write-Host "  .\deploy.ps1 dev                    # Start all services in development"
+    Write-Host "  .\deploy.ps1 dev wuzapi            # Start only WuzAPI + database"
+    Write-Host "  .\deploy.ps1 prod                  # Start production with SSL/proxy"
+    Write-Host "  .\deploy.ps1 config                # Generate nginx config from .env"
+    Write-Host "  .\deploy.ps1 logs wuzapi           # Show WuzAPI logs"
 }
 
-function Test-NetworkExists {
-    $networkExists = docker network ls --format "{{.Name}}" | Select-String -Pattern "^genfity-network$"
-    return $networkExists -ne $null
+function Test-EnvFile {
+    param($Path, $ServiceName)
+    
+    if (-not (Test-Path $Path)) {
+        Write-Yellow "Creating .env from template for $ServiceName..."
+        $examplePath = "$Path.example"
+        if (Test-Path $examplePath) {
+            Copy-Item $examplePath $Path
+            Write-Red "Please edit $Path and configure the settings before continuing!"
+            return $false
+        } else {
+            Write-Red "Error: $examplePath not found!"
+            return $false
+        }
+    }
+    return $true
 }
 
 function New-Network {
-    if (-not (Test-NetworkExists)) {
+    $networkExists = docker network ls --format "{{.Name}}" | Select-String -Pattern "^genfity-network$"
+    if (-not $networkExists) {
         Write-Yellow "Creating genfity-network..."
         docker network create genfity-network
     }
 }
 
-function Start-DevEnvironment {
-    param($ServiceName)
+function Invoke-GenerateNginxConfig {
+    Write-Green "Generating nginx configuration..."
     
-    Write-Green "Starting development environment..."
-    
-    New-Network
-    
-    # Start infrastructure
-    Write-Yellow "Starting PostgreSQL database..."
-    docker compose --profile dev up -d postgres
-    
-    switch ($ServiceName) {
-        "wuzapi" {
-            Write-Yellow "Starting WuzAPI service..."
-            Set-Location genfity-wuzapi
-            docker compose --profile dev up -d
-            Set-Location ..
-        }
-        "eventapi" {
-            Write-Yellow "Starting Event API service..."
-            Set-Location genfity-event-api
-            docker compose --profile dev up -d
-            Set-Location ..
-        }
-        default {
-            Write-Yellow "Starting all application services..."
-            Set-Location genfity-wuzapi
-            docker compose --profile dev up -d
-            Set-Location ..\genfity-event-api
-            docker compose --profile dev up -d
-            Set-Location ..
-        }
+    if (-not (Test-Path ".env")) {
+        Write-Red "Error: .env file not found in root directory!"
+        return $false
     }
     
-    Write-Green "Development environment started successfully!"
-    Write-Yellow "Services available at:"
-    if ($ServiceName -eq "all" -or $ServiceName -eq "wuzapi") {
-        Write-Host "  - WuzAPI: http://localhost:8080"
-    }
-    if ($ServiceName -eq "all" -or $ServiceName -eq "eventapi") {
-        Write-Host "  - Event API: http://localhost:8081"
-    }
-    Write-Host "  - PostgreSQL: localhost:5432"
+    # Make sure the script is executable and run it
+    docker run --rm --env-file .env -v "${PWD}/nginx/sites-available:/etc/nginx/sites-available" -v "${PWD}/scripts:/scripts" alpine:latest /scripts/generate-nginx-config.sh
+    
+    Write-Green "Nginx configuration generated successfully!"
+    return $true
 }
 
-function Start-ProdEnvironment {
-    param($ServiceName)
+function Start-Infrastructure {
+    param($Profile)
     
-    Write-Green "Starting production environment..."
+    Write-Yellow "Starting infrastructure..."
     
-    # Check if .env exists
-    if (-not (Test-Path ".env")) {
-        Write-Red "Error: .env file not found. Please copy .env.example to .env and configure it."
-        exit 1
+    if (-not (Test-EnvFile ".env" "root infrastructure")) {
+        return $false
     }
     
     New-Network
     
-    # Start infrastructure
-    Write-Yellow "Starting infrastructure (PostgreSQL + Nginx + SSL)..."
-    docker compose --profile prod up -d
+    if ($Profile -eq "prod") {
+        if (-not (Invoke-GenerateNginxConfig)) {
+            return $false
+        }
+        docker compose --profile prod up -d postgres nginx certbot
+    } else {
+        docker compose --profile dev up -d postgres
+    }
+    return $true
+}
+
+function Start-Service {
+    param($ServiceName, $Profile)
+    
+    Write-Yellow "Starting $ServiceName service..."
     
     switch ($ServiceName) {
         "wuzapi" {
-            Write-Yellow "Starting WuzAPI service..."
-            Set-Location genfity-wuzapi
-            docker compose --profile prod up -d
-            Set-Location ..
+            Push-Location "genfity-wuzapi"
+            try {
+                if (-not (Test-EnvFile ".env" "WuzAPI")) {
+                    return $false
+                }
+                docker compose up -d
+            } finally {
+                Pop-Location
+            }
         }
         "eventapi" {
-            Write-Yellow "Starting Event API service..."
-            Set-Location genfity-event-api
-            docker compose --profile prod up -d
-            Set-Location ..
+            Push-Location "genfity-event-api"
+            try {
+                if (-not (Test-EnvFile ".env" "Event API")) {
+                    return $false
+                }
+                docker compose up -d
+            } finally {
+                Pop-Location
+            }
         }
         default {
-            Write-Yellow "Starting all application services..."
-            Set-Location genfity-wuzapi
-            docker compose --profile prod up -d
-            Set-Location ..\genfity-event-api
-            docker compose --profile prod up -d
-            Set-Location ..
+            Write-Red "Unknown service: $ServiceName"
+            return $false
+        }
+    }
+    return $true
+}
+
+function Start-Environment {
+    param($Mode, $ServiceName)
+    
+    Write-Green "Starting $Mode environment..."
+    
+    switch ($ServiceName) {
+        "infrastructure" {
+            if (-not (Start-Infrastructure $Mode)) { return }
+        }
+        "wuzapi" {
+            if (-not (Start-Infrastructure $Mode)) { return }
+            if (-not (Start-Service "wuzapi" $Mode)) { return }
+        }
+        "eventapi" {
+            if (-not (Start-Infrastructure $Mode)) { return }
+            if (-not (Start-Service "eventapi" $Mode)) { return }
+        }
+        "all" {
+            if (-not (Start-Infrastructure $Mode)) { return }
+            if (-not (Start-Service "wuzapi" $Mode)) { return }
+            if (-not (Start-Service "eventapi" $Mode)) { return }
+        }
+        default {
+            Write-Red "Unknown service: $ServiceName"
+            return
         }
     }
     
-    Write-Green "Production environment started successfully!"
+    Write-Green "$Mode environment started successfully!"
+    Show-AccessInfo $Mode $ServiceName
+}
+
+function Show-AccessInfo {
+    param($Mode, $ServiceName)
+    
     Write-Yellow "Services available at:"
     
-    if (Test-Path ".env") {
-        $envContent = Get-Content ".env" | ForEach-Object {
-            if ($_ -match "^([^#][^=]+)=(.*)$") {
-                [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2], "Process")
-            }
-        }
-        
+    if ($Mode -eq "dev") {
         if ($ServiceName -eq "all" -or $ServiceName -eq "wuzapi") {
-            $wuzapiDomain = $env:WUZAPI_DOMAIN
-            if (-not $wuzapiDomain) { $wuzapiDomain = "wuzapi.yourdomain.com" }
-            Write-Host "  - WuzAPI: https://$wuzapiDomain"
+            Write-Host "  - WuzAPI: http://localhost:8080"
         }
         if ($ServiceName -eq "all" -or $ServiceName -eq "eventapi") {
-            $eventapiDomain = $env:EVENTAPI_DOMAIN
-            if (-not $eventapiDomain) { $eventapiDomain = "eventapi.yourdomain.com" }
-            Write-Host "  - Event API: https://$eventapiDomain"
+            Write-Host "  - Event API: http://localhost:8081"
+        }
+        Write-Host "  - PostgreSQL: localhost:5432"
+    } else {
+        if (Test-Path ".env") {
+            $envVars = @{}
+            Get-Content ".env" | ForEach-Object {
+                if ($_ -match "^([^#][^=]+)=(.*)$") {
+                    $envVars[$matches[1]] = $matches[2]
+                }
+            }
+            
+            if (($ServiceName -eq "all" -or $ServiceName -eq "wuzapi") -and $envVars["WUZAPI_DOMAIN"]) {
+                Write-Host "  - WuzAPI: https://$($envVars['WUZAPI_DOMAIN'])"
+            }
+            if (($ServiceName -eq "all" -or $ServiceName -eq "eventapi") -and $envVars["EVENTAPI_DOMAIN"]) {
+                Write-Host "  - Event API: https://$($envVars['EVENTAPI_DOMAIN'])"
+            }
         }
     }
 }
 
 function Stop-Services {
-    Write-Yellow "Stopping all services..."
+    param($ServiceName)
     
-    # Stop applications
-    Set-Location genfity-wuzapi
-    docker compose down
-    Set-Location ..\genfity-event-api
-    docker compose down
-    Set-Location ..
+    Write-Yellow "Stopping services..."
     
-    # Stop infrastructure
-    docker compose down
-    
-    Write-Green "All services stopped."
-}
-
-function Restart-Services {
-    param($ServiceName, $Mode)
-    
-    Write-Yellow "Restarting services..."
-    Stop-Services
-    Start-Sleep -Seconds 2
-    
-    if ($Mode -eq "prod") {
-        Start-ProdEnvironment $ServiceName
-    } else {
-        Start-DevEnvironment $ServiceName
+    switch ($ServiceName) {
+        "infrastructure" {
+            docker compose down
+        }
+        "wuzapi" {
+            Push-Location "genfity-wuzapi"
+            docker compose down
+            Pop-Location
+        }
+        "eventapi" {
+            Push-Location "genfity-event-api"
+            docker compose down
+            Pop-Location
+        }
+        "all" {
+            Push-Location "genfity-wuzapi"
+            docker compose down
+            Pop-Location
+            Push-Location "genfity-event-api"
+            docker compose down
+            Pop-Location
+            docker compose down
+        }
     }
+    
+    Write-Green "Services stopped."
 }
 
 function Show-Logs {
     param($ServiceName)
     
     switch ($ServiceName) {
-        "wuzapi" {
-            Set-Location genfity-wuzapi
+        "infrastructure" {
             docker compose logs -f
-            Set-Location ..
+        }
+        "wuzapi" {
+            Push-Location "genfity-wuzapi"
+            docker compose logs -f
+            Pop-Location
         }
         "eventapi" {
-            Set-Location genfity-event-api
+            Push-Location "genfity-event-api"
             docker compose logs -f
-            Set-Location ..
+            Pop-Location
         }
-        default {
+        "all" {
             Write-Yellow "Showing logs for all services (Ctrl+C to exit)..."
-            Start-Job -ScriptBlock { docker compose logs -f } | Out-Null
-            Start-Job -ScriptBlock { 
-                Set-Location genfity-wuzapi
-                docker compose logs -f 
-            } | Out-Null
-            Start-Job -ScriptBlock { 
-                Set-Location genfity-event-api
-                docker compose logs -f 
-            } | Out-Null
-            
-            try {
-                while ($true) {
-                    Start-Sleep -Seconds 1
-                }
-            } finally {
-                Get-Job | Stop-Job
-                Get-Job | Remove-Job
-            }
+            docker compose logs -f
         }
     }
 }
@@ -249,14 +272,14 @@ function Show-Status {
     docker compose ps
     Write-Host ""
     Write-Blue "WuzAPI:"
-    Set-Location genfity-wuzapi
+    Push-Location "genfity-wuzapi"
     docker compose ps
-    Set-Location ..
+    Pop-Location
     Write-Host ""
     Write-Blue "Event API:"
-    Set-Location genfity-event-api
+    Push-Location "genfity-event-api"
     docker compose ps
-    Set-Location ..
+    Pop-Location
 }
 
 function Remove-All {
@@ -266,19 +289,18 @@ function Remove-All {
     if ($response -eq "y" -or $response -eq "Y") {
         Write-Yellow "Cleaning up all resources..."
         
-        # Stop and remove everything
-        Set-Location genfity-wuzapi
+        Push-Location "genfity-wuzapi"
         docker compose down -v --remove-orphans
-        Set-Location ..\genfity-event-api
+        Pop-Location
+        Push-Location "genfity-event-api"
         docker compose down -v --remove-orphans
-        Set-Location ..
+        Pop-Location
         docker compose down -v --remove-orphans
         
-        # Remove network
         try {
             docker network rm genfity-network
         } catch {
-            # Network might not exist, ignore error
+            # Network might not exist
         }
         
         Write-Green "Cleanup completed."
@@ -287,32 +309,20 @@ function Remove-All {
     }
 }
 
-function Setup-SSL {
-    if (Test-Path "scripts\setup-ssl.sh") {
-        # Run in WSL or Git Bash if available
-        if (Get-Command wsl -ErrorAction SilentlyContinue) {
-            wsl bash scripts/setup-ssl.sh
-        } elseif (Get-Command "C:\Program Files\Git\bin\bash.exe" -ErrorAction SilentlyContinue) {
-            & "C:\Program Files\Git\bin\bash.exe" scripts/setup-ssl.sh
-        } else {
-            Write-Red "Error: SSL setup requires WSL or Git Bash. Please install one of them or run the script manually."
-            Write-Yellow "Alternative: Run the SSL setup commands manually in Docker."
-        }
-    } else {
-        Write-Red "Error: scripts\setup-ssl.sh not found."
-    }
-}
-
 # Main execution
 switch ($Command) {
-    "dev" { Start-DevEnvironment $Service }
-    "prod" { Start-ProdEnvironment $Service }
-    "stop" { Stop-Services }
-    "restart" { Restart-Services $Service "dev" }
+    "dev" { Start-Environment "dev" $Service }
+    "prod" { Start-Environment "prod" $Service }
+    "stop" { Stop-Services $Service }
+    "restart" { 
+        Stop-Services $Service
+        Start-Sleep -Seconds 2
+        Start-Environment "dev" $Service
+    }
     "logs" { Show-Logs $Service }
     "status" { Show-Status }
     "clean" { Remove-All }
-    "setup-ssl" { Setup-SSL }
+    "config" { Invoke-GenerateNginxConfig }
     "help" { Show-Usage }
     default { 
         Write-Red "Error: Unknown command '$Command'."

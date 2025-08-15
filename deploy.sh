@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Genfity Deployment Script
-# Manages different deployment profiles for the Genfity platform
+# Genfity Server Management Script for Linux/macOS
+# Simple modular deployment management
 
 set -e
 
@@ -15,150 +15,265 @@ NC='\033[0m' # No Color
 show_usage() {
     echo -e "${GREEN}=== Genfity Deployment Manager ===${NC}"
     echo
-    echo "Usage: $0 [COMMAND] [OPTIONS]"
+    echo "Usage: $0 [COMMAND] [SERVICE]"
     echo
     echo "Commands:"
-    echo -e "  ${BLUE}dev${NC}          Start development environment (DB + Apps only)"
-    echo -e "  ${BLUE}prod${NC}         Start production environment (DB + Apps + Nginx + SSL)"
-    echo -e "  ${BLUE}stop${NC}         Stop all services"
-    echo -e "  ${BLUE}restart${NC}      Restart all services"
-    echo -e "  ${BLUE}logs${NC}         Show logs for all services"
-    echo -e "  ${BLUE}status${NC}       Show status of all services"
-    echo -e "  ${BLUE}clean${NC}        Stop and remove all containers, networks, and volumes"
-    echo -e "  ${BLUE}setup-ssl${NC}    Setup SSL certificates (production only)"
+    echo -e "  ${BLUE}dev [service]     ${NC}Start development environment"
+    echo -e "  ${BLUE}prod [service]    ${NC}Start production environment (with SSL/proxy)"
+    echo -e "  ${BLUE}stop [service]    ${NC}Stop services"
+    echo -e "  ${BLUE}restart [service] ${NC}Restart services"
+    echo -e "  ${BLUE}logs [service]    ${NC}Show logs"
+    echo -e "  ${BLUE}status            ${NC}Show status of all services"
+    echo -e "  ${BLUE}clean             ${NC}Remove all containers, networks, and volumes"
+    echo -e "  ${BLUE}config            ${NC}Generate nginx configuration from .env"
     echo
-    echo "Options:"
-    echo -e "  ${BLUE}--service${NC}    Specify service (wuzapi|eventapi|all) - default: all"
-    echo -e "  ${BLUE}--help${NC}       Show this help message"
+    echo "Services:"
+    echo -e "  ${BLUE}all               ${NC}All services (default)"
+    echo -e "  ${BLUE}infrastructure    ${NC}PostgreSQL + Nginx + SSL only"
+    echo -e "  ${BLUE}wuzapi            ${NC}WuzAPI service (+ infrastructure if needed)"
+    echo -e "  ${BLUE}eventapi          ${NC}Event API service (+ infrastructure if needed)"
     echo
     echo "Examples:"
-    echo "  $0 dev                    # Start development environment"
-    echo "  $0 prod                   # Start production environment"
-    echo "  $0 dev --service wuzapi   # Start only wuzapi in dev mode"
-    echo "  $0 stop                   # Stop all services"
-    echo "  $0 logs --service eventapi # Show logs for event-api only"
+    echo "  $0 dev                    # Start all services in development"
+    echo "  $0 dev wuzapi            # Start only WuzAPI + database"
+    echo "  $0 prod                  # Start production with SSL/proxy"
+    echo "  $0 config                # Generate nginx config from .env"
+    echo "  $0 logs wuzapi           # Show WuzAPI logs"
+}
+
+test_env_file() {
+    local path=$1
+    local service_name=$2
+    
+    if [ ! -f "$path" ]; then
+        echo -e "${YELLOW}Creating .env from template for $service_name...${NC}"
+        local example_path="$path.example"
+        if [ -f "$example_path" ]; then
+            cp "$example_path" "$path"
+            echo -e "${RED}Please edit $path and configure the settings before continuing!${NC}"
+            return 1
+        else
+            echo -e "${RED}Error: $example_path not found!${NC}"
+            return 1
+        fi
+    fi
+    return 0
 }
 
 create_network() {
-    if ! docker network ls | grep -q "genfity-network"; then
+    if ! docker network ls --format "{{.Name}}" | grep -q "^genfity-network$"; then
         echo -e "${YELLOW}Creating genfity-network...${NC}"
         docker network create genfity-network
     fi
 }
 
-start_dev() {
-    local service=$1
-    echo -e "${GREEN}Starting development environment...${NC}"
+generate_nginx_config() {
+    echo -e "${GREEN}Generating nginx configuration...${NC}"
     
-    create_network
+    if [ ! -f ".env" ]; then
+        echo -e "${RED}Error: .env file not found in root directory!${NC}"
+        return 1
+    fi
     
-    # Start infrastructure
-    echo -e "${YELLOW}Starting PostgreSQL database...${NC}"
-    docker compose --profile dev up -d postgres
+    # Make sure the script is executable and run it
+    docker run --rm --env-file .env -v "$(pwd)/nginx/sites-available:/etc/nginx/sites-available" -v "$(pwd)/scripts:/scripts" alpine:latest /scripts/generate-nginx-config.sh
     
-    case $service in
-        "wuzapi")
-            echo -e "${YELLOW}Starting WuzAPI service...${NC}"
-            cd genfity-wuzapi && docker compose --profile dev up -d
-            ;;
-        "eventapi")
-            echo -e "${YELLOW}Starting Event API service...${NC}"
-            cd genfity-event-api && docker compose --profile dev up -d
-            ;;
-        "all"|*)
-            echo -e "${YELLOW}Starting all application services...${NC}"
-            cd genfity-wuzapi && docker compose --profile dev up -d && cd ..
-            cd genfity-event-api && docker compose --profile dev up -d && cd ..
-            ;;
-    esac
-    
-    echo -e "${GREEN}Development environment started successfully!${NC}"
-    echo -e "${YELLOW}Services available at:${NC}"
-    [ "$service" = "all" ] || [ "$service" = "wuzapi" ] && echo -e "  - WuzAPI: http://localhost:8080"
-    [ "$service" = "all" ] || [ "$service" = "eventapi" ] && echo -e "  - Event API: http://localhost:8081"
-    echo -e "  - PostgreSQL: localhost:5432"
+    echo -e "${GREEN}Nginx configuration generated successfully!${NC}"
+    return 0
 }
 
-start_prod() {
-    local service=$1
-    echo -e "${GREEN}Starting production environment...${NC}"
+start_infrastructure() {
+    local profile=$1
     
-    # Check if .env exists
-    if [ ! -f ".env" ]; then
-        echo -e "${RED}Error: .env file not found. Please copy .env.example to .env and configure it.${NC}"
-        exit 1
+    echo -e "${YELLOW}Starting infrastructure...${NC}"
+    
+    if ! test_env_file ".env" "root infrastructure"; then
+        return 1
     fi
     
     create_network
     
-    # Start infrastructure
-    echo -e "${YELLOW}Starting infrastructure (PostgreSQL + Nginx + SSL)...${NC}"
-    docker compose --profile prod up -d
+    if [ "$profile" = "prod" ]; then
+        if ! generate_nginx_config; then
+            return 1
+        fi
+        docker compose --profile prod up -d postgres nginx certbot
+    else
+        docker compose --profile dev up -d postgres
+    fi
+    return 0
+}
+
+start_service() {
+    local service_name=$1
+    local profile=$2
     
-    case $service in
+    echo -e "${YELLOW}Starting $service_name service...${NC}"
+    
+    case $service_name in
         "wuzapi")
-            echo -e "${YELLOW}Starting WuzAPI service...${NC}"
-            cd genfity-wuzapi && docker compose --profile prod up -d
+            pushd "genfity-wuzapi" > /dev/null
+            if ! test_env_file ".env" "WuzAPI"; then
+                popd > /dev/null
+                return 1
+            fi
+            docker compose up -d
+            popd > /dev/null
             ;;
         "eventapi")
-            echo -e "${YELLOW}Starting Event API service...${NC}"
-            cd genfity-event-api && docker compose --profile prod up -d
+            pushd "genfity-event-api" > /dev/null
+            if ! test_env_file ".env" "Event API"; then
+                popd > /dev/null
+                return 1
+            fi
+            docker compose up -d
+            popd > /dev/null
             ;;
-        "all"|*)
-            echo -e "${YELLOW}Starting all application services...${NC}"
-            cd genfity-wuzapi && docker compose --profile prod up -d && cd ..
-            cd genfity-event-api && docker compose --profile prod up -d && cd ..
+        *)
+            echo -e "${RED}Unknown service: $service_name${NC}"
+            return 1
+            ;;
+    esac
+    return 0
+}
+
+start_environment() {
+    local mode=$1
+    local service_name=$2
+    
+    echo -e "${GREEN}Starting $mode environment...${NC}"
+    
+    case $service_name in
+        "infrastructure")
+            if ! start_infrastructure "$mode"; then
+                return 1
+            fi
+            ;;
+        "wuzapi")
+            if ! start_infrastructure "$mode"; then
+                return 1
+            fi
+            if ! start_service "wuzapi" "$mode"; then
+                return 1
+            fi
+            ;;
+        "eventapi")
+            if ! start_infrastructure "$mode"; then
+                return 1
+            fi
+            if ! start_service "eventapi" "$mode"; then
+                return 1
+            fi
+            ;;
+        "all")
+            if ! start_infrastructure "$mode"; then
+                return 1
+            fi
+            if ! start_service "wuzapi" "$mode"; then
+                return 1
+            fi
+            if ! start_service "eventapi" "$mode"; then
+                return 1
+            fi
+            ;;
+        *)
+            echo -e "${RED}Unknown service: $service_name${NC}"
+            return 1
             ;;
     esac
     
-    echo -e "${GREEN}Production environment started successfully!${NC}"
+    echo -e "${GREEN}$mode environment started successfully!${NC}"
+    show_access_info "$mode" "$service_name"
+}
+
+show_access_info() {
+    local mode=$1
+    local service_name=$2
+    
     echo -e "${YELLOW}Services available at:${NC}"
-    source .env
-    [ "$service" = "all" ] || [ "$service" = "wuzapi" ] && echo -e "  - WuzAPI: https://${WUZAPI_DOMAIN:-wuzapi.yourdomain.com}"
-    [ "$service" = "all" ] || [ "$service" = "eventapi" ] && echo -e "  - Event API: https://${EVENTAPI_DOMAIN:-eventapi.yourdomain.com}"
+    
+    if [ "$mode" = "dev" ]; then
+        if [ "$service_name" = "all" ] || [ "$service_name" = "wuzapi" ]; then
+            echo "  - WuzAPI: http://localhost:8080"
+        fi
+        if [ "$service_name" = "all" ] || [ "$service_name" = "eventapi" ]; then
+            echo "  - Event API: http://localhost:8081"
+        fi
+        echo "  - PostgreSQL: localhost:5432"
+    else
+        if [ -f ".env" ]; then
+            # Source .env file to get domain variables
+            set -a
+            source .env
+            set +a
+            
+            if [ "$service_name" = "all" ] || [ "$service_name" = "wuzapi" ]; then
+                if [ -n "$WUZAPI_DOMAIN" ]; then
+                    echo "  - WuzAPI: https://$WUZAPI_DOMAIN"
+                fi
+            fi
+            if [ "$service_name" = "all" ] || [ "$service_name" = "eventapi" ]; then
+                if [ -n "$EVENTAPI_DOMAIN" ]; then
+                    echo "  - Event API: https://$EVENTAPI_DOMAIN"
+                fi
+            fi
+        fi
+    fi
 }
 
 stop_services() {
-    echo -e "${YELLOW}Stopping all services...${NC}"
+    local service_name=$1
     
-    # Stop applications
-    cd genfity-wuzapi && docker compose down && cd ..
-    cd genfity-event-api && docker compose down && cd ..
+    echo -e "${YELLOW}Stopping services...${NC}"
     
-    # Stop infrastructure
-    docker compose down
+    case $service_name in
+        "infrastructure")
+            docker compose down
+            ;;
+        "wuzapi")
+            pushd "genfity-wuzapi" > /dev/null
+            docker compose down
+            popd > /dev/null
+            ;;
+        "eventapi")
+            pushd "genfity-event-api" > /dev/null
+            docker compose down
+            popd > /dev/null
+            ;;
+        "all")
+            pushd "genfity-wuzapi" > /dev/null
+            docker compose down
+            popd > /dev/null
+            pushd "genfity-event-api" > /dev/null
+            docker compose down
+            popd > /dev/null
+            docker compose down
+            ;;
+    esac
     
-    echo -e "${GREEN}All services stopped.${NC}"
-}
-
-restart_services() {
-    local service=$1
-    local mode=$2
-    echo -e "${YELLOW}Restarting services...${NC}"
-    stop_services
-    sleep 2
-    if [ "$mode" = "prod" ]; then
-        start_prod "$service"
-    else
-        start_dev "$service"
-    fi
+    echo -e "${GREEN}Services stopped.${NC}"
 }
 
 show_logs() {
-    local service=$1
-    case $service in
+    local service_name=$1
+    
+    case $service_name in
+        "infrastructure")
+            docker compose logs -f
+            ;;
         "wuzapi")
-            cd genfity-wuzapi && docker compose logs -f
+            pushd "genfity-wuzapi" > /dev/null
+            docker compose logs -f
+            popd > /dev/null
             ;;
         "eventapi")
-            cd genfity-event-api && docker compose logs -f
+            pushd "genfity-event-api" > /dev/null
+            docker compose logs -f
+            popd > /dev/null
             ;;
-        "all"|*)
+        "all")
             echo -e "${YELLOW}Showing logs for all services (Ctrl+C to exit)...${NC}"
-            docker compose logs -f &
-            cd genfity-wuzapi && docker compose logs -f &
-            cd .. && cd genfity-event-api && docker compose logs -f &
-            wait
+            docker compose logs -f
             ;;
     esac
 }
@@ -170,25 +285,33 @@ show_status() {
     docker compose ps
     echo
     echo -e "${BLUE}WuzAPI:${NC}"
-    cd genfity-wuzapi && docker compose ps && cd ..
+    pushd "genfity-wuzapi" > /dev/null
+    docker compose ps
+    popd > /dev/null
     echo
     echo -e "${BLUE}Event API:${NC}"
-    cd genfity-event-api && docker compose ps && cd ..
+    pushd "genfity-event-api" > /dev/null
+    docker compose ps
+    popd > /dev/null
 }
 
-clean_all() {
+remove_all() {
     echo -e "${RED}Warning: This will remove all containers, networks, and volumes!${NC}"
     read -p "Are you sure? (y/N): " -n 1 -r
     echo
+    
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo -e "${YELLOW}Cleaning up all resources...${NC}"
         
-        # Stop and remove everything
-        cd genfity-wuzapi && docker compose down -v --remove-orphans && cd ..
-        cd genfity-event-api && docker compose down -v --remove-orphans && cd ..
+        pushd "genfity-wuzapi" > /dev/null
+        docker compose down -v --remove-orphans
+        popd > /dev/null
+        pushd "genfity-event-api" > /dev/null
+        docker compose down -v --remove-orphans
+        popd > /dev/null
         docker compose down -v --remove-orphans
         
-        # Remove network
+        # Remove network (ignore error if it doesn't exist)
         docker network rm genfity-network 2>/dev/null || true
         
         echo -e "${GREEN}Cleanup completed.${NC}"
@@ -198,50 +321,30 @@ clean_all() {
 }
 
 # Parse arguments
-COMMAND=""
-SERVICE="all"
-
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        dev|prod|stop|restart|logs|status|clean|setup-ssl)
-            COMMAND="$1"
-            shift
-            ;;
-        --service)
-            SERVICE="$2"
-            shift 2
-            ;;
-        --help|-h)
-            show_usage
-            exit 0
-            ;;
-        *)
-            echo -e "${RED}Unknown option: $1${NC}"
-            show_usage
-            exit 1
-            ;;
-    esac
-done
+COMMAND=${1:-"help"}
+SERVICE=${2:-"all"}
 
 # Validate service option
-if [ "$SERVICE" != "all" ] && [ "$SERVICE" != "wuzapi" ] && [ "$SERVICE" != "eventapi" ]; then
-    echo -e "${RED}Error: Invalid service '$SERVICE'. Must be 'all', 'wuzapi', or 'eventapi'.${NC}"
+if [ "$SERVICE" != "all" ] && [ "$SERVICE" != "infrastructure" ] && [ "$SERVICE" != "wuzapi" ] && [ "$SERVICE" != "eventapi" ]; then
+    echo -e "${RED}Error: Invalid service '$SERVICE'. Must be 'all', 'infrastructure', 'wuzapi', or 'eventapi'.${NC}"
     exit 1
 fi
 
 # Execute command
 case $COMMAND in
     "dev")
-        start_dev "$SERVICE"
+        start_environment "dev" "$SERVICE"
         ;;
     "prod")
-        start_prod "$SERVICE"
+        start_environment "prod" "$SERVICE"
         ;;
     "stop")
-        stop_services
+        stop_services "$SERVICE"
         ;;
     "restart")
-        restart_services "$SERVICE" "dev"
+        stop_services "$SERVICE"
+        sleep 2
+        start_environment "dev" "$SERVICE"
         ;;
     "logs")
         show_logs "$SERVICE"
@@ -250,15 +353,13 @@ case $COMMAND in
         show_status
         ;;
     "clean")
-        clean_all
+        remove_all
         ;;
-    "setup-ssl")
-        bash scripts/setup-ssl.sh
+    "config")
+        generate_nginx_config
         ;;
-    "")
-        echo -e "${RED}Error: No command specified.${NC}"
+    "help")
         show_usage
-        exit 1
         ;;
     *)
         echo -e "${RED}Error: Unknown command '$COMMAND'.${NC}"

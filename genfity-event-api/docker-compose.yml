@@ -5,69 +5,67 @@ services:
       dockerfile: Dockerfile
     container_name: genfity-event-api
     environment:
-      - DB_HOST=genfity-postgres
-      - DB_PORT=5432
-      - DB_USER=genfity_user
-      - DB_PASSWORD=genfity_password
-      - DB_NAME=event_api_db
-      - DB_SSLMODE=disable
-      - PORT=8081
-      - ENV=production
-      - GIN_MODE=release
-      - WEBHOOK_VERIFY_TOKEN=${WEBHOOK_VERIFY_TOKEN:-default_webhook_token}
-      - TZ=${TZ:-Asia/Jakarta}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_SSLMODE=${DB_SSLMODE}
+      - PORT=${PORT}
+      - ENV=${ENV}
+      - TZ=${TZ}
+      - GIN_MODE=${GIN_MODE}
+      - WEBHOOK_VERIFY_TOKEN=${WEBHOOK_VERIFY_TOKEN}
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+      - WA_SERVER_URL=${WA_SERVER_URL}
+      - WA_ADMIN_TOKEN=${WA_ADMIN_TOKEN}
+      - LOG_LEVEL=${LOG_LEVEL}
     ports:
-      - "8081:8081"  # Only exposed in dev profile
+      - "${PORT}:${PORT}"
     networks:
       - genfity-network
     depends_on:
       - db-check
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${PORT}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    profiles:
-      - dev
-      - prod
 
   db-check:
-    image: postgres:16-alpine
+    image: postgres:16
     container_name: eventapi-db-check
     environment:
-      - PGHOST=genfity-postgres
-      - PGPORT=5432
-      - PGUSER=genfity_user
-      - PGPASSWORD=genfity_password
-      - PGDATABASE=event_api_db
+      - PGHOST=${DB_HOST}
+      - PGPORT=${DB_PORT}
+      - PGUSER=${DB_USER}
+      - PGPASSWORD=${DB_PASSWORD}
+      - PGDATABASE=${DB_NAME}
     networks:
       - genfity-network
     command: >
       sh -c "
         echo 'Checking database connection...'
-        until pg_isready -h genfity-postgres -p 5432 -U genfity_user -d postgres; do
+        until pg_isready -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d postgres; do
           echo 'Waiting for PostgreSQL server...'
           sleep 2
         done
         echo 'PostgreSQL server is ready!'
         
         echo 'Checking if database exists...'
-        if psql -h genfity-postgres -U genfity_user -d postgres -lqt | cut -d \\| -f 1 | grep -qw event_api_db; then
-          echo 'Database event_api_db exists'
+        if psql -h ${DB_HOST} -U ${DB_USER} -d postgres -lqt | cut -d \\| -f 1 | grep -qw ${DB_NAME}; then
+          echo 'Database ${DB_NAME} exists'
         else
-          echo 'Database event_api_db does not exist, creating...'
-          psql -h genfity-postgres -U genfity_user -d postgres -c 'CREATE DATABASE event_api_db;'
-          echo 'Database event_api_db created'
+          echo 'Database ${DB_NAME} does not exist, creating...'
+          psql -h ${DB_HOST} -U ${DB_USER} -d postgres -c 'CREATE DATABASE ${DB_NAME};'
+          echo 'Database ${DB_NAME} created'
         fi
         
         echo 'Running migrations if needed...'
         echo 'Database check completed successfully'
       "
-    profiles:
-      - dev
-      - prod
 
 networks:
   genfity-network:
@@ -75,9 +73,6 @@ networks:
 
 # ==========================================
 # Usage:
-#   Dev (app only, uses shared db):
-#     docker compose --profile dev up -d
-#
-#   Prod (app with reverse proxy + SSL):
-#     docker compose --profile prod up -d
+#   Copy .env.example to .env and configure
+#   Then run: docker compose up -d
 # ==========================================

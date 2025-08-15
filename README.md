@@ -1,58 +1,71 @@
 # Genfity Server Platform
 
-Platform server untuk Genfity yang terdiri dari WuzAPI (WhatsApp Gateway) dan Event API dengan konfigurasi Docker yang terintegrasi.
+Platform server modular untuk Genfity yang terdiri dari WuzAPI (WhatsApp Gateway) dan Event API dengan arsitektur microservices menggunakan Docker.
 
-## 🏗️ Arsitektur
+## 🏗️ Arsitektur Modular
 
-### Infrastruktur Utama (Root Level)
+### Root Level (Infrastructure)
 - **PostgreSQL 16**: Database utama dengan multiple databases
-- **Nginx**: Reverse proxy dengan SSL otomatis
-- **Certbot**: Manajemen SSL certificate otomatis
+- **Nginx**: Reverse proxy dengan auto-generated configuration  
+- **Certbot**: SSL certificate management otomatis
 
-### Services
-- **genfity-wuzapi**: WhatsApp Gateway Service (Port 8080)
-- **genfity-event-api**: Event Management API (Port 8081)
+### Individual Projects
+- **genfity-wuzapi**: WhatsApp Gateway Service (mandiri dengan `.env` sendiri)
+- **genfity-event-api**: Event Management API (mandiri dengan `.env` sendiri)
 
-### Profiles
-- **dev**: Hanya database + aplikasi (tanpa SSL/reverse proxy)
-- **prod**: Database + aplikasi + reverse proxy + SSL otomatis
+Setiap project dapat dijalankan independen atau bersama-sama melalui script management di root.
 
 ## 🚀 Quick Start
 
 ### 1. Setup Environment
 
+**Root Level (Infrastructure):**
 ```bash
-# Copy dan edit file environment
+# Copy dan edit file environment infrastruktur
 cp .env.example .env
 ```
 
-Edit `.env` file dan sesuaikan dengan konfigurasi Anda:
+Edit `.env` root untuk infrastruktur dan domain mapping:
 ```env
-# Domain Configuration (untuk production)
-WUZAPI_DOMAIN=wuzapi.yourdomain.com
-EVENTAPI_DOMAIN=eventapi.yourdomain.com
-LETSENCRYPT_EMAIL=your-email@domain.com
-
-# Database Configuration
+# Database & Infrastructure
 DB_USER=genfity_user
 DB_PASSWORD=genfity_password
+LETSENCRYPT_EMAIL=genfity@gmail.com
 
-# Security Tokens
-WUZAPI_ADMIN_TOKEN=your_secure_admin_token
-WEBHOOK_VERIFY_TOKEN=your_secure_webhook_token
+# Domain Mapping (untuk production)
+WUZAPI_DOMAIN=wa.genfity.com
+WUZAPI_PORT=8080
+WUZAPI_CONTAINER=genfity-wuzapi
+
+EVENTAPI_DOMAIN=api.genfity.com
+EVENTAPI_PORT=8081
+EVENTAPI_CONTAINER=genfity-event-api
+```
+
+**Per Project:**
+```bash
+# WuzAPI
+cd genfity-wuzapi
+cp .env.example .env
+# Edit .env dengan konfigurasi WuzAPI
+
+# Event API  
+cd genfity-event-api
+cp .env.example .env
+# Edit .env dengan konfigurasi Event API
 ```
 
 ### 2. Development Mode
 
 ```bash
-# Start semua services dalam mode development
-./deploy.sh dev
+# Windows PowerShell
+.\deploy.ps1 dev                  # Start semua services
+.\deploy.ps1 dev wuzapi          # Start hanya WuzAPI + database
+.\deploy.ps1 dev eventapi        # Start hanya Event API + database
 
-# Start hanya WuzAPI
-./deploy.sh dev --service wuzapi
-
-# Start hanya Event API
-./deploy.sh dev --service eventapi
+# Linux/Mac
+./deploy.sh dev                   # Start semua services
+./deploy.sh dev wuzapi           # Start hanya WuzAPI + database
 ```
 
 **Development URLs:**
@@ -63,271 +76,327 @@ WEBHOOK_VERIFY_TOKEN=your_secure_webhook_token
 ### 3. Production Mode
 
 ```bash
-# Setup SSL certificates (hanya sekali)
-./deploy.sh setup-ssl
+# Windows PowerShell
+.\deploy.ps1 config              # Generate nginx config dari .env
+.\deploy.ps1 prod                # Start production environment
 
-# Start production environment
-./deploy.sh prod
+# Linux/Mac  
+./deploy.sh config               # Generate nginx config dari .env
+./deploy.sh prod                 # Start production environment
 ```
 
 **Production URLs:**
-- WuzAPI: https://wuzapi.yourdomain.com
-- Event API: https://eventapi.yourdomain.com
+- WuzAPI: https://wa.genfity.com
+- Event API: https://api.genfity.com
 
 ## 📋 Management Commands
 
+### Basic Operations
 ```bash
-# Lihat status semua services
-./deploy.sh status
+# Status semua services
+.\deploy.ps1 status
 
-# Lihat logs
-./deploy.sh logs
-./deploy.sh logs --service wuzapi
+# Logs specific service
+.\deploy.ps1 logs wuzapi
+.\deploy.ps1 logs eventapi
 
-# Stop semua services
-./deploy.sh stop
+# Stop services
+.\deploy.ps1 stop all
+.\deploy.ps1 stop wuzapi
 
 # Restart services
-./deploy.sh restart
+.\deploy.ps1 restart eventapi
 
-# Cleanup (hapus semua containers & volumes)
-./deploy.sh clean
+# Generate nginx config
+.\deploy.ps1 config
+
+# Cleanup everything
+.\deploy.ps1 clean
 ```
 
-## 🗄️ Database Management
-
-### Struktur Database
-- **genfity_db**: Database utama
-- **wuzapi_db**: Database untuk WuzAPI
-- **event_api_db**: Database untuk Event API
-
-### Auto Database Creation
-Database akan dibuat otomatis saat service pertama kali dijalankan:
-1. Check koneksi ke PostgreSQL
-2. Create database jika belum ada
-3. Jalankan migrasi (jika ada)
-
-### Manual Database Access
+### Service-Specific Deployment
 ```bash
-# Connect ke PostgreSQL container
-docker exec -it genfity-postgres psql -U genfity_user -d genfity_db
+# Development
+.\deploy.ps1 dev infrastructure  # Hanya database
+.\deploy.ps1 dev wuzapi          # WuzAPI + database
+.\deploy.ps1 dev eventapi        # Event API + database
+.\deploy.ps1 dev all             # Semua services
 
-# Backup database
-docker exec genfity-postgres pg_dump -U genfity_user wuzapi_db > wuzapi_backup.sql
-
-# Restore database
-docker exec -i genfity-postgres psql -U genfity_user wuzapi_db < wuzapi_backup.sql
+# Production  
+.\deploy-simple.ps1 prod infrastructure # Database + Nginx + SSL
+.\deploy-simple.ps1 prod wuzapi         # WuzAPI + infrastructure
+.\deploy-simple.ps1 prod eventapi       # Event API + infrastructure
+.\deploy-simple.ps1 prod all            # Semua services + infrastructure
 ```
 
-## 🔧 Configuration Files
+## 🔧 Configuration Structure
 
-### Root Level
-- `docker-compose.yml`: Infrastruktur utama (PostgreSQL + Nginx)
-- `nginx/nginx.conf`: Konfigurasi Nginx utama
-- `nginx/sites-available/`: Konfigurasi per-service
-- `scripts/`: Helper scripts
+### Root Level Configuration (`.env`)
+```env
+# Infrastructure only
+DB_USER=genfity_user
+DB_PASSWORD=genfity_password
+POSTGRES_MULTIPLE_DATABASES=wuzapi_db,event_api_db
 
-### Per Service
-- `genfity-wuzapi/docker-compose.yml`: WuzAPI service
-- `genfity-event-api/docker-compose.yml`: Event API service
+# Domain mapping for reverse proxy
+WUZAPI_DOMAIN=wa.genfity.com
+WUZAPI_PORT=8080
+WUZAPI_CONTAINER=genfity-wuzapi
+
+EVENTAPI_DOMAIN=api.genfity.com  
+EVENTAPI_PORT=8081
+EVENTAPI_CONTAINER=genfity-event-api
+```
+
+### Per Project Configuration
+
+**genfity-wuzapi/.env:**
+```env
+# Database connection
+DB_HOST=genfity-postgres
+DB_USER=genfity_user
+DB_PASSWORD=genfity_password
+DB_NAME=wuzapi_db
+
+# Application settings
+PORT=8080
+WUZAPI_ADMIN_TOKEN=your_secure_token
+```
+
+**genfity-event-api/.env:**
+```env
+# Database connection
+DB_HOST=genfity-postgres
+DB_USER=genfity_user
+DB_PASSWORD=genfity_password
+DB_NAME=event_api_db
+
+# Application settings
+PORT=8081
+WEBHOOK_VERIFY_TOKEN=your_secure_token
+```
 
 ## 🌐 Network Architecture
 
 ```
 genfity-network (Docker Bridge Network)
 ├── genfity-postgres (5432)
-├── genfity-nginx (80, 443)
+├── genfity-nginx (80, 443) [prod only]
 ├── genfity-wuzapi (internal: 8080)
 └── genfity-event-api (internal: 8081)
 ```
 
-### Profile Differences
+### Mode Differences
 
-#### Development Profile
+#### Development Mode
 - Ports exposed: 5432, 8080, 8081
 - No SSL/reverse proxy
-- Direct access ke services
+- Direct access to services
+- Each service runs independently
 
-#### Production Profile
+#### Production Mode  
 - Only ports 80, 443 exposed
-- SSL termination di Nginx
-- Services hanya accessible melalui reverse proxy
+- SSL termination at Nginx
+- Auto-generated nginx configuration
+- Services accessible via reverse proxy
 
-## 🔒 SSL Management
+## 🔒 SSL & Nginx Auto-Configuration
 
-### Automatic SSL (Production)
-SSL certificates dikelola otomatis oleh Certbot:
-- Initial setup: `./deploy.sh setup-ssl`
-- Auto-renewal setiap 12 jam
-- Certificates tersimpan di volume `certbot_certs`
+### Automatic Nginx Configuration
+Nginx configuration dibuat otomatis berdasarkan variabel di `.env` root:
 
-### Manual SSL Operations
 ```bash
-# Check certificate status
-docker exec genfity-certbot certbot certificates
+# Generate config dari .env
+.\deploy.ps1 config
+```
 
-# Renew certificates manually
-docker exec genfity-certbot certbot renew
+Script akan membuat file nginx configuration untuk setiap service yang didefinisikan:
+- `WUZAPI_DOMAIN` → `nginx/sites-available/wuzapi.conf`
+- `EVENTAPI_DOMAIN` → `nginx/sites-available/eventapi.conf`
 
-# Add new domain
+### SSL Management
+```bash
+# Setup SSL certificates (manual)
 docker exec genfity-certbot certbot certonly --webroot \
   --webroot-path=/var/www/certbot \
-  --email your-email@domain.com \
+  --email genfity@gmail.com \
   --agree-tos \
-  -d newdomain.com
+  -d wa.genfity.com
+
+# Auto-renewal berjalan setiap 12 jam
+```
+
+## ➕ Menambah Service Baru
+
+### 1. Tambah di `.env` Root
+```env
+# New Service Configuration
+NEWSERVICE_DOMAIN=new.genfity.com
+NEWSERVICE_PORT=8082
+NEWSERVICE_CONTAINER=genfity-newservice
+```
+
+### 2. Buat Project Directory
+```bash
+mkdir genfity-newservice
+cd genfity-newservice
+
+# Buat .env.example
+cat > .env.example << EOF
+DB_HOST=genfity-postgres
+DB_PORT=5432
+DB_USER=genfity_user
+DB_PASSWORD=genfity_password
+DB_NAME=newservice_db
+PORT=8082
+EOF
+
+# Buat docker-compose.yml (ikuti pattern existing)
+```
+
+### 3. Generate dan Deploy
+```bash
+# Generate nginx config otomatis
+.\deploy-simple.ps1 config
+
+# Start new service
+.\deploy-simple.ps1 prod newservice
 ```
 
 ## 🔍 Monitoring & Debugging
 
 ### Health Checks
-Semua services memiliki health checks:
 ```bash
-# Check health status
-docker ps --format "table {{.Names}}\t{{.Status}}"
+# Check semua service status
+.\deploy-simple.ps1 status
 
-# Detailed health check
+# Check specific service health
 docker inspect --format='{{.State.Health.Status}}' genfity-wuzapi
 ```
 
-### Logs
+### Logs Analysis
 ```bash
-# Real-time logs
-./deploy.sh logs
-
-# Specific service logs
-docker logs -f genfity-wuzapi
+# Real-time logs per service
+.\deploy-simple.ps1 logs wuzapi
+.\deploy-simple.ps1 logs eventapi
 
 # Filter logs
-docker logs genfity-postgres | grep ERROR
+docker logs genfity-postgres | findstr ERROR
 ```
 
-### Database Debugging
+### Database Operations
 ```bash
-# Check database connections
-docker exec genfity-postgres pg_stat_activity
+# Connect to PostgreSQL
+docker exec -it genfity-postgres psql -U genfity_user -d genfity_db
 
-# Check database size
-docker exec genfity-postgres psql -U genfity_user -c "
-SELECT 
-    datname,
-    pg_size_pretty(pg_database_size(datname)) as size
-FROM pg_database 
-WHERE datistemplate = false;
-"
+# List databases
+docker exec genfity-postgres psql -U genfity_user -c "\l"
+
+# Backup specific database
+docker exec genfity-postgres pg_dump -U genfity_user wuzapi_db > backup.sql
 ```
 
 ## 🚨 Troubleshooting
 
 ### Common Issues
 
-#### Database Connection Failed
+#### Service Won't Start
+```bash
+# Check .env file exists
+ls genfity-wuzapi/.env
+
+# Check container logs
+.\deploy-simple.ps1 logs wuzapi
+
+# Restart service
+.\deploy-simple.ps1 restart wuzapi
+```
+
+#### Database Connection Issues
 ```bash
 # Check PostgreSQL status
 docker logs genfity-postgres
 
-# Restart PostgreSQL
-docker restart genfity-postgres
+# Test database connectivity  
+docker exec genfity-postgres pg_isready -U genfity_user
 
-# Reset database
-./deploy.sh clean
-./deploy.sh dev
+# Restart database
+.\deploy-simple.ps1 restart infrastructure
 ```
 
-#### SSL Certificate Issues
+#### SSL/Nginx Issues
 ```bash
-# Check certificate validity
-openssl x509 -in /etc/letsencrypt/live/yourdomain.com/fullchain.pem -text -noout
+# Regenerate nginx config
+.\deploy-simple.ps1 config
 
-# Recreate certificates
-docker exec genfity-certbot certbot delete --cert-name yourdomain.com
-./deploy.sh setup-ssl
+# Check nginx config
+docker exec genfity-nginx nginx -t
+
+# Check SSL certificates
+docker exec genfity-certbot certbot certificates
 ```
 
-#### Network Issues
+### Recovery Procedures
+
+#### Complete Reset
 ```bash
-# Recreate network
-docker network rm genfity-network
-docker network create genfity-network
+# Stop everything
+.\deploy-simple.ps1 stop all
 
-# Check network connectivity
-docker exec genfity-wuzapi ping genfity-postgres
+# Clean all resources  
+.\deploy-simple.ps1 clean
+
+# Restart from scratch
+.\deploy-simple.ps1 dev
 ```
 
-### Service-Specific Issues
-
-#### WuzAPI Issues
+#### Database Recovery
 ```bash
-# Check WuzAPI logs
-docker logs genfity-wuzapi
-
-# Restart WuzAPI only
-cd genfity-wuzapi && docker compose restart
+# Restore from backup
+docker exec -i genfity-postgres psql -U genfity_user wuzapi_db < backup.sql
 ```
 
-#### Event API Issues
-```bash
-# Check Event API logs
-docker logs genfity-event-api
-
-# Database migration issues
-docker exec genfity-event-api go run main.go migrate
-```
-
-## 🔄 Updates & Maintenance
-
-### Update Services
-```bash
-# Pull latest images
-docker compose pull
-
-# Rebuild services
-cd genfity-wuzapi && docker compose build --no-cache
-cd ../genfity-event-api && docker compose build --no-cache
-
-# Restart with new images
-./deploy.sh restart
-```
-
-### Backup Strategy
-```bash
-# Create backup script
-#!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-
-# Backup databases
-docker exec genfity-postgres pg_dump -U genfity_user wuzapi_db > "backup_wuzapi_${DATE}.sql"
-docker exec genfity-postgres pg_dump -U genfity_user event_api_db > "backup_eventapi_${DATE}.sql"
-
-# Backup SSL certificates
-docker run --rm -v certbot_certs:/certs -v $(pwd):/backup alpine tar czf /backup/ssl_backup_${DATE}.tar.gz -C /certs .
-```
-
-## 📞 Support
-
-Untuk bantuan dan support:
-1. Check logs untuk error messages
-2. Verify network connectivity
-3. Check database status
-4. Review SSL certificate validity
-5. Ensure environment variables are correctly set
-
-## 📝 File Structure
+## 📁 Project Structure
 
 ```
 Server/
-├── docker-compose.yml              # Main infrastructure
-├── .env.example                    # Environment template
-├── deploy.sh                       # Management script
+├── docker-compose.yml              # Infrastructure (PostgreSQL + Nginx)
+├── .env.example                    # Infrastructure configuration template
+├── deploy-simple.ps1               # Windows management script
+├── deploy-simple.sh                # Linux/Mac management script
 ├── nginx/
-│   ├── nginx.conf                  # Main nginx config
-│   └── sites-available/
-│       ├── wuzapi.conf             # WuzAPI proxy config
-│       └── eventapi.conf           # Event API proxy config
+│   ├── nginx.conf                  # Main nginx configuration
+│   └── sites-available/            # Auto-generated service configs
 ├── scripts/
-│   ├── init-multiple-databases.sh  # DB initialization
-│   └── setup-ssl.sh               # SSL setup script
+│   ├── generate-nginx-config.sh    # Auto-generate nginx configs
+│   └── init-multiple-databases.sh  # Database initialization
 ├── genfity-wuzapi/
-│   └── docker-compose.yml         # WuzAPI service
+│   ├── docker-compose.yml         # WuzAPI service only
+│   ├── .env.example               # WuzAPI configuration template
+│   ├── Dockerfile
+│   └── ... (source code)
 └── genfity-event-api/
-    └── docker-compose.yml         # Event API service
+    ├── docker-compose.yml         # Event API service only  
+    ├── .env.example               # Event API configuration template
+    ├── Dockerfile
+    └── ... (source code)
 ```
+
+## 🎯 Key Benefits
+
+- ✅ **True Modularity**: Each service can run independently
+- ✅ **Auto-Configuration**: Nginx configs generated from environment
+- ✅ **Flexible Deployment**: Deploy specific services or all together
+- ✅ **Easy Scaling**: Add new services by editing `.env` and creating project folder
+- ✅ **Clean Separation**: Infrastructure vs application configuration
+- ✅ **Development Friendly**: No need for SSL/proxy in development
+- ✅ **Production Ready**: Automatic SSL and reverse proxy in production
+
+## 📞 Support
+
+Untuk bantuan:
+1. Check service status: `.\deploy-simple.ps1 status`
+2. Check logs: `.\deploy-simple.ps1 logs [service]`
+3. Verify `.env` files exist and are configured correctly
+4. Restart problematic service: `.\deploy-simple.ps1 restart [service]`
+5. Generate fresh nginx config: `.\deploy-simple.ps1 config`
