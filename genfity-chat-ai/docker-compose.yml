@@ -69,6 +69,7 @@ services:
 networks:
   genfity-network:
     external: true
+    name: server_genfity-network
 
 # ==========================================
 # Usage:
