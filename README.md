@@ -1,6 +1,6 @@
 # Genfity Server Platform
 
-Platform server modular untuk Genfity yang terdiri dari WuzAPI (WhatsApp Gateway) dan Event API dengan arsitektur microservices menggunakan Docker.
+Platform server modular untuk Genfity yang terdiri dari 4 layanan utama dengan arsitektur microservices menggunakan Docker.
 
 ## 🏗️ Arsitektur Modular
 
@@ -11,7 +11,9 @@ Platform server modular untuk Genfity yang terdiri dari WuzAPI (WhatsApp Gateway
 
 ### Individual Projects
 - **genfity-wa**: WhatsApp Gateway Service (mandiri dengan `.env` sendiri)
-- **genfity-chat-ai**: Event Management API (mandiri dengan `.env` sendiri)
+- **genfity-chat-ai**: Chat AI (mandiri dengan `.env` sendiri)
+- **genfity-backend**: Backend API Next.js (dengan database connection)
+- **genfity-frontend**: Frontend Next.js (UI/Dashboard)
 
 Setiap project dapat dijalankan independen atau bersama-sama melalui script management di root.
 
@@ -30,47 +32,77 @@ Edit `.env` root untuk infrastruktur dan domain mapping:
 # Database & Infrastructure
 DB_USER=genfity_user
 DB_PASSWORD=genfity_password
+DB_NAME=genfity_app
 LETSENCRYPT_EMAIL=genfity@gmail.com
 
 # Domain Mapping (untuk production)
-WUZAPI_DOMAIN=wa.genfity.com
-WUZAPI_PORT=8080
-WUZAPI_CONTAINER=genfity-wa
+WA_DOMAIN=wa.genfity.com
+WA_PORT=8080
+WA_CONTAINER=genfity-wa
 
-EVENTAPI_DOMAIN=api.genfity.com
-EVENTAPI_PORT=8081
-EVENTAPI_CONTAINER=genfity-chat-ai
+CHAT_AI_DOMAIN=api.genfity.com
+CHAT_AI_PORT=8081
+CHAT_AI_CONTAINER=genfity-chat-ai
+
+BACKEND_DOMAIN=api-v1.genfity.com
+BACKEND_PORT=8090
+BACKEND_CONTAINER=genfity-backend
+
+FRONTEND_DOMAIN=fe.genfity.com
+FRONTEND_PORT=8050
+FRONTEND_CONTAINER=genfity-frontend
 ```
 
 **Per Project:**
 ```bash
-# WuzAPI
+# WA
 cd genfity-wa
 cp .env.example .env
-# Edit .env dengan konfigurasi WuzAPI
+# Edit .env dengan konfigurasi WA
 
-# Event API  
+# CHAT AI
 cd genfity-chat-ai
 cp .env.example .env
-# Edit .env dengan konfigurasi Event API
+# Edit .env dengan konfigurasi CHAT AI
+
+# Backend API
+cd genfity-backend
+cp .env.example .env
+# Edit .env dengan konfigurasi Backend
+
+# Frontend
+cd genfity-frontend
+cp .env.example .env
+# Edit .env dengan konfigurasi Frontend
 ```
 
 ### 2. Development Mode
 
 ```bash
 # Windows PowerShell
-.\deploy.ps1 dev                  # Start semua services
-.\deploy.ps1 dev wuzapi          # Start hanya WuzAPI + database
-.\deploy.ps1 dev eventapi        # Start hanya Event API + database
+.\deploy.ps1 dev                  # Start semua services dalam development mode
+.\deploy.ps1 dev wa             # Start hanya WA + database
+.\deploy.ps1 dev chat-ai        # Start hanya Chat AI + database
+.\deploy.ps1 dev backend         # Start hanya Backend + database (npm run dev)
+.\deploy.ps1 dev frontend        # Start hanya Frontend (npm run dev)
 
 # Linux/Mac
-./deploy.sh dev                   # Start semua services
-./deploy.sh dev wuzapi           # Start hanya WuzAPI + database
+./deploy.sh dev                   # Start semua services dalam development mode
+./deploy.sh dev wa           # Start hanya WA + database
+./deploy.sh dev backend          # Start hanya Backend + database (npm run dev)
 ```
 
+**Development Mode Features:**
+- **Next.js projects** menjalankan `npm run dev` untuk hot reload
+- **Volume mounting** untuk live code changes
+- **No SSL/Nginx** - direct port access
+- **Development optimizations** aktif
+
 **Development URLs:**
-- WuzAPI: http://localhost:8080
-- Event API: http://localhost:8081
+- WA: http://localhost:8080
+- Chat AI: http://localhost:8081
+- Backend API: http://localhost:8090 (npm run dev)
+- Frontend: http://localhost:8050 (npm run dev)
 - PostgreSQL: localhost:5432
 
 ### 3. Production Mode
@@ -85,9 +117,18 @@ cp .env.example .env
 ./deploy.sh prod                 # Start production environment
 ```
 
+**Production Mode Features:**
+- **Next.js projects** menjalankan `npm run build` + `npm run start`
+- **Optimized builds** dengan standalone output
+- **SSL termination** di Nginx dengan auto-renewal
+- **Reverse proxy** configuration
+- **Production optimizations** aktif
+
 **Production URLs:**
-- WuzAPI: https://wa.genfity.com
-- Event API: https://api.genfity.com
+- WA: https://wa.genfity.com
+- Chat AI: https://api.genfity.com
+- Backend API: https://api-v1.genfity.com (built & optimized)
+- Frontend: https://fe.genfity.com (built & optimized)
 
 ## 📋 Management Commands
 
@@ -97,15 +138,17 @@ cp .env.example .env
 .\deploy.ps1 status
 
 # Logs specific service
-.\deploy.ps1 logs wuzapi
-.\deploy.ps1 logs eventapi
+.\deploy.ps1 logs wa
+.\deploy.ps1 logs chat-ai
 
 # Stop services
 .\deploy.ps1 stop all
-.\deploy.ps1 stop wuzapi
+.\deploy.ps1 stop wa
+.\deploy.ps1 stop backend
 
 # Restart services
-.\deploy.ps1 restart eventapi
+.\deploy.ps1 restart chat-ai
+.\deploy.ps1 restart frontend
 
 # Generate nginx config
 .\deploy.ps1 config
@@ -118,15 +161,19 @@ cp .env.example .env
 ```bash
 # Development
 .\deploy.ps1 dev infrastructure  # Hanya database
-.\deploy.ps1 dev wuzapi          # WuzAPI + database
-.\deploy.ps1 dev eventapi        # Event API + database
+.\deploy.ps1 dev wa          # wa + database
+.\deploy.ps1 dev chat-ai        # Event API + database
+.\deploy.ps1 dev backend         # Backend + database
+.\deploy.ps1 dev frontend        # Frontend saja
 .\deploy.ps1 dev all             # Semua services
 
 # Production  
-.\deploy-simple.ps1 prod infrastructure # Database + Nginx + SSL
-.\deploy-simple.ps1 prod wuzapi         # WuzAPI + infrastructure
-.\deploy-simple.ps1 prod eventapi       # Event API + infrastructure
-.\deploy-simple.ps1 prod all            # Semua services + infrastructure
+.\deploy.ps1 prod infrastructure # Database + Nginx + SSL
+.\deploy.ps1 prod wa         # wa + infrastructure
+.\deploy.ps1 prod chat-ai       # Event API + infrastructure
+.\deploy.ps1 prod backend        # Backend + infrastructure
+.\deploy.ps1 prod frontend       # Frontend + infrastructure
+.\deploy.ps1 prod all            # Semua services + infrastructure
 ```
 
 ## 🔧 Configuration Structure
@@ -136,16 +183,25 @@ cp .env.example .env
 # Infrastructure only
 DB_USER=genfity_user
 DB_PASSWORD=genfity_password
-POSTGRES_MULTIPLE_DATABASES=wuzapi_db,event_api_db
+DB_NAME=genfity_app
+POSTGRES_MULTIPLE_DATABASES=wa_db,chat-ai_db
 
 # Domain mapping for reverse proxy
-WUZAPI_DOMAIN=wa.genfity.com
-WUZAPI_PORT=8080
-WUZAPI_CONTAINER=genfity-wa
+WA_DOMAIN=wa.genfity.com
+WA_PORT=8080
+WA_CONTAINER=genfity-wa
 
-EVENTAPI_DOMAIN=api.genfity.com  
-EVENTAPI_PORT=8081
-EVENTAPI_CONTAINER=genfity-chat-ai
+CHAT_AI_DOMAIN=api.genfity.com  
+CHAT_AI_PORT=8081
+CHAT_AI_CONTAINER=genfity-chat-ai
+
+BACKEND_DOMAIN=api-v1.genfity.com
+BACKEND_PORT=8090
+BACKEND_CONTAINER=genfity-backend
+
+FRONTEND_DOMAIN=fe.genfity.com
+FRONTEND_PORT=8050
+FRONTEND_CONTAINER=genfity-frontend
 ```
 
 ### Per Project Configuration
@@ -156,11 +212,11 @@ EVENTAPI_CONTAINER=genfity-chat-ai
 DB_HOST=genfity-postgres
 DB_USER=genfity_user
 DB_PASSWORD=genfity_password
-DB_NAME=wuzapi_db
+DB_NAME=wa_db
 
 # Application settings
 PORT=8080
-WUZAPI_ADMIN_TOKEN=your_secure_token
+WA_ADMIN_TOKEN=your_secure_token
 ```
 
 **genfity-chat-ai/.env:**
@@ -169,11 +225,45 @@ WUZAPI_ADMIN_TOKEN=your_secure_token
 DB_HOST=genfity-postgres
 DB_USER=genfity_user
 DB_PASSWORD=genfity_password
-DB_NAME=event_api_db
+DB_NAME=chat-ai_db
 
 # Application settings
 PORT=8081
 WEBHOOK_VERIFY_TOKEN=your_secure_token
+```
+
+**genfity-backend/.env:**
+```env
+# Database connection
+DB_USER=genfity_user
+DB_PASSWORD=genfity_password
+DB_NAME=genfity_app
+DATABASE_URL=postgresql://genfity_user:genfity_password@genfity-db-postgres:5432/genfity_app
+
+# Application settings
+PORT=8090
+NEXTAUTH_SECRET=your_nextauth_secret
+JWT_SECRET=your_jwt_secret
+
+# API integrations
+WHATSAPP_API_URL=http://genfity-wa:8080
+CHAT_AI_API_URL=http://genfity-chat-ai:8070
+```
+
+**genfity-frontend/.env:**
+```env
+# Application settings
+PORT=8050
+NEXT_PUBLIC_API_URL=http://localhost:8090
+NEXT_PUBLIC_APP_NAME=Genfity Digital Solutions
+
+# NextAuth
+NEXTAUTH_URL=http://localhost:8050
+NEXTAUTH_SECRET=your_nextauth_secret
+
+# External services
+NEXT_PUBLIC_WHATSAPP_API_URL=http://localhost:8080
+NEXT_PUBLIC_CHAT_AI_API_URL=http://localhost:8070
 ```
 
 ## 🌐 Network Architecture
@@ -183,13 +273,15 @@ genfity-network (Docker Bridge Network)
 ├── genfity-postgres (5432)
 ├── genfity-nginx (80, 443) [prod only]
 ├── genfity-wa (internal: 8080)
-└── genfity-chat-ai (internal: 8081)
+├── genfity-chat-ai (internal: 8070)
+├── genfity-backend (internal: 8090)
+└── genfity-frontend (internal: 8050)
 ```
 
 ### Mode Differences
 
 #### Development Mode
-- Ports exposed: 5432, 8080, 8081
+- Ports exposed: 5432, 8080, 8070, 8090, 8050
 - No SSL/reverse proxy
 - Direct access to services
 - Each service runs independently
@@ -211,8 +303,10 @@ Nginx configuration dibuat otomatis berdasarkan variabel di `.env` root:
 ```
 
 Script akan membuat file nginx configuration untuk setiap service yang didefinisikan:
-- `WUZAPI_DOMAIN` → `nginx/sites-available/wuzapi.conf`
-- `EVENTAPI_DOMAIN` → `nginx/sites-available/eventapi.conf`
+- `WA_DOMAIN` → `nginx/sites-available/wa.conf`
+- `CHAT_AI_DOMAIN` → `nginx/sites-available/chat-ai.conf`
+- `BACKEND_DOMAIN` → `nginx/sites-available/backend.conf`
+- `FRONTEND_DOMAIN` → `nginx/sites-available/frontend.conf`
 
 ### SSL Management
 ```bash
@@ -221,7 +315,10 @@ docker exec genfity-certbot certbot certonly --webroot \
   --webroot-path=/var/www/certbot \
   --email genfity@gmail.com \
   --agree-tos \
-  -d wa.genfity.com
+  -d wa.genfity.com \
+  -d api.genfity.com \
+  -d api-v1.genfity.com \
+  -d fe.genfity.com
 
 # Auto-renewal berjalan setiap 12 jam
 ```
@@ -257,10 +354,10 @@ EOF
 ### 3. Generate dan Deploy
 ```bash
 # Generate nginx config otomatis
-.\deploy-simple.ps1 config
+.\deploy.ps1 config
 
 # Start new service
-.\deploy-simple.ps1 prod newservice
+.\deploy.ps1 prod newservice
 ```
 
 ## 🔍 Monitoring & Debugging
@@ -268,17 +365,20 @@ EOF
 ### Health Checks
 ```bash
 # Check semua service status
-.\deploy-simple.ps1 status
+.\deploy.ps1 status
 
 # Check specific service health
 docker inspect --format='{{.State.Health.Status}}' genfity-wa
+docker inspect --format='{{.State.Health.Status}}' genfity-backend
 ```
 
 ### Logs Analysis
 ```bash
 # Real-time logs per service
-.\deploy-simple.ps1 logs wuzapi
-.\deploy-simple.ps1 logs eventapi
+.\deploy.ps1 logs wa
+.\deploy.ps1 logs chat-ai
+.\deploy.ps1 logs backend
+.\deploy.ps1 logs frontend
 
 # Filter logs
 docker logs genfity-postgres | findstr ERROR
@@ -293,7 +393,7 @@ docker exec -it genfity-postgres psql -U genfity_user -d genfity_db
 docker exec genfity-postgres psql -U genfity_user -c "\l"
 
 # Backup specific database
-docker exec genfity-postgres pg_dump -U genfity_user wuzapi_db > backup.sql
+docker exec genfity-postgres pg_dump -U genfity_user wa_db > backup.sql
 ```
 
 ## 🚨 Troubleshooting
@@ -304,12 +404,15 @@ docker exec genfity-postgres pg_dump -U genfity_user wuzapi_db > backup.sql
 ```bash
 # Check .env file exists
 ls genfity-wa/.env
+ls genfity-backend/.env
 
 # Check container logs
-.\deploy-simple.ps1 logs wuzapi
+.\deploy.ps1 logs wa
+.\deploy.ps1 logs backend
 
 # Restart service
-.\deploy-simple.ps1 restart wuzapi
+.\deploy.ps1 restart wa
+.\deploy.ps1 restart backend
 ```
 
 #### Database Connection Issues
@@ -321,13 +424,13 @@ docker logs genfity-postgres
 docker exec genfity-postgres pg_isready -U genfity_user
 
 # Restart database
-.\deploy-simple.ps1 restart infrastructure
+.\deploy.ps1 restart infrastructure
 ```
 
 #### SSL/Nginx Issues
 ```bash
 # Regenerate nginx config
-.\deploy-simple.ps1 config
+.\deploy.ps1 config
 
 # Check nginx config
 docker exec genfity-nginx nginx -t
@@ -336,24 +439,43 @@ docker exec genfity-nginx nginx -t
 docker exec genfity-certbot certbot certificates
 ```
 
+#### Backend/Frontend Issues
+```bash
+# Check database connection from backend
+docker exec genfity-backend npm run db:status
+
+# Check build issues
+.\deploy.ps1 logs backend
+.\deploy.ps1 logs frontend
+
+# Rebuild containers
+docker compose down
+docker compose build --no-cache
+.\deploy.ps1 dev backend
+```
+
 ### Recovery Procedures
 
 #### Complete Reset
 ```bash
 # Stop everything
-.\deploy-simple.ps1 stop all
+.\deploy.ps1 stop all
 
 # Clean all resources  
-.\deploy-simple.ps1 clean
+.\deploy.ps1 clean
 
 # Restart from scratch
-.\deploy-simple.ps1 dev
+.\deploy.ps1 dev
 ```
 
 #### Database Recovery
 ```bash
 # Restore from backup
-docker exec -i genfity-postgres psql -U genfity_user wuzapi_db < backup.sql
+docker exec -i genfity-postgres psql -U genfity_user genfity_app < backup.sql
+
+# Reset backend database
+cd genfity-backend
+docker compose exec genfity-backend npm run db:reset
 ```
 
 ## 📁 Project Structure
@@ -362,8 +484,8 @@ docker exec -i genfity-postgres psql -U genfity_user wuzapi_db < backup.sql
 Server/
 ├── docker-compose.yml              # Infrastructure (PostgreSQL + Nginx)
 ├── .env.example                    # Infrastructure configuration template
-├── deploy-simple.ps1               # Windows management script
-├── deploy-simple.sh                # Linux/Mac management script
+├── deploy.ps1                      # Windows management script
+├── deploy.sh                       # Linux/Mac management script
 ├── nginx/
 │   ├── nginx.conf                  # Main nginx configuration
 │   └── sites-available/            # Auto-generated service configs
@@ -371,15 +493,29 @@ Server/
 │   ├── generate-nginx-config.sh    # Auto-generate nginx configs
 │   └── init-multiple-databases.sh  # Database initialization
 ├── genfity-wa/
-│   ├── docker-compose.yml         # WuzAPI service only
-│   ├── .env.example               # WuzAPI configuration template
+│   ├── docker-compose.yml         # WA service only
+│   ├── .env.example               # WA configuration template
 │   ├── Dockerfile
 │   └── ... (source code)
-└── genfity-chat-ai/
-    ├── docker-compose.yml         # Event API service only  
-    ├── .env.example               # Event API configuration template
+├── genfity-chat-ai/
+│   ├── docker-compose.yml         # Event API service only  
+│   ├── .env.example               # Event API configuration template
+│   ├── Dockerfile
+│   └── ... (source code)
+├── genfity-backend/
+│   ├── docker-compose.yml         # Backend API service
+│   ├── .env.example               # Backend configuration template
+│   ├── Dockerfile
+│   ├── Dockerfile.setup           # Setup dependencies
+│   ├── healthcheck.js             # Health check script
+│   └── ... (Next.js source code)
+└── genfity-frontend/
+    ├── docker-compose.yml         # Frontend service
+    ├── .env.example               # Frontend configuration template
     ├── Dockerfile
-    └── ... (source code)
+    ├── Dockerfile.setup           # Setup dependencies
+    ├── healthcheck.js             # Health check script
+    └── ... (Next.js source code)
 ```
 
 ## 🎯 Key Benefits
@@ -391,12 +527,15 @@ Server/
 - ✅ **Clean Separation**: Infrastructure vs application configuration
 - ✅ **Development Friendly**: No need for SSL/proxy in development
 - ✅ **Production Ready**: Automatic SSL and reverse proxy in production
+- ✅ **Next.js Optimized**: Standalone builds for efficient containerization
+- ✅ **Database Integration**: Prisma ORM with automated migrations
+- ✅ **Health Monitoring**: Built-in health checks for all services
 
 ## 📞 Support
 
 Untuk bantuan:
-1. Check service status: `.\deploy-simple.ps1 status`
-2. Check logs: `.\deploy-simple.ps1 logs [service]`
+1. Check service status: `.\deploy.ps1 status`
+2. Check logs: `.\deploy.ps1 logs [service]`
 3. Verify `.env` files exist and are configured correctly
-4. Restart problematic service: `.\deploy-simple.ps1 restart [service]`
-5. Generate fresh nginx config: `.\deploy-simple.ps1 config`
+4. Restart problematic service: `.\deploy.ps1 restart [service]`
+5. Generate fresh nginx config: `.\deploy.ps1 config`

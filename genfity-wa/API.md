@@ -3,7 +3,7 @@
 The API supports two authentication methods:
 
 1. **User Token**: For regular endpoints, use the `Authorization` header with the user's token value.
-2. **Admin Token**: For admin endpoints (/admin/**), use the `Authorization` header with the admin token value (set in WUZAPI_ADMIN_TOKEN).
+2. **Admin Token**: For admin endpoints (/admin/**), use the `Authorization` header with the admin token value (set in WA_ADMIN_TOKEN).
 
 ### Request Requirements
 
@@ -14,7 +14,7 @@ The API supports two authentication methods:
 
 ## Admin Endpoints (User Management)
 
-The following admin-only endpoints are used to manage users in the system. All require the Authorization header with the admin token (WUZAPI_ADMIN_TOKEN).
+The following admin-only endpoints are used to manage users in the system. All require the Authorization header with the admin token (WA_ADMIN_TOKEN).
 
 
 ## List All Users
@@ -25,7 +25,7 @@ Returns a list of registered users.
 
 Example Request:
 ```
-curl -s -X GET -H 'Authorization: {{WUZAPI_ADMIN_TOKEN}}' http://localhost:8080/admin/users
+curl -s -X GET -H 'Authorization: {{WA_ADMIN_TOKEN}}' http://localhost:8080/admin/users
 ```
 
 Response:

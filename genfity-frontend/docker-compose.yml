@@ -1,0 +1,106 @@
+networks:
+  genfity-network:
+    external: true
+
+services:
+  # Development mode service
+  genfity-frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: genfity-frontend-dev
+    environment:
+      - NODE_ENV=development
+      - PORT=8050
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8090}
+      - NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME:-Genfity}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:8050}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+    ports:
+      - "8050:8050"
+    networks:
+      - genfity-network
+    depends_on:
+      - frontend-setup-dev
+    restart: unless-stopped
+    volumes:
+      - ./:/app
+      - frontend_node_modules_dev:/app/node_modules
+      - /app/.next
+    working_dir: /app
+    command: npm run dev
+    profiles:
+      - dev
+
+  # Production mode service
+  genfity-frontend-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: genfity-frontend
+    environment:
+      - NODE_ENV=production
+      - PORT=8050
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8090}
+      - NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME:-Genfity}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:8050}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+    ports:
+      - "8050:8050"
+    networks:
+      - genfity-network
+    depends_on:
+      - frontend-setup-prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8050/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    profiles:
+      - prod
+
+  # Development setup
+  frontend-setup-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.setup
+    container_name: genfity-frontend-setup-dev
+    volumes:
+      - ./:/app
+      - frontend_node_modules_dev:/app/node_modules
+    working_dir: /app
+    command: >
+      sh -c "
+        echo 'Installing frontend dependencies for development...'
+        npm ci
+        echo 'Frontend development setup complete!'
+      "
+    restart: "no"
+    profiles:
+      - dev
+
+  # Production setup
+  frontend-setup-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile.setup
+    container_name: genfity-frontend-setup-prod
+    volumes:
+      - ./:/app
+      - frontend_node_modules_prod:/app/node_modules
+    working_dir: /app
+    command: >
+      sh -c "
+        echo 'Installing frontend dependencies for production...'
+        npm ci
+        echo 'Frontend production setup complete!'
+      "
+    restart: "no"
+    profiles:
+      - prod
+
+volumes:
+  frontend_node_modules_dev:
+  frontend_node_modules_prod:

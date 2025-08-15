@@ -9,8 +9,10 @@ NGINX_SITES_DIR="/etc/nginx/sites-available"
 TEMPLATE_DIR="/scripts/templates"
 
 echo "=== Generating Nginx Configuration ==="
-echo "WuzAPI: ${WUZAPI_DOMAIN}:${WUZAPI_PORT} -> ${WUZAPI_CONTAINER}"
-echo "Event API: ${EVENTAPI_DOMAIN}:${EVENTAPI_PORT} -> ${EVENTAPI_CONTAINER}"
+echo "Genfity WA: ${WA_DOMAIN}:${WA_PORT} -> ${WA_CONTAINER}"
+echo "Genfity CHAT AI: ${CHAT_AI_DOMAIN}:${CHAT_AI_PORT} -> ${CHAT_AI_CONTAINER}"
+echo "Genfity Backend: ${BACKEND_DOMAIN}:${BACKEND_PORT} -> ${BACKEND_CONTAINER}"
+echo "Genfity Frontend: ${FRONTEND_DOMAIN}:${FRONTEND_PORT} -> ${FRONTEND_CONTAINER}"
 
 # Function to generate nginx config for a service
 generate_service_config() {
@@ -86,16 +88,28 @@ EOF
 }
 
 # Generate configurations for each service
-if [ -n "${WUZAPI_DOMAIN}" ] && [ -n "${WUZAPI_PORT}" ] && [ -n "${WUZAPI_CONTAINER}" ]; then
-    generate_service_config "wa" "${WUZAPI_DOMAIN}" "${WUZAPI_PORT}" "${WUZAPI_CONTAINER}"
+if [ -n "${WA_DOMAIN}" ] && [ -n "${WA_PORT}" ] && [ -n "${WA_CONTAINER}" ]; then
+    generate_service_config "wa" "${WA_DOMAIN}" "${WA_PORT}" "${WA_CONTAINER}"
 else
     echo "Warning: Genfity WA configuration incomplete, skipping..."
 fi
 
-if [ -n "${EVENTAPI_DOMAIN}" ] && [ -n "${EVENTAPI_PORT}" ] && [ -n "${EVENTAPI_CONTAINER}" ]; then
-    generate_service_config "chat-ai" "${EVENTAPI_DOMAIN}" "${EVENTAPI_PORT}" "${EVENTAPI_CONTAINER}"
+if [ -n "${CHAT_AI_DOMAIN}" ] && [ -n "${CHAT_AI_PORT}" ] && [ -n "${CHAT_AI_CONTAINER}" ]; then
+    generate_service_config "chat-ai" "${CHAT_AI_DOMAIN}" "${CHAT_AI_PORT}" "${CHAT_AI_CONTAINER}"
 else
     echo "Warning: Genfity Chat AI configuration incomplete, skipping..."
+fi
+
+if [ -n "${BACKEND_DOMAIN}" ] && [ -n "${BACKEND_PORT}" ] && [ -n "${BACKEND_CONTAINER}" ]; then
+    generate_service_config "backend" "${BACKEND_DOMAIN}" "${BACKEND_PORT}" "${BACKEND_CONTAINER}"
+else
+    echo "Warning: Genfity Backend configuration incomplete, skipping..."
+fi
+
+if [ -n "${FRONTEND_DOMAIN}" ] && [ -n "${FRONTEND_PORT}" ] && [ -n "${FRONTEND_CONTAINER}" ]; then
+    generate_service_config "frontend" "${FRONTEND_DOMAIN}" "${FRONTEND_PORT}" "${FRONTEND_CONTAINER}"
+else
+    echo "Warning: Genfity Frontend configuration incomplete, skipping..."
 fi
 
 echo "=== Nginx Configuration Generation Complete ==="

@@ -7,7 +7,7 @@ param(
     [string]$Command = "help",
     
     [Parameter(Position=1)]
-    [ValidateSet("all", "infrastructure", "wuzapi", "eventapi")]
+    [ValidateSet("all", "infrastructure", "wa", "chat-ai", "backend", "frontend")]
     [string]$Service = "all"
 )
 
@@ -34,15 +34,18 @@ function Show-Usage {
     Write-Host "Services:"
     Write-Blue "  all               "; Write-Host "All services (default)"
     Write-Blue "  infrastructure    "; Write-Host "PostgreSQL + Nginx + SSL only"
-    Write-Blue "  wuzapi            "; Write-Host "WuzAPI service (+ infrastructure if needed)"
-    Write-Blue "  eventapi          "; Write-Host "Event API service (+ infrastructure if needed)"
+    Write-Blue "  wa            "; Write-Host "WA service (+ infrastructure if needed)"
+    Write-Blue "  chat-ai           "; Write-Host "Chat AI service (+ infrastructure if needed)"
+    Write-Blue "  backend           "; Write-Host "Backend API service (+ infrastructure if needed)"
+    Write-Blue "  frontend          "; Write-Host "Frontend service (+ infrastructure if needed)"
     Write-Host ""
     Write-Host "Examples:"
     Write-Host "  .\deploy.ps1 dev                    # Start all services in development"
-    Write-Host "  .\deploy.ps1 dev wuzapi            # Start only WuzAPI + database"
+    Write-Host "  .\deploy.ps1 dev wa            # Start only WA + database"
+    Write-Host "  .\deploy.ps1 dev backend           # Start only Backend + database"
     Write-Host "  .\deploy.ps1 prod                  # Start production with SSL/proxy"
     Write-Host "  .\deploy.ps1 config                # Generate nginx config from .env"
-    Write-Host "  .\deploy.ps1 logs wuzapi           # Show WuzAPI logs"
+    Write-Host "  .\deploy.ps1 logs backend          # Show Backend logs"
 }
 
 function Test-EnvFile {
@@ -114,10 +117,10 @@ function Start-Service {
     Write-Yellow "Starting $ServiceName service..."
     
     switch ($ServiceName) {
-        "wuzapi" {
+        "wa" {
             Push-Location "genfity-wa"
             try {
-                if (-not (Test-EnvFile ".env" "WuzAPI")) {
+                if (-not (Test-EnvFile ".env" "WA")) {
                     return $false
                 }
                 docker compose up -d
@@ -125,13 +128,43 @@ function Start-Service {
                 Pop-Location
             }
         }
-        "eventapi" {
+        "chat-ai" {
             Push-Location "genfity-chat-ai"
             try {
-                if (-not (Test-EnvFile ".env" "Event API")) {
+                if (-not (Test-EnvFile ".env" "Chat AI")) {
                     return $false
                 }
                 docker compose up -d
+            } finally {
+                Pop-Location
+            }
+        }
+        "backend" {
+            Push-Location "genfity-backend"
+            try {
+                if (-not (Test-EnvFile ".env" "Backend API")) {
+                    return $false
+                }
+                if ($Profile -eq "prod") {
+                    docker compose --profile prod up -d
+                } else {
+                    docker compose --profile dev up -d
+                }
+            } finally {
+                Pop-Location
+            }
+        }
+        "frontend" {
+            Push-Location "genfity-frontend"
+            try {
+                if (-not (Test-EnvFile ".env" "Frontend")) {
+                    return $false
+                }
+                if ($Profile -eq "prod") {
+                    docker compose --profile prod up -d
+                } else {
+                    docker compose --profile dev up -d
+                }
             } finally {
                 Pop-Location
             }
@@ -153,18 +186,28 @@ function Start-Environment {
         "infrastructure" {
             if (-not (Start-Infrastructure $Mode)) { return }
         }
-        "wuzapi" {
+        "wa" {
             if (-not (Start-Infrastructure $Mode)) { return }
-            if (-not (Start-Service "wuzapi" $Mode)) { return }
+            if (-not (Start-Service "wa" $Mode)) { return }
         }
-        "eventapi" {
+        "chat-ai" {
             if (-not (Start-Infrastructure $Mode)) { return }
-            if (-not (Start-Service "eventapi" $Mode)) { return }
+            if (-not (Start-Service "chat-ai" $Mode)) { return }
+        }
+        "backend" {
+            if (-not (Start-Infrastructure $Mode)) { return }
+            if (-not (Start-Service "backend" $Mode)) { return }
+        }
+        "frontend" {
+            if (-not (Start-Infrastructure $Mode)) { return }
+            if (-not (Start-Service "frontend" $Mode)) { return }
         }
         "all" {
             if (-not (Start-Infrastructure $Mode)) { return }
-            if (-not (Start-Service "wuzapi" $Mode)) { return }
-            if (-not (Start-Service "eventapi" $Mode)) { return }
+            if (-not (Start-Service "wa" $Mode)) { return }
+            if (-not (Start-Service "chat-ai" $Mode)) { return }
+            if (-not (Start-Service "backend" $Mode)) { return }
+            if (-not (Start-Service "frontend" $Mode)) { return }
         }
         default {
             Write-Red "Unknown service: $ServiceName"
@@ -182,11 +225,17 @@ function Show-AccessInfo {
     Write-Yellow "Services available at:"
     
     if ($Mode -eq "dev") {
-        if ($ServiceName -eq "all" -or $ServiceName -eq "wuzapi") {
-            Write-Host "  - WuzAPI: http://localhost:8080"
+        if ($ServiceName -eq "all" -or $ServiceName -eq "wa") {
+            Write-Host "  - WA: http://localhost:8080"
         }
-        if ($ServiceName -eq "all" -or $ServiceName -eq "eventapi") {
-            Write-Host "  - Event API: http://localhost:8081"
+        if ($ServiceName -eq "all" -or $ServiceName -eq "chat-ai") {
+            Write-Host "  - Chat AI: http://localhost:8081"
+        }
+        if ($ServiceName -eq "all" -or $ServiceName -eq "backend") {
+            Write-Host "  - Backend API: http://localhost:8090"
+        }
+        if ($ServiceName -eq "all" -or $ServiceName -eq "frontend") {
+            Write-Host "  - Frontend: http://localhost:8050"
         }
         Write-Host "  - PostgreSQL: localhost:5432"
     } else {
@@ -198,11 +247,17 @@ function Show-AccessInfo {
                 }
             }
             
-            if (($ServiceName -eq "all" -or $ServiceName -eq "wuzapi") -and $envVars["WUZAPI_DOMAIN"]) {
-                Write-Host "  - WuzAPI: https://$($envVars['WUZAPI_DOMAIN'])"
+            if (($ServiceName -eq "all" -or $ServiceName -eq "wa") -and $envVars["WA_DOMAIN"]) {
+                Write-Host "  - WA: https://$($envVars['WA_DOMAIN'])"
             }
-            if (($ServiceName -eq "all" -or $ServiceName -eq "eventapi") -and $envVars["EVENTAPI_DOMAIN"]) {
-                Write-Host "  - Event API: https://$($envVars['EVENTAPI_DOMAIN'])"
+            if (($ServiceName -eq "all" -or $ServiceName -eq "chat-ai") -and $envVars["CHAT_AI_DOMAIN"]) {
+                Write-Host "  - Chat AI: https://$($envVars['CHAT_AI_DOMAIN'])"
+            }
+            if (($ServiceName -eq "all" -or $ServiceName -eq "backend") -and $envVars["BACKEND_DOMAIN"]) {
+                Write-Host "  - Backend API: https://$($envVars['BACKEND_DOMAIN'])"
+            }
+            if (($ServiceName -eq "all" -or $ServiceName -eq "frontend") -and $envVars["FRONTEND_DOMAIN"]) {
+                Write-Host "  - Frontend: https://$($envVars['FRONTEND_DOMAIN'])"
             }
         }
     }
@@ -217,14 +272,26 @@ function Stop-Services {
         "infrastructure" {
             docker compose down
         }
-        "wuzapi" {
+        "wa" {
             Push-Location "genfity-wa"
             docker compose down
             Pop-Location
         }
-        "eventapi" {
+        "chat-ai" {
             Push-Location "genfity-chat-ai"
             docker compose down
+            Pop-Location
+        }
+        "backend" {
+            Push-Location "genfity-backend"
+            docker compose --profile dev down
+            docker compose --profile prod down
+            Pop-Location
+        }
+        "frontend" {
+            Push-Location "genfity-frontend"
+            docker compose --profile dev down
+            docker compose --profile prod down
             Pop-Location
         }
         "all" {
@@ -233,6 +300,14 @@ function Stop-Services {
             Pop-Location
             Push-Location "genfity-chat-ai"
             docker compose down
+            Pop-Location
+            Push-Location "genfity-backend"
+            docker compose --profile dev down
+            docker compose --profile prod down
+            Pop-Location
+            Push-Location "genfity-frontend"
+            docker compose --profile dev down
+            docker compose --profile prod down
             Pop-Location
             docker compose down
         }
@@ -248,14 +323,26 @@ function Show-Logs {
         "infrastructure" {
             docker compose logs -f
         }
-        "wuzapi" {
+        "wa" {
             Push-Location "genfity-wa"
             docker compose logs -f
             Pop-Location
         }
-        "eventapi" {
+        "chat-ai" {
             Push-Location "genfity-chat-ai"
             docker compose logs -f
+            Pop-Location
+        }
+        "backend" {
+            Push-Location "genfity-backend"
+            # Try to get logs from both dev and prod containers
+            docker compose logs -f 2>/dev/null || Write-Host "No backend containers running"
+            Pop-Location
+        }
+        "frontend" {
+            Push-Location "genfity-frontend"
+            # Try to get logs from both dev and prod containers
+            docker compose logs -f 2>/dev/null || Write-Host "No frontend containers running"
             Pop-Location
         }
         "all" {
@@ -271,13 +358,23 @@ function Show-Status {
     Write-Blue "Infrastructure:"
     docker compose ps
     Write-Host ""
-    Write-Blue "WuzAPI:"
+    Write-Blue "WA:"
     Push-Location "genfity-wa"
     docker compose ps
     Pop-Location
     Write-Host ""
-    Write-Blue "Event API:"
+    Write-Blue "Chat AI:"
     Push-Location "genfity-chat-ai"
+    docker compose ps
+    Pop-Location
+    Write-Host ""
+    Write-Blue "Backend API:"
+    Push-Location "genfity-backend"
+    docker compose ps
+    Pop-Location
+    Write-Host ""
+    Write-Blue "Frontend:"
+    Push-Location "genfity-frontend"
     docker compose ps
     Pop-Location
 }
@@ -294,6 +391,14 @@ function Remove-All {
         Pop-Location
         Push-Location "genfity-chat-ai"
         docker compose down -v --remove-orphans
+        Pop-Location
+        Push-Location "genfity-backend"
+        docker compose --profile dev down -v --remove-orphans
+        docker compose --profile prod down -v --remove-orphans
+        Pop-Location
+        Push-Location "genfity-frontend"
+        docker compose --profile dev down -v --remove-orphans
+        docker compose --profile prod down -v --remove-orphans
         Pop-Location
         docker compose down -v --remove-orphans
         

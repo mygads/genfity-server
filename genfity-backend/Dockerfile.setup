@@ -1,0 +1,18 @@
+# Setup stage for dependencies and database setup
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache \
+    postgresql-client \
+    curl
+
+# Install global packages
+RUN npm install -g prisma
+
+# Set proper permissions
+RUN chown -R node:node /app
+USER node
+
+CMD ["/bin/sh"]

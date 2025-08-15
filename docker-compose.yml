@@ -72,12 +72,18 @@ services:
       - ./nginx/sites-available:/etc/nginx/sites-available
       - ./scripts:/scripts
     environment:
-      - WUZAPI_DOMAIN=${WUZAPI_DOMAIN}
-      - WUZAPI_PORT=${WUZAPI_PORT}
-      - WUZAPI_CONTAINER=${WUZAPI_CONTAINER}
-      - EVENTAPI_DOMAIN=${EVENTAPI_DOMAIN}
-      - EVENTAPI_PORT=${EVENTAPI_PORT}
-      - EVENTAPI_CONTAINER=${EVENTAPI_CONTAINER}
+      - WA_DOMAIN=${WA_DOMAIN}
+      - WA_PORT=${WA_PORT}
+      - WA_CONTAINER=${WA_CONTAINER}
+      - CHAT_AI_DOMAIN=${CHAT_AI_DOMAIN}
+      - CHAT_AI_PORT=${CHAT_AI_PORT}
+      - CHAT_AI_CONTAINER=${CHAT_AI_CONTAINER}
+      - BACKEND_DOMAIN=${BACKEND_DOMAIN}
+      - BACKEND_PORT=${BACKEND_PORT}
+      - BACKEND_CONTAINER=${BACKEND_CONTAINER}
+      - FRONTEND_DOMAIN=${FRONTEND_DOMAIN}
+      - FRONTEND_PORT=${FRONTEND_PORT}
+      - FRONTEND_CONTAINER=${FRONTEND_CONTAINER}
     command: >
       sh -c "
         echo 'Generating nginx configuration from environment variables...'

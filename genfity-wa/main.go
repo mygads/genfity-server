@@ -72,7 +72,7 @@ func init() {
 	}
 
 	if *versionFlag {
-		fmt.Printf("WuzAPI version %s\n", version)
+		fmt.Printf("WA version %s\n", version)
 		os.Exit(0)
 	}
 	tz := os.Getenv("TZ")
@@ -126,7 +126,7 @@ func init() {
 	}
 
 	if *adminToken == "" {
-		if v := os.Getenv("WUZAPI_ADMIN_TOKEN"); v != "" {
+		if v := os.Getenv("WA_ADMIN_TOKEN"); v != "" {
 			*adminToken = v
 		} else {
 			// Generate a random token if none provided
@@ -142,7 +142,7 @@ func init() {
 
 	// Check for global webhook in environment variable
 	if *globalWebhook == "" {
-		if v := os.Getenv("WUZAPI_GLOBAL_WEBHOOK"); v != "" {
+		if v := os.Getenv("WA_GLOBAL_WEBHOOK"); v != "" {
 			*globalWebhook = v
 			log.Info().Str("global_webhook", v).Msg("Global webhook configured from environment variable")
 		}

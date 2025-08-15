@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Enable standalone output for Docker
+  output: 'standalone',
+  
   images: {
     remotePatterns: [
       {
@@ -30,6 +33,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  
+  // Experimental features for better performance
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client'],
+  },
+  
   /* other config options here */
 };
 

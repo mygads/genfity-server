@@ -30,15 +30,18 @@ show_usage() {
     echo "Services:"
     echo -e "  ${BLUE}all               ${NC}All services (default)"
     echo -e "  ${BLUE}infrastructure    ${NC}PostgreSQL + Nginx + SSL only"
-    echo -e "  ${BLUE}wuzapi            ${NC}WuzAPI service (+ infrastructure if needed)"
-    echo -e "  ${BLUE}eventapi          ${NC}Event API service (+ infrastructure if needed)"
+    echo -e "  ${BLUE}wa                ${NC}WA service (+ infrastructure if needed)"
+    echo -e "  ${BLUE}chat-ai           ${NC}Chat AI service (+ infrastructure if needed)"
+    echo -e "  ${BLUE}backend           ${NC}Backend API service (+ infrastructure if needed)"
+    echo -e "  ${BLUE}frontend          ${NC}Frontend service (+ infrastructure if needed)"
     echo
     echo "Examples:"
     echo "  $0 dev                    # Start all services in development"
-    echo "  $0 dev wuzapi            # Start only WuzAPI + database"
+    echo "  $0 dev wa                # Start only WA + database"
+    echo "  $0 dev backend           # Start only Backend + database"
     echo "  $0 prod                  # Start production with SSL/proxy"
     echo "  $0 config                # Generate nginx config from .env"
-    echo "  $0 logs wuzapi           # Show WuzAPI logs"
+    echo "  $0 logs backend          # Show Backend logs"
 }
 
 test_env_file() {
@@ -111,22 +114,48 @@ start_service() {
     echo -e "${YELLOW}Starting $service_name service...${NC}"
     
     case $service_name in
-        "wuzapi")
+        "wa")
             pushd "genfity-wa" > /dev/null
-            if ! test_env_file ".env" "WuzAPI"; then
+            if ! test_env_file ".env" "WA"; then
                 popd > /dev/null
                 return 1
             fi
             docker compose up -d
             popd > /dev/null
             ;;
-        "eventapi")
+        "chat-ai")
             pushd "genfity-chat-ai" > /dev/null
-            if ! test_env_file ".env" "Event API"; then
+            if ! test_env_file ".env" "Chat AI"; then
                 popd > /dev/null
                 return 1
             fi
             docker compose up -d
+            popd > /dev/null
+            ;;
+        "backend")
+            pushd "genfity-backend" > /dev/null
+            if ! test_env_file ".env" "Backend API"; then
+                popd > /dev/null
+                return 1
+            fi
+            if [ "$profile" = "prod" ]; then
+                docker compose --profile prod up -d
+            else
+                docker compose --profile dev up -d
+            fi
+            popd > /dev/null
+            ;;
+        "frontend")
+            pushd "genfity-frontend" > /dev/null
+            if ! test_env_file ".env" "Frontend"; then
+                popd > /dev/null
+                return 1
+            fi
+            if [ "$profile" = "prod" ]; then
+                docker compose --profile prod up -d
+            else
+                docker compose --profile dev up -d
+            fi
             popd > /dev/null
             ;;
         *)
@@ -149,19 +178,35 @@ start_environment() {
                 return 1
             fi
             ;;
-        "wuzapi")
+        "wa")
             if ! start_infrastructure "$mode"; then
                 return 1
             fi
-            if ! start_service "wuzapi" "$mode"; then
+            if ! start_service "wa" "$mode"; then
                 return 1
             fi
             ;;
-        "eventapi")
+        "chat-ai")
             if ! start_infrastructure "$mode"; then
                 return 1
             fi
-            if ! start_service "eventapi" "$mode"; then
+            if ! start_service "chat-ai" "$mode"; then
+                return 1
+            fi
+            ;;
+        "backend")
+            if ! start_infrastructure "$mode"; then
+                return 1
+            fi
+            if ! start_service "backend" "$mode"; then
+                return 1
+            fi
+            ;;
+        "frontend")
+            if ! start_infrastructure "$mode"; then
+                return 1
+            fi
+            if ! start_service "frontend" "$mode"; then
                 return 1
             fi
             ;;
@@ -169,10 +214,16 @@ start_environment() {
             if ! start_infrastructure "$mode"; then
                 return 1
             fi
-            if ! start_service "wuzapi" "$mode"; then
+            if ! start_service "wa" "$mode"; then
                 return 1
             fi
-            if ! start_service "eventapi" "$mode"; then
+            if ! start_service "chat-ai" "$mode"; then
+                return 1
+            fi
+            if ! start_service "backend" "$mode"; then
+                return 1
+            fi
+            if ! start_service "frontend" "$mode"; then
                 return 1
             fi
             ;;
@@ -193,11 +244,17 @@ show_access_info() {
     echo -e "${YELLOW}Services available at:${NC}"
     
     if [ "$mode" = "dev" ]; then
-        if [ "$service_name" = "all" ] || [ "$service_name" = "wuzapi" ]; then
-            echo "  - WuzAPI: http://localhost:8080"
+        if [ "$service_name" = "all" ] || [ "$service_name" = "wa" ]; then
+            echo "  - WA: http://localhost:8080"
         fi
-        if [ "$service_name" = "all" ] || [ "$service_name" = "eventapi" ]; then
-            echo "  - Event API: http://localhost:8081"
+        if [ "$service_name" = "all" ] || [ "$service_name" = "chat-ai" ]; then
+            echo "  - Chat AI: http://localhost:8081"
+        fi
+        if [ "$service_name" = "all" ] || [ "$service_name" = "backend" ]; then
+            echo "  - Backend API: http://localhost:8090"
+        fi
+        if [ "$service_name" = "all" ] || [ "$service_name" = "frontend" ]; then
+            echo "  - Frontend: http://localhost:8050"
         fi
         echo "  - PostgreSQL: localhost:5432"
     else
@@ -207,14 +264,24 @@ show_access_info() {
             source .env
             set +a
             
-            if [ "$service_name" = "all" ] || [ "$service_name" = "wuzapi" ]; then
-                if [ -n "$WUZAPI_DOMAIN" ]; then
-                    echo "  - WuzAPI: https://$WUZAPI_DOMAIN"
+            if [ "$service_name" = "all" ] || [ "$service_name" = "wa" ]; then
+                if [ -n "$WA_DOMAIN" ]; then
+                    echo "  - WA: https://$WA_DOMAIN"
                 fi
             fi
-            if [ "$service_name" = "all" ] || [ "$service_name" = "eventapi" ]; then
-                if [ -n "$EVENTAPI_DOMAIN" ]; then
-                    echo "  - Event API: https://$EVENTAPI_DOMAIN"
+            if [ "$service_name" = "all" ] || [ "$service_name" = "chat-ai" ]; then
+                if [ -n "$CHAT_AI_DOMAIN" ]; then
+                    echo "  - Chat AI: https://$CHAT_AI_DOMAIN"
+                fi
+            fi
+            if [ "$service_name" = "all" ] || [ "$service_name" = "backend" ]; then
+                if [ -n "$BACKEND_DOMAIN" ]; then
+                    echo "  - Backend API: https://$BACKEND_DOMAIN"
+                fi
+            fi
+            if [ "$service_name" = "all" ] || [ "$service_name" = "frontend" ]; then
+                if [ -n "$FRONTEND_DOMAIN" ]; then
+                    echo "  - Frontend: https://$FRONTEND_DOMAIN"
                 fi
             fi
         fi
@@ -230,14 +297,26 @@ stop_services() {
         "infrastructure")
             docker compose down
             ;;
-        "wuzapi")
+        "wa")
             pushd "genfity-wa" > /dev/null
             docker compose down
             popd > /dev/null
             ;;
-        "eventapi")
+        "chat-ai")
             pushd "genfity-chat-ai" > /dev/null
             docker compose down
+            popd > /dev/null
+            ;;
+        "backend")
+            pushd "genfity-backend" > /dev/null
+            docker compose --profile dev down
+            docker compose --profile prod down
+            popd > /dev/null
+            ;;
+        "frontend")
+            pushd "genfity-frontend" > /dev/null
+            docker compose --profile dev down
+            docker compose --profile prod down
             popd > /dev/null
             ;;
         "all")
@@ -246,6 +325,14 @@ stop_services() {
             popd > /dev/null
             pushd "genfity-chat-ai" > /dev/null
             docker compose down
+            popd > /dev/null
+            pushd "genfity-backend" > /dev/null
+            docker compose --profile dev down
+            docker compose --profile prod down
+            popd > /dev/null
+            pushd "genfity-frontend" > /dev/null
+            docker compose --profile dev down
+            docker compose --profile prod down
             popd > /dev/null
             docker compose down
             ;;
@@ -261,14 +348,26 @@ show_logs() {
         "infrastructure")
             docker compose logs -f
             ;;
-        "wuzapi")
+        "wa")
             pushd "genfity-wa" > /dev/null
             docker compose logs -f
             popd > /dev/null
             ;;
-        "eventapi")
+        "chat-ai")
             pushd "genfity-chat-ai" > /dev/null
             docker compose logs -f
+            popd > /dev/null
+            ;;
+        "backend")
+            pushd "genfity-backend" > /dev/null
+            # Try to get logs from both dev and prod containers
+            docker compose logs -f 2>/dev/null || echo "No backend containers running"
+            popd > /dev/null
+            ;;
+        "frontend")
+            pushd "genfity-frontend" > /dev/null
+            # Try to get logs from both dev and prod containers
+            docker compose logs -f 2>/dev/null || echo "No frontend containers running"
             popd > /dev/null
             ;;
         "all")
@@ -284,13 +383,23 @@ show_status() {
     echo -e "${BLUE}Infrastructure:${NC}"
     docker compose ps
     echo
-    echo -e "${BLUE}WuzAPI:${NC}"
+    echo -e "${BLUE}WA:${NC}"
     pushd "genfity-wa" > /dev/null
     docker compose ps
     popd > /dev/null
     echo
-    echo -e "${BLUE}Event API:${NC}"
+    echo -e "${BLUE}Chat AI:${NC}"
     pushd "genfity-chat-ai" > /dev/null
+    docker compose ps
+    popd > /dev/null
+    echo
+    echo -e "${BLUE}Backend API:${NC}"
+    pushd "genfity-backend" > /dev/null
+    docker compose ps
+    popd > /dev/null
+    echo
+    echo -e "${BLUE}Frontend:${NC}"
+    pushd "genfity-frontend" > /dev/null
     docker compose ps
     popd > /dev/null
 }
@@ -309,6 +418,14 @@ remove_all() {
         pushd "genfity-chat-ai" > /dev/null
         docker compose down -v --remove-orphans
         popd > /dev/null
+        pushd "genfity-backend" > /dev/null
+        docker compose --profile dev down -v --remove-orphans
+        docker compose --profile prod down -v --remove-orphans
+        popd > /dev/null
+        pushd "genfity-frontend" > /dev/null
+        docker compose --profile dev down -v --remove-orphans
+        docker compose --profile prod down -v --remove-orphans
+        popd > /dev/null
         docker compose down -v --remove-orphans
         
         # Remove network (ignore error if it doesn't exist)
@@ -325,8 +442,8 @@ COMMAND=${1:-"help"}
 SERVICE=${2:-"all"}
 
 # Validate service option
-if [ "$SERVICE" != "all" ] && [ "$SERVICE" != "infrastructure" ] && [ "$SERVICE" != "wuzapi" ] && [ "$SERVICE" != "eventapi" ]; then
-    echo -e "${RED}Error: Invalid service '$SERVICE'. Must be 'all', 'infrastructure', 'wuzapi', or 'eventapi'.${NC}"
+if [ "$SERVICE" != "all" ] && [ "$SERVICE" != "infrastructure" ] && [ "$SERVICE" != "wa" ] && [ "$SERVICE" != "chat-ai" ] && [ "$SERVICE" != "backend" ] && [ "$SERVICE" != "frontend" ]; then
+    echo -e "${RED}Error: Invalid service '$SERVICE'. Must be 'all', 'infrastructure', 'wa', 'chat-ai', 'backend', or 'frontend'.${NC}"
     exit 1
 fi
 

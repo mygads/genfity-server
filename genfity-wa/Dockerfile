@@ -19,7 +19,7 @@ RUN go mod download
 
 COPY . .
 ENV CGO_ENABLED=1
-RUN go build -o wuzapi
+RUN go build -o wa
 
 FROM debian:bullseye-slim
 
@@ -43,12 +43,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV TZ="America/Sao_Paulo"
 WORKDIR /app
 
-COPY --from=builder /app/wuzapi         /app/
+COPY --from=builder /app/wa             /app/
 COPY --from=builder /app/static         /app/static/
-COPY --from=builder /app/wuzapi.service /app/wuzapi.service
+COPY --from=builder /app/wa.service     /app/wa.service
 
-RUN chmod +x /app/wuzapi && \
+RUN chmod +x /app/wa && \
     chmod -R 755 /app && \
     chown -R root:root /app
 
-ENTRYPOINT ["/app/wuzapi", "--logtype=console", "--color=true"]
+ENTRYPOINT ["/app/wa", "--logtype=console", "--color=true"]

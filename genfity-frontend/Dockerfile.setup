@@ -1,0 +1,13 @@
+# Setup stage for dependencies
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache curl
+
+# Set proper permissions
+RUN chown -R node:node /app
+USER node
+
+CMD ["/bin/sh"]

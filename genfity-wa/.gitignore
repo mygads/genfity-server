@@ -1,6 +1,6 @@
 dbdata/
 files/
-wuzapi
+WA
 .env
 .tool-versions
 docker-compose.yml
