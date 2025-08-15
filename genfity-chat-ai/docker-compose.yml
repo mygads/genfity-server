@@ -27,7 +27,9 @@ services:
       - db-check
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${PORT}/health"]
+      # Use curl -f to perform a GET and return non-zero on non-2xx responses.
+      # This avoids HEAD requests (wget --spider) which some handlers don't support.
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
