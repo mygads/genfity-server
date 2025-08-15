@@ -10,8 +10,8 @@ Platform server modular untuk Genfity yang terdiri dari WuzAPI (WhatsApp Gateway
 - **Certbot**: SSL certificate management otomatis
 
 ### Individual Projects
-- **genfity-wuzapi**: WhatsApp Gateway Service (mandiri dengan `.env` sendiri)
-- **genfity-event-api**: Event Management API (mandiri dengan `.env` sendiri)
+- **genfity-wa**: WhatsApp Gateway Service (mandiri dengan `.env` sendiri)
+- **genfity-chat-ai**: Event Management API (mandiri dengan `.env` sendiri)
 
 Setiap project dapat dijalankan independen atau bersama-sama melalui script management di root.
 
@@ -35,22 +35,22 @@ LETSENCRYPT_EMAIL=genfity@gmail.com
 # Domain Mapping (untuk production)
 WUZAPI_DOMAIN=wa.genfity.com
 WUZAPI_PORT=8080
-WUZAPI_CONTAINER=genfity-wuzapi
+WUZAPI_CONTAINER=genfity-wa
 
 EVENTAPI_DOMAIN=api.genfity.com
 EVENTAPI_PORT=8081
-EVENTAPI_CONTAINER=genfity-event-api
+EVENTAPI_CONTAINER=genfity-chat-ai
 ```
 
 **Per Project:**
 ```bash
 # WuzAPI
-cd genfity-wuzapi
+cd genfity-wa
 cp .env.example .env
 # Edit .env dengan konfigurasi WuzAPI
 
 # Event API  
-cd genfity-event-api
+cd genfity-chat-ai
 cp .env.example .env
 # Edit .env dengan konfigurasi Event API
 ```
@@ -141,16 +141,16 @@ POSTGRES_MULTIPLE_DATABASES=wuzapi_db,event_api_db
 # Domain mapping for reverse proxy
 WUZAPI_DOMAIN=wa.genfity.com
 WUZAPI_PORT=8080
-WUZAPI_CONTAINER=genfity-wuzapi
+WUZAPI_CONTAINER=genfity-wa
 
 EVENTAPI_DOMAIN=api.genfity.com  
 EVENTAPI_PORT=8081
-EVENTAPI_CONTAINER=genfity-event-api
+EVENTAPI_CONTAINER=genfity-chat-ai
 ```
 
 ### Per Project Configuration
 
-**genfity-wuzapi/.env:**
+**genfity-wa/.env:**
 ```env
 # Database connection
 DB_HOST=genfity-postgres
@@ -163,7 +163,7 @@ PORT=8080
 WUZAPI_ADMIN_TOKEN=your_secure_token
 ```
 
-**genfity-event-api/.env:**
+**genfity-chat-ai/.env:**
 ```env
 # Database connection
 DB_HOST=genfity-postgres
@@ -182,8 +182,8 @@ WEBHOOK_VERIFY_TOKEN=your_secure_token
 genfity-network (Docker Bridge Network)
 ├── genfity-postgres (5432)
 ├── genfity-nginx (80, 443) [prod only]
-├── genfity-wuzapi (internal: 8080)
-└── genfity-event-api (internal: 8081)
+├── genfity-wa (internal: 8080)
+└── genfity-chat-ai (internal: 8081)
 ```
 
 ### Mode Differences
@@ -271,7 +271,7 @@ EOF
 .\deploy-simple.ps1 status
 
 # Check specific service health
-docker inspect --format='{{.State.Health.Status}}' genfity-wuzapi
+docker inspect --format='{{.State.Health.Status}}' genfity-wa
 ```
 
 ### Logs Analysis
@@ -303,7 +303,7 @@ docker exec genfity-postgres pg_dump -U genfity_user wuzapi_db > backup.sql
 #### Service Won't Start
 ```bash
 # Check .env file exists
-ls genfity-wuzapi/.env
+ls genfity-wa/.env
 
 # Check container logs
 .\deploy-simple.ps1 logs wuzapi
@@ -370,12 +370,12 @@ Server/
 ├── scripts/
 │   ├── generate-nginx-config.sh    # Auto-generate nginx configs
 │   └── init-multiple-databases.sh  # Database initialization
-├── genfity-wuzapi/
+├── genfity-wa/
 │   ├── docker-compose.yml         # WuzAPI service only
 │   ├── .env.example               # WuzAPI configuration template
 │   ├── Dockerfile
 │   └── ... (source code)
-└── genfity-event-api/
+└── genfity-chat-ai/
     ├── docker-compose.yml         # Event API service only  
     ├── .env.example               # Event API configuration template
     ├── Dockerfile

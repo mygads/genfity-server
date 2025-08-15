@@ -115,7 +115,7 @@ function Start-Service {
     
     switch ($ServiceName) {
         "wuzapi" {
-            Push-Location "genfity-wuzapi"
+            Push-Location "genfity-wa"
             try {
                 if (-not (Test-EnvFile ".env" "WuzAPI")) {
                     return $false
@@ -126,7 +126,7 @@ function Start-Service {
             }
         }
         "eventapi" {
-            Push-Location "genfity-event-api"
+            Push-Location "genfity-chat-ai"
             try {
                 if (-not (Test-EnvFile ".env" "Event API")) {
                     return $false
@@ -218,20 +218,20 @@ function Stop-Services {
             docker compose down
         }
         "wuzapi" {
-            Push-Location "genfity-wuzapi"
+            Push-Location "genfity-wa"
             docker compose down
             Pop-Location
         }
         "eventapi" {
-            Push-Location "genfity-event-api"
+            Push-Location "genfity-chat-ai"
             docker compose down
             Pop-Location
         }
         "all" {
-            Push-Location "genfity-wuzapi"
+            Push-Location "genfity-wa"
             docker compose down
             Pop-Location
-            Push-Location "genfity-event-api"
+            Push-Location "genfity-chat-ai"
             docker compose down
             Pop-Location
             docker compose down
@@ -249,12 +249,12 @@ function Show-Logs {
             docker compose logs -f
         }
         "wuzapi" {
-            Push-Location "genfity-wuzapi"
+            Push-Location "genfity-wa"
             docker compose logs -f
             Pop-Location
         }
         "eventapi" {
-            Push-Location "genfity-event-api"
+            Push-Location "genfity-chat-ai"
             docker compose logs -f
             Pop-Location
         }
@@ -272,12 +272,12 @@ function Show-Status {
     docker compose ps
     Write-Host ""
     Write-Blue "WuzAPI:"
-    Push-Location "genfity-wuzapi"
+    Push-Location "genfity-wa"
     docker compose ps
     Pop-Location
     Write-Host ""
     Write-Blue "Event API:"
-    Push-Location "genfity-event-api"
+    Push-Location "genfity-chat-ai"
     docker compose ps
     Pop-Location
 }
@@ -289,10 +289,10 @@ function Remove-All {
     if ($response -eq "y" -or $response -eq "Y") {
         Write-Yellow "Cleaning up all resources..."
         
-        Push-Location "genfity-wuzapi"
+        Push-Location "genfity-wa"
         docker compose down -v --remove-orphans
         Pop-Location
-        Push-Location "genfity-event-api"
+        Push-Location "genfity-chat-ai"
         docker compose down -v --remove-orphans
         Pop-Location
         docker compose down -v --remove-orphans

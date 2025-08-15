@@ -112,7 +112,7 @@ start_service() {
     
     case $service_name in
         "wuzapi")
-            pushd "genfity-wuzapi" > /dev/null
+            pushd "genfity-wa" > /dev/null
             if ! test_env_file ".env" "WuzAPI"; then
                 popd > /dev/null
                 return 1
@@ -121,7 +121,7 @@ start_service() {
             popd > /dev/null
             ;;
         "eventapi")
-            pushd "genfity-event-api" > /dev/null
+            pushd "genfity-chat-ai" > /dev/null
             if ! test_env_file ".env" "Event API"; then
                 popd > /dev/null
                 return 1
@@ -231,20 +231,20 @@ stop_services() {
             docker compose down
             ;;
         "wuzapi")
-            pushd "genfity-wuzapi" > /dev/null
+            pushd "genfity-wa" > /dev/null
             docker compose down
             popd > /dev/null
             ;;
         "eventapi")
-            pushd "genfity-event-api" > /dev/null
+            pushd "genfity-chat-ai" > /dev/null
             docker compose down
             popd > /dev/null
             ;;
         "all")
-            pushd "genfity-wuzapi" > /dev/null
+            pushd "genfity-wa" > /dev/null
             docker compose down
             popd > /dev/null
-            pushd "genfity-event-api" > /dev/null
+            pushd "genfity-chat-ai" > /dev/null
             docker compose down
             popd > /dev/null
             docker compose down
@@ -262,12 +262,12 @@ show_logs() {
             docker compose logs -f
             ;;
         "wuzapi")
-            pushd "genfity-wuzapi" > /dev/null
+            pushd "genfity-wa" > /dev/null
             docker compose logs -f
             popd > /dev/null
             ;;
         "eventapi")
-            pushd "genfity-event-api" > /dev/null
+            pushd "genfity-chat-ai" > /dev/null
             docker compose logs -f
             popd > /dev/null
             ;;
@@ -285,12 +285,12 @@ show_status() {
     docker compose ps
     echo
     echo -e "${BLUE}WuzAPI:${NC}"
-    pushd "genfity-wuzapi" > /dev/null
+    pushd "genfity-wa" > /dev/null
     docker compose ps
     popd > /dev/null
     echo
     echo -e "${BLUE}Event API:${NC}"
-    pushd "genfity-event-api" > /dev/null
+    pushd "genfity-chat-ai" > /dev/null
     docker compose ps
     popd > /dev/null
 }
@@ -303,10 +303,10 @@ remove_all() {
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo -e "${YELLOW}Cleaning up all resources...${NC}"
         
-        pushd "genfity-wuzapi" > /dev/null
+        pushd "genfity-wa" > /dev/null
         docker compose down -v --remove-orphans
         popd > /dev/null
-        pushd "genfity-event-api" > /dev/null
+        pushd "genfity-chat-ai" > /dev/null
         docker compose down -v --remove-orphans
         popd > /dev/null
         docker compose down -v --remove-orphans

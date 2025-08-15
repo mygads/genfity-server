@@ -1,0 +1,77 @@
+services:
+  genfity-chat-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: genfity-chat-ai
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_SSLMODE=${DB_SSLMODE}
+      - PORT=${PORT}
+      - TZ=${TZ}
+      - GIN_MODE=${GIN_MODE}
+      - WEBHOOK_VERIFY_TOKEN=${WEBHOOK_VERIFY_TOKEN}
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+      - WA_SERVER_URL=${WA_SERVER_URL}
+      - WA_ADMIN_TOKEN=${WA_ADMIN_TOKEN}
+      - LOG_LEVEL=${LOG_LEVEL}
+    ports:
+      - "${PORT}:${PORT}"
+    networks:
+      - genfity-network
+    depends_on:
+      - db-check
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  db-check:
+    image: postgres:16
+    container_name: eventapi-db-check
+    environment:
+      - PGHOST=${DB_HOST}
+      - PGPORT=${DB_PORT}
+      - PGUSER=${DB_USER}
+      - PGPASSWORD=${DB_PASSWORD}
+      - PGDATABASE=${DB_NAME}
+    networks:
+      - genfity-network
+    command: >
+      sh -c "
+        echo 'Checking database connection...'
+        until pg_isready -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d postgres; do
+          echo 'Waiting for PostgreSQL server...'
+          sleep 2
+        done
+        echo 'PostgreSQL server is ready!'
+        
+        echo 'Checking if database exists...'
+        if psql -h ${DB_HOST} -U ${DB_USER} -d postgres -lqt | cut -d \\| -f 1 | grep -qw ${DB_NAME}; then
+          echo 'Database ${DB_NAME} exists'
+        else
+          echo 'Database ${DB_NAME} does not exist, creating...'
+          psql -h ${DB_HOST} -U ${DB_USER} -d postgres -c 'CREATE DATABASE ${DB_NAME};'
+          echo 'Database ${DB_NAME} created'
+        fi
+        
+        echo 'Running migrations if needed...'
+        echo 'Database check completed successfully'
+      "
+
+networks:
+  genfity-network:
+    external: true
+
+# ==========================================
+# Usage:
+#   Copy .env.example to .env and configure
+#   Then run: docker compose up -d
+# ==========================================
