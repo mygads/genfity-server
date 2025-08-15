@@ -1,0 +1,296 @@
+{
+  "HomePage": {
+    "title": "Hello world!",
+    "about": "Go to the about page"
+  },
+  "Metadata": {
+    "title": "Hello world!",
+    "description": "This is a simple example of a metadata page."
+  },
+  "Header": {
+    "explore": "Explore",
+    "services": "Services",
+    "pricing": "Pricing",
+    "portfolio": "Portfolio",
+    "howToOrder": "How to Order",
+    "contact": "Contact Us",    "signUp": "Sign Up",
+    "signIn": "Sign In",
+    "cart": "Cart",
+    "aboutUs": "About Us",
+    "faq": "FAQ",
+    "blog": "Blog (Coming Soon)",
+    "career": "Career (Coming Soon)",
+    "mainProducts": "Main Products",
+    "whatsappServices": "WhatsApp Services",
+    "others": "Others",
+    "customWebsite": "Custom Website Development",
+    "customWebsiteDesc": "Website tailored to your business needs.",
+    "webApp": "Web Application Development",
+    "webAppDesc": "Modern web applications for digital business needs.",
+    "companySystem": "Company Systems",
+    "companySystemDesc": "Management and automation systems for companies.",
+    "graphicDesign": "Graphic Design",
+    "graphicDesignDesc": "Professional visual design for branding and marketing.",
+    "whatsappAPI": "WhatsApp API",
+    "whatsappAPIDesc": "WhatsApp Business API integration for more effective business communication.",
+    "whatsappChatbot": "WhatsApp AI Chatbot",
+    "whatsappChatbotDesc": "WhatsApp bot with AI to serve customers 24/7 automatically.",
+    "seoSpecialist": "SEO Specialist",
+    "seoSpecialistDesc": "Website optimization to be easily found on Google.",
+    "socialMedia": "Social Media Management",
+    "socialMediaDesc": "Manage and improve your social media performance.",
+    "googleBusiness": "Google Business",
+    "googleBusinessDesc": "Optimize your Google Business to be easily found.",
+    "companyProfile": "Company Profile Design",
+    "companyProfileDesc": "Attractive and informative company profile.",
+    "corporateBranding": "Corporate Branding",
+    "corporateBrandingDesc": "Build your company's brand identity.",
+    "techSupport": "Tech Support",    "techSupportDesc": "Technical assistance for smooth business operations."
+  },
+  "HowToOrder": {
+    "title": "How to Order",
+    "subtitle": "Complete guide to placing your order",
+    "description": "Follow our comprehensive ordering process to get your project started with Genfity.",
+    "orderingProcess": {
+      "title": "Ordering Process",
+      "subtitle": "8 simple steps to complete your order",
+      "steps": {
+        "addToCart": {
+          "title": "Add to Cart",
+          "description": "Browse our services and add your desired products to the cart. You can select multiple services if needed."
+        },
+        "fillForm": {
+          "title": "Fill Form",
+          "description": "Complete the order form with your project details, requirements, and contact information."
+        },
+        "voucher": {
+          "title": "Apply Voucher",
+          "description": "Enter your voucher code if you have one to get discounts on your order."
+        },
+        "verifyOrder": {
+          "title": "Verify Order",
+          "description": "Review your order details, services selected, and total amount before proceeding."
+        },
+        "checkout": {
+          "title": "Checkout",
+          "description": "Confirm your order and proceed to the payment gateway."
+        },
+        "payment": {
+          "title": "Payment Gateway",
+          "description": "Choose your preferred payment method and enter payment details securely."
+        },
+        "pay": {
+          "title": "Complete Payment",
+          "description": "Finalize your payment to start the order processing."
+        },
+        "checkStatus": {
+          "title": "Check Order Status",
+          "description": "Monitor your order progress through our tracking system."
+        }
+      }
+    },
+    "mainWorkflow": {
+      "title": "Main Product Workflow",
+      "subtitle": "How we process your main product orders",
+      "steps": {
+        "orderReceived": {
+          "title": "Order Received",
+          "description": "Your order is confirmed and added to our processing queue."
+        },
+        "whatsappContact": {
+          "title": "WhatsApp Contact",
+          "description": "Our team will contact you via WhatsApp for project discussion and clarification."
+        },
+        "workExecution": {
+          "title": "Work Execution",
+          "description": "Our expert team starts working on your project according to the specifications."
+        },
+        "delivery": {
+          "title": "Project Delivery",
+          "description": "Complete project delivered with documentation and support."
+        }
+      }
+    },
+    "revisionProcess": {
+      "title": "Revision Process",
+      "subtitle": "How we handle project revisions",
+      "steps": {
+        "meetings": {
+          "title": "Client Meetings",
+          "description": "Schedule meetings to discuss revision requirements and feedback."
+        },
+        "revisionRequests": {
+          "title": "Revision Requests",
+          "description": "Submit detailed revision requests through our platform."
+        },
+        "processing": {
+          "title": "Revision Processing",
+          "description": "Our team implements the requested changes and delivers updated results."
+        }
+      }
+    },
+    "whatsappApiWorkflow": {
+      "title": "WhatsApp API Service Workflow",
+      "subtitle": "Automated service activation process",
+      "steps": {
+        "automaticActivation": {
+          "title": "Automatic Activation",
+          "description": "Your WhatsApp API service is automatically activated after successful payment."
+        },
+        "dashboardAccess": {
+          "title": "Dashboard Access",
+          "description": "Get instant access to your WhatsApp API dashboard to start managing your business communications."
+        }
+      }
+    },
+    "needHelp": {
+      "title": "Need Help?",
+      "description": "If you have any questions about the ordering process, feel free to contact our support team.",
+      "contactButton": "Contact Support"
+    }
+  },
+  "Auth": {
+    "signIn": {
+      "title": "Sign In",
+      "subtitle": "Sign in to your account",
+      "description": "Login to access your dashboard and manage your account",
+      "sessionExpired": "Session Expired",
+      "sessionExpiredMessage": "Your session has expired. Please sign in again to continue.",
+      "accessPageMessage": "Please sign in to access this page.",
+      "loginModes": {
+        "password": "Password",
+        "sso": "Quick Login"
+      },
+      "form": {
+        "emailOrPhone": "Email or Phone Number",
+        "emailOrPhonePlaceholder": "Enter your email or phone number",
+        "password": "Password",
+        "passwordPlaceholder": "Enter your Password",
+        "ssoIdentifier": "Email or WhatsApp Number",
+        "ssoIdentifierPlaceholder": "Enter your email or WhatsApp number",
+        "forgotPassword": "Forgot Password?",
+        "signInButton": "Sign in",
+        "sendCodeButton": "Send Code",
+        "rememberMe": "Remember me"
+      },
+      "otp": {
+        "title": "Enter Verification Code",
+        "description": "We've sent a verification code to",
+        "enterCode": "Enter the 6-digit code",
+        "resendCode": "Resend Code",
+        "resendIn": "Resend in",
+        "seconds": "seconds",
+        "back": "Back",
+        "verify": "Verify"
+      },
+      "google": {
+        "signInWith": "Sign in with Google"
+      },
+      "errors": {
+        "invalidCredentials": "Invalid credentials. Please try again.",
+        "unknownError": "An unknown error occurred during sign in.",
+        "unexpectedError": "An unexpected error occurred. Please try again.",
+        "ssoFailed": "Failed to send verification code. Please try again.",
+        "ssoUnknownError": "An unknown error occurred while sending verification code.",
+        "verifyFailed": "Invalid verification code. Please try again.",
+        "verifyUnknownError": "An unknown error occurred during verification."
+      },
+      "links": {
+        "noAccount": "Don't have an account?",
+        "signUp": "Sign Up"
+      }
+    },
+    "signUp": {
+      "title": "Sign Up",
+      "subtitle": "Create your account",
+      "description": "Join us and start your journey with Genfity",
+      "form": {
+        "name": "Full Name",
+        "namePlaceholder": "Enter your full name",
+        "email": "Email Address",
+        "emailPlaceholder": "Enter your email address",
+        "phone": "Phone Number",
+        "phonePlaceholder": "Enter your phone number",
+        "password": "Password",
+        "passwordPlaceholder": "Enter your password",
+        "signUpButton": "Sign Up",
+        "creating": "Creating account..."
+      },
+      "verification": {
+        "title": "Verify Your Phone Number",
+        "description": "We've sent a verification code to",
+        "enterCode": "Enter the 4-digit code",
+        "resendCode": "Resend Code",
+        "resendIn": "Resend in",
+        "seconds": "seconds",
+        "back": "Back to Sign Up",
+        "verify": "Verify & Complete Registration"
+      },
+      "errors": {
+        "signupFailed": "Failed to sign up. Please try again.",
+        "unexpectedError": "An unexpected error occurred. Please try again.",
+        "invalidOtp": "Invalid OTP. Please try again.",
+        "resendFailed": "Failed to resend code. Please try again."
+      },
+      "links": {
+        "hasAccount": "Already have an account?",
+        "signIn": "Sign In"
+      }
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "subtitle": "Reset your password",
+      "description": "Enter your email or phone number to receive a reset code",
+      "steps": {
+        "request": {
+          "title": "Reset Password",
+          "description": "Enter your email or phone number and we'll send you a reset code",
+          "form": {
+            "identifier": "Email or Phone Number",
+            "identifierPlaceholder": "Enter your email or phone number",
+            "sendCode": "Send Reset Code"
+          }
+        },
+        "verify": {
+          "title": "Enter Reset Code",
+          "description": "We've sent a reset code to",
+          "form": {
+            "enterCode": "Enter the 4-digit code",
+            "newPassword": "New Password",
+            "newPasswordPlaceholder": "Enter your new password",
+            "confirmPassword": "Confirm Password",
+            "confirmPasswordPlaceholder": "Confirm your new password",
+            "resetPassword": "Reset Password"
+          },
+          "resendCode": "Resend Code",
+          "resendIn": "Resend in",
+          "seconds": "seconds"
+        },
+        "success": {
+          "title": "Password Reset Successfully",
+          "description": "Your password has been reset successfully. You can now sign in with your new password.",
+          "signIn": "Sign In Now"
+        }
+      },
+      "errors": {
+        "sendFailed": "Failed to send reset code. Please try again.",
+        "unexpectedError": "An unexpected error occurred. Please try again.",
+        "passwordMismatch": "Passwords do not match",
+        "resetFailed": "Failed to reset password. Please try again.",
+        "resendFailed": "Failed to resend code. Please try again."
+      },      
+      "links": {
+        "backToSignIn": "Back to Sign In",
+        "rememberPassword": "Remember your password?",
+        "signIn": "Sign In"
+      }
+    },
+    "common": {
+      "back": "Back",
+      "loading": "Loading...",
+      "or": "or",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
+    }
+  }
+}

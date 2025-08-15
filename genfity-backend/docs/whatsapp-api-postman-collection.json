@@ -1,0 +1,1286 @@
+{
+  "info": {
+    "name": "WhatsApp API - Genfity Backend",
+    "description": "Complete API collection for WhatsApp session management and message sending.\n\n## Authentication\n\n### Customer API\nUse Bearer Token authentication:\n```\nAuthorization: Bearer gf_your_api_key\n```\n\n### Public API\nUse API Key as URL parameter (no Bearer token required)\nGet your API key from `/api/customer/whatsapp/apikey` endpoint.\nThis API key works for all your WhatsApp sessions.\n\n## Requirements\n1. User must be logged in and have API key\n2. User must have active WhatsApp subscription package\n3. WhatsApp session must be 'connected' for message sending\n4. API key is global - one key works for all user sessions",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "whatsapp-api-genfity"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{api_key}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Customer Sessions Management",
+      "description": "Endpoints for managing WhatsApp sessions (authenticated). Note: Message sending is done via Public API only.",
+      "item": [
+        {
+          "name": "Get All Sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customer/whatsapp/sessions?limit=20&offset=0&status=connected",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "whatsapp", "sessions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Number of results per page (max 100)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset for pagination"
+                },
+                {
+                  "key": "status",
+                  "value": "connected",
+                  "description": "Filter by session status",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all WhatsApp sessions for authenticated user with pagination and filtering"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/sessions",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "sessions"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"cm4abc123def\",\n      \"sessionId\": \"customer-123-a1b2c3d4e5\",\n      \"sessionName\": \"My Session 1\",\n      \"status\": \"connected\",\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n      \"updatedAt\": \"2024-01-01T12:00:00.000Z\",\n      \"qr\": null,\n      \"message\": \"Session ready\"\n    }\n  ],\n  \"pagination\": {\n    \"total\": 1,\n    \"limit\": 20,\n    \"offset\": 0,\n    \"hasMore\": false\n  },\n  \"subscription\": {\n    \"packageName\": \"WhatsApp Starter\",\n    \"maxSessions\": 1,\n    \"currentSessions\": 1,\n    \"canCreateMoreSessions\": false,\n    \"endDate\": \"2025-11-30T00:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create New Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionName\": \"My New WhatsApp Session\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/customer/whatsapp/sessions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "whatsapp", "sessions"]
+            },
+            "description": "Create a new WhatsApp session with subscription and limit validation"
+          },
+          "response": [
+            {
+              "name": "Session Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionName\": \"Test Session\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/sessions",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "sessions"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cm4new123def\",\n    \"sessionId\": \"customer-123-new-session\",\n    \"sessionName\": \"Test Session\",\n    \"status\": \"disconnected\",\n    \"createdAt\": \"2024-01-01T13:00:00.000Z\",\n    \"updatedAt\": \"2024-01-01T13:00:00.000Z\"\n  },\n  \"message\": \"WhatsApp session created successfully\"\n}"
+            },
+            {
+              "name": "Session Limit Reached",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionName\": \"Another Session\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/sessions",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "sessions"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Session limit reached. Your package \\\"WhatsApp Starter\\\" allows maximum 1 sessions. You currently have 1 sessions.\",\n  \"details\": {\n    \"packageName\": \"WhatsApp Starter\",\n    \"maxSessions\": 1,\n    \"currentSessions\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Specific Session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customer/whatsapp/sessions/{{session_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "whatsapp", "sessions", "{{session_id}}"]
+            },
+            "description": "Get details of a specific WhatsApp session"
+          },
+          "response": [
+            {
+              "name": "Session Details",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/sessions/customer-123-a1b2c3d4e5",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "sessions", "customer-123-a1b2c3d4e5"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cm4abc123def\",\n    \"sessionId\": \"customer-123-a1b2c3d4e5\",\n    \"sessionName\": \"My Session\",\n    \"status\": \"connected\",\n    \"qr\": null,\n    \"message\": \"Session ready\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n    \"updatedAt\": \"2024-01-01T12:00:00.000Z\",\n    \"aiConfig\": null,\n    \"isNotification\": false\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionName\": \"Updated Session Name\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/customer/whatsapp/sessions/{{session_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "whatsapp", "sessions", "{{session_id}}"]
+            },
+            "description": "Update session name or activate/deactivate session"
+          },
+          "response": [
+            {
+              "name": "Session Updated",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionName\": \"Updated Session\",\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/sessions/customer-123-a1b2c3d4e5",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "sessions", "customer-123-a1b2c3d4e5"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cm4abc123def\",\n    \"sessionId\": \"customer-123-a1b2c3d4e5\",\n    \"sessionName\": \"Updated Session\",\n    \"status\": \"connected\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n    \"updatedAt\": \"2024-01-01T14:00:00.000Z\"\n  },\n  \"message\": \"Session updated successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get WhatsApp API Key",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customer/whatsapp/apikey",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "whatsapp", "apikey"]
+            },
+            "description": "Get global API key for WhatsApp service (works for all user sessions)"
+          },
+          "response": [
+            {
+              "name": "API Key Retrieved",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/apikey",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "apikey"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"apiKey\": \"gf_abc123def456ghi789jkl012\",\n    \"name\": \"WhatsApp Service API Key\",\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n  },\n  \"message\": \"API key retrieved successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Generate New WhatsApp API Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My WhatsApp API Key\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/customer/whatsapp/apikey",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "whatsapp", "apikey"]
+            },
+            "description": "Generate new global API key for WhatsApp service (deactivates old key)"
+          },
+          "response": [
+            {
+              "name": "New API Key Generated",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"New WhatsApp Key\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/apikey",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "apikey"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"apiKey\": \"gf_xyz789new456key123abc\",\n    \"name\": \"New WhatsApp Key\",\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-01T10:00:00.000Z\"\n  },\n  \"message\": \"New API key generated successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Session QR Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customer/whatsapp/sessions/{{session_id}}/qr",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "whatsapp", "sessions", "{{session_id}}", "qr"]
+            },
+            "description": "Get QR code for WhatsApp connection"
+          },
+          "response": [
+            {
+              "name": "QR Code Retrieved",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/sessions/customer-123-a1b2c3d4e5/qr",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "sessions", "customer-123-a1b2c3d4e5", "qr"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"sessionId\": \"customer-123-a1b2c3d4e5\",\n    \"sessionName\": \"My Session\",\n    \"status\": \"disconnected\",\n    \"qr\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAJyklEQVR4nO3d0Y3sKBQFUBLSQAokQAI...\",\n    \"message\": \"Scan this QR code with WhatsApp to connect your session\",\n    \"hasQR\": true\n  }\n}"
+            },
+            {
+              "name": "Session Connected - No QR Needed",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/sessions/customer-123-a1b2c3d4e5/qr",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "sessions", "customer-123-a1b2c3d4e5", "qr"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"sessionId\": \"customer-123-a1b2c3d4e5\",\n    \"sessionName\": \"My Session\",\n    \"status\": \"connected\",\n    \"qr\": null,\n    \"message\": \"Session is connected\",\n    \"hasQR\": false\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Session",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customer/whatsapp/sessions/{{session_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "whatsapp", "sessions", "{{session_id}}"]
+            },
+            "description": "Delete a WhatsApp session"
+          },
+          "response": [
+            {
+              "name": "Session Deleted",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/sessions/customer-123-a1b2c3d4e5",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "sessions", "customer-123-a1b2c3d4e5"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Session deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "WhatsApp Subscription & Billing",
+      "description": "Endpoints for viewing subscription details and transaction history",
+      "item": [
+        {
+          "name": "Get WhatsApp Subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customer/whatsapp/subscription",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "whatsapp", "subscription"]
+            },
+            "description": "Get current WhatsApp subscription details including package, quotas, and expiry"
+          },
+          "response": [
+            {
+              "name": "Active Subscription",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/subscription",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "subscription"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"hasActiveSubscription\": true,\n    \"packageName\": \"WhatsApp Professional\",\n    \"maxSessions\": 5,\n    \"currentSessions\": 2,\n    \"canCreateMoreSessions\": true,\n    \"startDate\": \"2024-01-01T00:00:00.000Z\",\n    \"endDate\": \"2025-01-01T00:00:00.000Z\",\n    \"status\": \"active\",\n    \"system\": \"new\",\n    \"subscriptionId\": \"sub_123abc\",\n    \"packageId\": \"pkg_456def\",\n    \"price\": 99000\n  },\n  \"message\": \"WhatsApp subscription details retrieved successfully\"\n}"
+            },
+            {
+              "name": "No Active Subscription",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/subscription",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "subscription"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"hasActiveSubscription\": false,\n    \"packageName\": null,\n    \"maxSessions\": 0,\n    \"currentSessions\": 0,\n    \"canCreateMoreSessions\": false,\n    \"startDate\": null,\n    \"endDate\": null,\n    \"status\": \"inactive\"\n  },\n  \"message\": \"No active WhatsApp subscription found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get WhatsApp Transaction History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customer/whatsapp/transactions?limit=10&offset=0&status=paid",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "whatsapp", "transactions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of results per page"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset for pagination"
+                },
+                {
+                  "key": "status",
+                  "value": "paid",
+                  "description": "Filter by transaction status (paid, pending, failed)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get WhatsApp transaction history (successful transactions by default)"
+          },
+          "response": [
+            {
+              "name": "Transaction History",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/transactions",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "transactions"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"transactions\": [\n      {\n        \"id\": \"trans_123\",\n        \"transactionId\": \"tx_abc456\",\n        \"packageName\": \"WhatsApp Professional\",\n        \"packageDescription\": \"Professional WhatsApp package with 5 sessions\",\n        \"maxSessions\": 5,\n        \"amount\": 99000,\n        \"status\": \"paid\",\n        \"paymentMethod\": \"bank_transfer\",\n        \"purchaseDate\": \"2024-01-01T10:00:00.000Z\",\n        \"startDate\": \"2024-01-01T00:00:00.000Z\",\n        \"endDate\": \"2025-01-01T00:00:00.000Z\",\n        \"duration\": \"yearly\",\n        \"system\": \"new\",\n        \"subscriptionStatus\": \"success\",\n        \"isActive\": true\n      }\n    ],\n    \"activeSubscription\": {\n      \"id\": \"trans_123\",\n      \"packageName\": \"WhatsApp Professional\",\n      \"isActive\": true\n    },\n    \"pagination\": {\n      \"total\": 1,\n      \"limit\": 10,\n      \"offset\": 0,\n      \"hasMore\": false\n    },\n    \"summary\": {\n      \"totalTransactions\": 1,\n      \"totalLegacyTransactions\": 0,\n      \"totalNewTransactions\": 1,\n      \"hasActiveSubscription\": true\n    }\n  },\n  \"message\": \"WhatsApp transaction history retrieved successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Public WhatsApp Service",
+      "description": "Public endpoints for sending WhatsApp messages (API key only). All message sending must use these endpoints.",
+      "item": [
+        {
+          "name": "Send Message via URL Parameters",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/services/whatsapp/chat/{{session_id}}/{{api_key}}/{{phone_number}}/{{message}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "services",
+                "whatsapp",
+                "chat",
+                "{{session_id}}",
+                "{{api_key}}",
+                "{{phone_number}}",
+                "{{message}}"
+              ]
+            },
+            "description": "Send WhatsApp message using URL parameters (message will be URL encoded)"
+          },
+          "response": [
+            {
+              "name": "Message Sent Successfully",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/services/whatsapp/chat/customer-123-a1b2c3d4e5/gf_abc123def456/628123456789/Hello%20World",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "services",
+                    "whatsapp",
+                    "chat",
+                    "customer-123-a1b2c3d4e5",
+                    "gf_abc123def456",
+                    "628123456789",
+                    "Hello%20World"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"sessionId\": \"customer-123-a1b2c3d4e5\",\n    \"recipient\": \"+628123456789\",\n    \"message\": \"Hello World\",\n    \"status\": \"sent\",\n    \"timestamp\": \"2024-01-01T15:30:00.000Z\"\n  },\n  \"message\": \"Message sent successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Test Service via URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/services/whatsapp/chat/{{session_id}}/{{api_key}}/{{phone_number}}/test",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "services",
+                "whatsapp",
+                "chat",
+                "{{session_id}}",
+                "{{api_key}}",
+                "{{phone_number}}",
+                "test"
+              ]
+            },
+            "description": "Test WhatsApp service connection and status"
+          },
+          "response": [
+            {
+              "name": "Service Ready",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/services/whatsapp/chat/customer-123-a1b2c3d4e5/gf_abc123def456/628123456789/test",
+                  "host": ["{{base_url}}"],
+                  "path": [
+                    "api",
+                    "services",
+                    "whatsapp",
+                    "chat",
+                    "customer-123-a1b2c3d4e5",
+                    "gf_abc123def456",
+                    "628123456789",
+                    "test"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"sessionId\": \"customer-123-a1b2c3d4e5\",\n    \"sessionName\": \"My Session\",\n    \"status\": \"connected\",\n    \"ready\": true\n  },\n  \"message\": \"WhatsApp service is ready\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send Text Message via Body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"628123456789\",\n  \"contentType\": \"text\",\n  \"content\": \"Hello World from JSON API!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/services/whatsapp/chat/{{session_id}}/{{api_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "services", "whatsapp", "chat", "{{session_id}}", "{{api_key}}"]
+            },
+            "description": "Send text message via request body"
+          },
+          "response": [
+            {
+              "name": "Text Message Sent",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"628123456789\",\n  \"contentType\": \"text\",\n  \"content\": \"Hello World!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/services/whatsapp/chat/customer-123-a1b2c3d4e5/gf_abc123def456",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "services", "whatsapp", "chat", "customer-123-a1b2c3d4e5", "gf_abc123def456"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"sessionId\": \"customer-123-a1b2c3d4e5\",\n    \"recipient\": \"+628123456789\",\n    \"contentType\": \"text\",\n    \"content\": \"Hello World!\",\n    \"fileName\": null,\n    \"caption\": null,\n    \"timestamp\": \"2024-01-01T15:45:00.000Z\"\n  },\n  \"message\": \"text message sent successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send Image Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"628123456789\",\n  \"contentType\": \"image\",\n  \"content\": \"base64_image_data_here\",\n  \"caption\": \"Check out this image!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/services/whatsapp/chat/{{session_id}}/{{api_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "services", "whatsapp", "chat", "{{session_id}}", "{{api_key}}"]
+            },
+            "description": "Send image message with caption"
+          },
+          "response": [
+            {
+              "name": "Image Message Sent",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"628123456789\",\n  \"contentType\": \"image\",\n  \"content\": \"base64_image_data\",\n  \"caption\": \"Check this out!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/services/whatsapp/chat/customer-123-a1b2c3d4e5/gf_abc123def456",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "services", "whatsapp", "chat", "customer-123-a1b2c3d4e5", "gf_abc123def456"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"sessionId\": \"customer-123-a1b2c3d4e5\",\n    \"recipient\": \"+628123456789\",\n    \"contentType\": \"image\",\n    \"content\": \"base64_image_data\",\n    \"fileName\": null,\n    \"caption\": \"Check this out!\",\n    \"timestamp\": \"2024-01-01T16:00:00.000Z\"\n  },\n  \"message\": \"image message sent successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send Document Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"628123456789\",\n  \"contentType\": \"document\",\n  \"content\": \"base64_document_data_here\",\n  \"fileName\": \"report.pdf\",\n  \"caption\": \"Monthly report document\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/services/whatsapp/chat/{{session_id}}/{{api_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "services", "whatsapp", "chat", "{{session_id}}", "{{api_key}}"]
+            },
+            "description": "Send document message with filename and caption"
+          },
+          "response": [
+            {
+              "name": "Document Message Sent",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"628123456789\",\n  \"contentType\": \"document\",\n  \"content\": \"base64_document_data\",\n  \"fileName\": \"report.pdf\",\n  \"caption\": \"Monthly report\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/services/whatsapp/chat/customer-123-a1b2c3d4e5/gf_abc123def456",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "services", "whatsapp", "chat", "customer-123-a1b2c3d4e5", "gf_abc123def456"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"sessionId\": \"customer-123-a1b2c3d4e5\",\n    \"recipient\": \"+628123456789\",\n    \"contentType\": \"document\",\n    \"content\": \"base64_document_data\",\n    \"fileName\": \"report.pdf\",\n    \"caption\": \"Monthly report\",\n    \"timestamp\": \"2024-01-01T16:15:00.000Z\"\n  },\n  \"message\": \"document message sent successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Check Service Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/services/whatsapp/chat/{{session_id}}/{{api_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "services", "whatsapp", "chat", "{{session_id}}", "{{api_key}}"]
+            },
+            "description": "Check WhatsApp service status and message statistics"
+          },
+          "response": [
+            {
+              "name": "Service Status",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/services/whatsapp/chat/customer-123-a1b2c3d4e5/gf_abc123def456",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "services", "whatsapp", "chat", "customer-123-a1b2c3d4e5", "gf_abc123def456"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"sessionId\": \"customer-123-a1b2c3d4e5\",\n    \"sessionName\": \"My Session\",\n    \"status\": \"connected\",\n    \"ready\": true,\n    \"stats\": {\n      \"totalMessagesSent\": 150,\n      \"totalMessagesFailed\": 5,\n      \"lastMessageSentAt\": \"2024-01-01T16:15:00.000Z\",\n      \"lastMessageFailedAt\": \"2024-01-01T10:30:00.000Z\"\n    }\n  },\n  \"message\": \"WhatsApp service status retrieved\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Error Examples",
+      "description": "Common error scenarios for testing",
+      "item": [
+        {
+          "name": "Unauthorized - No Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/customer/whatsapp/sessions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "whatsapp", "sessions"]
+            },
+            "description": "Test authentication error"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/sessions",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "sessions"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Authentication required\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Invalid Phone Number",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"invalid-phone\",\n  \"contentType\": \"text\",\n  \"content\": \"Hello World\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/services/whatsapp/chat/{{session_id}}/{{api_key}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "services", "whatsapp", "chat", "{{session_id}}", "{{api_key}}"]
+            },
+            "description": "Test validation error for invalid phone number"
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"invalid\",\n  \"contentType\": \"text\",\n  \"content\": \"Hello\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/services/whatsapp/chat/customer-123-a1b2c3d4e5/gf_abc123def456",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "services", "whatsapp", "chat", "customer-123-a1b2c3d4e5", "gf_abc123def456"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Invalid phone number format\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Session Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customer/whatsapp/sessions/nonexistent-session",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "whatsapp", "sessions", "nonexistent-session"]
+            },
+            "description": "Test 404 error for non-existent session"
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer gf_example_api_key"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/customer/whatsapp/sessions/nonexistent",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "customer", "whatsapp", "sessions", "nonexistent"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Session not found\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8090",
+      "type": "string",
+      "description": "Base URL for the API (change to your server URL)"
+    },
+    {
+      "key": "api_key",
+      "value": "gf_your_api_key_here",
+      "type": "string",
+      "description": "Your API key (must start with gf_)"
+    },
+    {
+      "key": "session_id",
+      "value": "customer-123-a1b2c3d4e5",
+      "type": "string",
+      "description": "WhatsApp session ID (short format)"
+    },
+    {
+      "key": "phone_number",
+      "value": "628123456789",
+      "type": "string",
+      "description": "Target phone number (Indonesian format)"
+    },
+    {
+      "key": "message",
+      "value": "Hello%20World%20from%20API",
+      "type": "string",
+      "description": "URL encoded message"
+    }
+  ]
+}
+

@@ -1,0 +1,61 @@
+{
+  "id": "genfity-api-environment",
+  "name": "Genfity API Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "production_url",
+      "value": "https://api.genfity.com/api",
+      "type": "default",
+      "enabled": false
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "transaction_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "payment_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "sample_package_id",
+      "value": "clh123abc456def789",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "sample_addon_id",
+      "value": "clh456def789ghi012",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "sample_whatsapp_package_id",
+      "value": "clh789ghi012jkl345",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "free_package_id",
+      "value": "clh000free000000000",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

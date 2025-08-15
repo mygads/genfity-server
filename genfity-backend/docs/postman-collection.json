@@ -1,0 +1,872 @@
+{
+  "info": {
+    "name": "Genfity API - Comprehensive Checkout & Transaction System",
+    "description": "Complete transaction and payment processing system for Genfity platform. Supports unified checkout for products, addons, and WhatsApp services with multi-currency support and various payment methods.",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "transaction_id",
+      "value": "",
+      "type": "string"
+    },    {
+      "key": "payment_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "voucher_code",
+      "value": "SAVE20",
+      "type": "string"
+    },
+    {
+      "key": "package_id",
+      "value": "clh123abc",
+      "type": "string"
+    },    {
+      "key": "addon_id",
+      "value": "clh456def",
+      "type": "string"
+    },
+    {
+      "key": "voucher_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🛒 Checkout System",
+      "item": [
+        {
+          "name": "Unified Checkout - Mixed Products",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packages\": [\n    {\n      \"id\": \"{{package_id}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"addons\": [\n    {\n      \"id\": \"{{addon_id}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"whatsapp\": [\n    {\n      \"packageId\": \"clh789ghi\",\n      \"duration\": \"month\"\n    }\n  ],\n  \"currency\": \"idr\",\n  \"referenceLink\": \"https://example.com/ref\",\n  \"voucherCode\": \"{{voucher_code}}\",\n  \"notes\": \"Additional notes or comments for this transaction\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/checkout",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "checkout"]
+            },
+            "description": "Create a comprehensive transaction that includes products (packages), addons, and WhatsApp services in a single request."
+          },
+          "response": [
+            {
+              "name": "Successful Mixed Checkout",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"packages\": [\n    {\n      \"id\": \"clh123abc\",\n      \"quantity\": 1\n    }\n  ],\n  \"whatsapp\": [\n    {\n      \"packageId\": \"clh789ghi\",\n      \"duration\": \"month\"\n    }\n  ],\n  \"currency\": \"idr\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/customer/checkout",
+                  "host": ["{{base_url}}"],
+                  "path": ["customer", "checkout"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"transaction\": {\n      \"id\": \"clh987xyz\",\n      \"amount\": 150000,\n      \"currency\": \"idr\",\n      \"status\": \"pending\",\n      \"type\": \"mixed_checkout\",\n      \"transactionDate\": \"2025-06-01T10:00:00Z\",\n      \"isFree\": false\n    },\n    \"payment\": {\n      \"id\": \"clh988abc\",\n      \"amount\": 150000,\n      \"method\": \"pending\",\n      \"status\": \"pending\",\n      \"paymentDate\": null\n    },\n    \"items\": [\n      {\n        \"type\": \"package\",\n        \"item\": {\n          \"id\": \"clh123abc\",\n          \"name_en\": \"Premium Package\",\n          \"name_id\": \"Paket Premium\",\n          \"price_idr\": 100000,\n          \"price_usd\": 7.0\n        },\n        \"quantity\": 1,\n        \"unitPrice\": 100000,\n        \"totalPrice\": 100000\n      },\n      {\n        \"type\": \"whatsapp\",\n        \"item\": {\n          \"id\": \"clh789ghi\",\n          \"name\": \"WhatsApp Basic\",\n          \"priceMonth\": 50000,\n          \"priceYear\": 500000\n        },\n        \"duration\": \"month\",\n        \"unitPrice\": 50000,\n        \"totalPrice\": 50000\n      }\n    ],\n    \"summary\": {\n      \"totalItems\": 2,\n      \"totalAmount\": 150000,\n      \"currency\": \"idr\",\n      \"needsPayment\": true\n    }\n  },\n  \"message\": \"Transaction created successfully. Please proceed with payment.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Checkout - Products Only",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packages\": [\n    {\n      \"id\": \"clh123abc\",\n      \"quantity\": 1\n    }\n  ],\n  \"addons\": [\n    {\n      \"id\": \"clh456def\",\n      \"quantity\": 1\n    }\n  ],\n  \"currency\": \"usd\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/checkout",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "checkout"]
+            },
+            "description": "Create a transaction with products and addons only."
+          }
+        },
+        {
+          "name": "Checkout - WhatsApp Services Only",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"whatsapp\": [\n    {\n      \"packageId\": \"clh789ghi\",\n      \"duration\": \"year\"\n    }\n  ],\n  \"currency\": \"idr\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/checkout",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "checkout"]
+            },
+            "description": "Create a transaction with WhatsApp services only."
+          }
+        },
+        {
+          "name": "Checkout - Free Products (Auto-completed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packages\": [\n    {\n      \"id\": \"clh000free\",\n      \"quantity\": 1\n    }\n  ],\n  \"currency\": \"idr\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/checkout",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "checkout"]
+            },            "description": "Create a transaction with free products that will be auto-completed without payment."
+          }
+        },
+        {
+          "name": "Checkout - Backward Compatible (Items Format)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{package_id}}\",\n      \"type\": \"package\",\n      \"quantity\": 1\n    },\n    {\n      \"productId\": \"{{addon_id}}\",\n      \"type\": \"addon\",\n      \"quantity\": 2\n    }\n  ],\n  \"currency\": \"idr\",\n  \"voucherCode\": \"{{voucher_code}}\",\n  \"notes\": \"Using backward compatible items format\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/checkout",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "checkout"]
+            },
+            "description": "Demonstrates backward compatibility using the legacy 'items' array format which gets automatically converted to the new detailed format internally."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🎫 Voucher System",
+      "item": [
+        {
+          "name": "Check Voucher Validity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{voucher_code}}\",\n  \"orderAmount\": 150000,\n  \"items\": [\n    {\n      \"type\": \"product\",\n      \"id\": \"{{package_id}}\",\n      \"amount\": 100000\n    },\n    {\n      \"type\": \"addon\",\n      \"id\": \"{{addon_id}}\",\n      \"amount\": 50000\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/check-voucher",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "check-voucher"]
+            },
+            "description": "Check if a voucher is valid and calculate discount amount. Authentication required via JWT token. No userId needed in request body."
+          },
+          "response": [
+            {
+              "name": "Valid Voucher Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"SAVE20\",\n  \"orderAmount\": 150000,\n  \"items\": [\n    {\n      \"type\": \"product\",\n      \"id\": \"clh123abc\",\n      \"amount\": 100000\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/customer/check-voucher",
+                  "host": ["{{base_url}}"],
+                  "path": ["customer", "check-voucher"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"isValid\": true,\n  \"data\": {\n    \"voucher\": {\n      \"id\": \"voucher_123\",\n      \"code\": \"SAVE20\",\n      \"name\": \"20% Discount\",\n      \"description\": \"Save 20% on your order\",\n      \"type\": \"percentage\",\n      \"discountType\": \"total\",\n      \"value\": 20,\n      \"minAmount\": 100000,\n      \"maxDiscount\": null\n    },\n    \"calculation\": {\n      \"originalAmount\": 150000,\n      \"applicableAmount\": 150000,\n      \"discountAmount\": 30000,\n      \"finalAmount\": 120000,\n      \"savings\": 30000\n    }\n  }\n}"
+            },
+            {
+              "name": "Invalid Voucher Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"INVALID123\",\n  \"orderAmount\": 150000\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/customer/check-voucher",
+                  "host": ["{{base_url}}"],
+                  "path": ["customer", "check-voucher"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"isValid\": false,\n  \"error\": \"Invalid voucher code\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Checkout with Voucher",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packages\": [\n    {\n      \"id\": \"{{package_id}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"addons\": [\n    {\n      \"id\": \"{{addon_id}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"currency\": \"idr\",\n  \"voucherCode\": \"{{voucher_code}}\",\n  \"notes\": \"Customer requested special delivery instructions\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/checkout",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "checkout"]
+            },
+            "description": "Create a checkout transaction with voucher discount applied. Authentication required via JWT token."          }
+        },
+        {
+          "name": "Admin - List Vouchers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/vouchers?page=1&limit=10&search=&isActive=true",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "vouchers"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "isActive",
+                  "value": "true"
+                },
+                {
+                  "key": "type",
+                  "value": "percentage",
+                  "disabled": true
+                },
+                {
+                  "key": "discountType",
+                  "value": "total",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get list of vouchers with pagination and filtering. Admin access required."
+          }
+        },
+        {
+          "name": "Admin - Create Voucher",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"NEWVOUCHER20\",\n  \"name\": \"20% Off New Customer\",\n  \"description\": \"Special discount for new customers\",\n  \"type\": \"percentage\",\n  \"discountType\": \"total\",\n  \"value\": 20,\n  \"minAmount\": 50000,\n  \"maxDiscount\": 100000,\n  \"maxUses\": 100,\n  \"isActive\": true,\n  \"startDate\": \"2025-06-01T00:00:00.000Z\",\n  \"endDate\": \"2025-12-31T23:59:59.999Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/vouchers",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "vouchers"]
+            },
+            "description": "Create a new voucher. Admin access required."
+          }
+        },
+        {
+          "name": "Admin - Get Voucher Usage",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/vouchers/{{voucher_id}}/usage",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "vouchers", "{{voucher_id}}", "usage"]
+            },            "description": "Get voucher usage history and statistics. Admin access required."
+          }
+        },
+        {
+          "name": "Admin - Get Voucher Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/vouchers/{{voucher_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "vouchers", "{{voucher_id}}"]
+            },
+            "description": "Get detailed information about a specific voucher including usage history. Admin access required."
+          }
+        },
+        {
+          "name": "Admin - Update Voucher",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Voucher Name\",\n  \"description\": \"Updated description\",\n  \"isActive\": false,\n  \"maxUses\": 50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/vouchers/{{voucher_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "vouchers", "{{voucher_id}}"]
+            },
+            "description": "Update voucher details. Admin access required."
+          }        },
+        {
+          "name": "Admin - Delete Voucher",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/vouchers/{{voucher_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "vouchers", "{{voucher_id}}"]
+            },
+            "description": "Delete a voucher (only if never used). Admin access required."
+          }
+        },
+        {
+          "name": "Admin - Update Transaction",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"paid\",\n  \"notes\": \"Updated transaction notes - payment confirmed via bank transfer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/transactions/{{transaction_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["transactions", "{{transaction_id}}"]
+            },
+            "description": "Update transaction status and notes. Admin access required."
+          }
+        }
+      ]
+    },
+    {
+      "name": "💳 Payment Processing",
+      "item": [
+        {
+          "name": "Process Payment - Midtrans",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transaction_id}}\",\n  \"method\": \"midtrans\",\n  \"amount\": 150000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payments/process",
+              "host": ["{{base_url}}"],
+              "path": ["payments", "process"]
+            },
+            "description": "Process payment using Midtrans gateway."
+          },
+          "response": [
+            {
+              "name": "Midtrans Payment Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"transactionId\": \"clh987xyz\",\n  \"method\": \"midtrans\",\n  \"amount\": 150000\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/payments/process",
+                  "host": ["{{base_url}}"],
+                  "path": ["payments", "process"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"transaction_id\": \"clh987xyz\",\n    \"payment_id\": \"clh988abc\",\n    \"method\": \"midtrans\",\n    \"amount\": 150000,\n    \"status\": \"pending\",\n    \"transaction_type\": \"mixed_checkout\",\n    \"payment_url\": \"https://app.sandbox.midtrans.com/snap/v1/transactions/clh987xyz\",\n    \"token\": \"mt_1717200000000\",\n    \"redirect_url\": \"https://app.sandbox.midtrans.com/snap/v4/redirection/clh987xyz\",\n    \"instructions\": \"Complete payment via Midtrans payment page\"\n  },\n  \"message\": \"Payment processing initiated\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Process Payment - Test Mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transaction_id}}\",\n  \"method\": \"test\",\n  \"amount\": 150000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payments/process",
+              "host": ["{{base_url}}"],
+              "path": ["payments", "process"]
+            },
+            "description": "Process payment using test mode (auto-verified in 3 seconds)."
+          }
+        },
+        {
+          "name": "Process Payment - Manual Bank Transfer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transaction_id}}\",\n  \"method\": \"manual\",\n  \"amount\": 150000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payments/process",
+              "host": ["{{base_url}}"],
+              "path": ["payments", "process"]
+            },
+            "description": "Process payment using manual bank transfer."
+          }
+        },
+        {
+          "name": "Process Payment - Xendit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transaction_id}}\",\n  \"method\": \"xendit\",\n  \"amount\": 150000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payments/process",
+              "host": ["{{base_url}}"],
+              "path": ["payments", "process"]
+            },
+            "description": "Process payment using Xendit gateway."
+          }
+        },
+        {
+          "name": "Check Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/payments/status/{{payment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "payments", "status", "{{payment_id}}"]
+            },
+            "description": "Check the current status of a payment."
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Transaction Management",
+      "item": [
+        {
+          "name": "Get User Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/transactions?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "transactions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve all transactions for the authenticated user with pagination."
+          }
+        },
+        {
+          "name": "Get Transaction Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/transactions/{{transaction_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "transactions", "{{transaction_id}}"]
+            },
+            "description": "Get detailed information about a specific transaction."
+          }
+        },
+        {
+          "name": "Get Transaction by Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/transactions?status=paid&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "transactions"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "paid"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get transactions filtered by status."
+          }
+        }
+      ]
+    },
+    {
+      "name": "📦 Product Catalog",
+      "item": [
+        {
+          "name": "Get Available Packages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/catalog/packages?currency=idr",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "catalog", "packages"],
+              "query": [
+                {
+                  "key": "currency",
+                  "value": "idr"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "category123",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve all available packages for purchase."
+          }
+        },
+        {
+          "name": "Get Available Addons",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/catalog/addons?currency=usd",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "catalog", "addons"],
+              "query": [
+                {
+                  "key": "currency",
+                  "value": "usd"
+                }
+              ]
+            },
+            "description": "Retrieve all available addons for purchase."
+          }
+        },
+        {
+          "name": "Get Package Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/catalog/categories",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "catalog", "categories"]
+            },
+            "description": "Get all available package categories."
+          }
+        }
+      ]
+    },
+    {
+      "name": "📱 WhatsApp Services",
+      "item": [
+        {
+          "name": "Get WhatsApp Packages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/whatsapp/packages",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "whatsapp", "packages"]
+            },
+            "description": "Retrieve all available WhatsApp service packages."
+          }
+        },
+        {
+          "name": "Get WhatsApp Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/whatsapp/transactions?limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "whatsapp", "transactions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "paid",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get user's WhatsApp service transactions."
+          }
+        },
+        {
+          "name": "Get WhatsApp Services (Active)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/whatsapp/services",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "whatsapp", "services"]
+            },
+            "description": "Get user's active WhatsApp services."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔧 Webhook & Testing",
+      "item": [
+        {
+          "name": "Payment Webhook Simulation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{transaction_id}}\",\n  \"payment_id\": \"{{payment_id}}\",\n  \"status\": \"paid\",\n  \"payment_method\": \"midtrans\",\n  \"gateway_signature\": \"test_signature_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payments/webhook",
+              "host": ["{{base_url}}"],
+              "path": ["payments", "webhook"]
+            },
+            "description": "Simulate payment gateway webhook for testing payment completion."
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-extract transaction_id from checkout response",
+          "if (pm.response && pm.response.json && pm.response.json().success) {",
+          "    const data = pm.response.json().data;",
+          "    if (data.transaction && data.transaction.id) {",
+          "        pm.environment.set('transaction_id', data.transaction.id);",
+          "    }",
+          "    if (data.payment && data.payment.id) {",
+          "        pm.environment.set('payment_id', data.payment.id);",
+          "    }",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Common test cases",
+          "pm.test('Response status is successful', function () {",
+          "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+          "});",
+          "",
+          "pm.test('Response has success field', function () {",
+          "    const jsonData = pm.response.json();",
+          "    pm.expect(jsonData).to.have.property('success');",
+          "});",
+          "",
+          "// Auto-extract IDs for next requests",
+          "if (pm.response.json().success && pm.response.json().data) {",
+          "    const data = pm.response.json().data;",
+          "    ",
+          "    if (data.transaction && data.transaction.id) {",
+          "        pm.environment.set('transaction_id', data.transaction.id);",
+          "        console.log('Set transaction_id:', data.transaction.id);",
+          "    }",
+          "    ",
+          "    if (data.payment && data.payment.id) {",
+          "        pm.environment.set('payment_id', data.payment.id);",
+          "        console.log('Set payment_id:', data.payment.id);",
+          "    }",
+          "    ",
+          "    if (data.transaction_id) {",
+          "        pm.environment.set('transaction_id', data.transaction_id);",
+          "        console.log('Set transaction_id:', data.transaction_id);",
+          "    }",
+          "    ",          "    if (data.payment_id) {",
+          "        pm.environment.set('payment_id', data.payment_id);",
+          "        console.log('Set payment_id:', data.payment_id);",
+          "    }",
+          "    ",
+          "    if (data.voucher && data.voucher.id) {",
+          "        pm.environment.set('voucher_id', data.voucher.id);",
+          "        console.log('Set voucher_id:', data.voucher.id);",
+          "    }",
+          "    ",
+          "    if (data.id && pm.request.url.toString().includes('/vouchers')) {",
+          "        pm.environment.set('voucher_id', data.id);",
+          "        console.log('Set voucher_id:', data.id);",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ]
+}

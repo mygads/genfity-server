@@ -1,0 +1,98 @@
+{
+  "info": {
+    "name": "Customer Dashboard API",
+    "description": "API untuk mendapatkan summary data customer dashboard",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Get Customer Dashboard",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/customer/dashboard",
+          "host": ["{{base_url}}"],
+          "path": ["api", "customer", "dashboard"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/customer/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "dashboard"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"success\": true,\n  \"data\": {\n    \"transactionSummary\": {\n      \"success\": {\n        \"total\": 15,\n        \"product\": 10,\n        \"whatsapp\": 5\n      },\n      \"pending\": {\n        \"awaitingPayment\": 3,\n        \"awaitingVerification\": 2\n      },\n      \"failed\": 1,\n      \"totalOverall\": 21\n    },\n    \"productDeliveryLog\": [\n      {\n        \"transactionId\": \"clx123abc\",\n        \"packageName\": \"VPS Basic\",\n        \"addonName\": \"Additional Storage\",\n        \"isDelivered\": true,\n        \"amount\": \"150000.00\",\n        \"currency\": \"idr\",\n        \"createdAt\": \"2025-06-01T10:30:00.000Z\"\n      },\n      {\n        \"transactionId\": \"clx456def\",\n        \"packageName\": \"VPS Pro\",\n        \"addonName\": null,\n        \"isDelivered\": false,\n        \"amount\": \"300000.00\",\n        \"currency\": \"idr\",\n        \"createdAt\": \"2025-05-30T15:45:00.000Z\"\n      }\n    ],\n    \"whatsappSummary\": {\n      \"expiration\": \"2025-07-15T23:59:59.000Z\",\n      \"sessionQuota\": {\n        \"total\": 5,\n        \"used\": 3,\n        \"remaining\": 2\n      },\n      \"activeSessions\": 2,\n      \"messageStats\": {\n        \"sent\": 1250,\n        \"failed\": 15\n      }\n    },\n    \"recentHistory\": {\n      \"products\": [\n        {\n          \"id\": \"clx123abc\",\n          \"packageName\": \"VPS Basic\",\n          \"addonName\": \"Additional Storage\",\n          \"amount\": \"150000.00\",\n          \"currency\": \"idr\",\n          \"createdAt\": \"2025-06-01T10:30:00.000Z\"\n        },\n        {\n          \"id\": \"clx789ghi\",\n          \"packageName\": \"Shared Hosting\",\n          \"addonName\": null,\n          \"amount\": \"50000.00\",\n          \"currency\": \"idr\",\n          \"createdAt\": \"2025-05-25T09:15:00.000Z\"\n        }\n      ],\n      \"whatsapp\": [\n        {\n          \"id\": \"clx456def\",\n          \"packageName\": \"WhatsApp Pro\",\n          \"duration\": \"monthly\",\n          \"amount\": \"99000.00\",\n          \"currency\": \"idr\",\n          \"createdAt\": \"2025-05-28T14:20:00.000Z\"\n        },\n        {\n          \"id\": \"clx101112\",\n          \"packageName\": \"WhatsApp Basic\",\n          \"duration\": \"yearly\",\n          \"amount\": \"950000.00\",\n          \"currency\": \"idr\",\n          \"createdAt\": \"2025-04-15T11:30:00.000Z\"\n        }\n      ]\n    },\n    \"lastUpdated\": \"2025-06-08T12:00:00.000Z\"\n  }\n}"
+        },
+        {
+          "name": "Authentication Required",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/customer/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["api", "customer", "dashboard"]
+            }
+          },
+          "status": "Unauthorized",
+          "code": 401,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"success\": false,\n  \"error\": \"Authentication required\"\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8090",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "your_jwt_token_here",
+      "type": "string"
+    }
+  ]
+}

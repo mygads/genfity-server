@@ -1,0 +1,291 @@
+{
+  "Metadata": {
+    "title": "Hello world!",
+    "description": "This is a simple example of a metadata page."
+  },
+  "Header": {
+    "explore": "Jelajahi",
+    "services": "Layanan",
+    "pricing": "Harga",
+    "portfolio": "Portofolio",
+    "howToOrder": "Cara Pesan",
+    "contact": "Hubungi Kami",    "signUp": "Daftar",
+    "signIn": "Masuk",
+    "cart": "Keranjang",
+    "aboutUs": "Tentang Kami",
+    "faq": "FAQ",
+    "blog": "Blog (Segera Hadir)",
+    "career": "Karir (Segera Hadir)",
+    "mainProducts": "Produk Utama",
+    "whatsappServices": "Layanan WhatsApp",
+    "others": "Lainnya",
+    "customWebsite": "Pembuatan Custom Website",
+    "customWebsiteDesc": "Website sesuai kebutuhan dan bisnis Anda.",
+    "webApp": "Pembuatan Web App",
+    "webAppDesc": "Aplikasi web modern untuk kebutuhan bisnis digital.",
+    "companySystem": "Sistem Perusahaan",
+    "companySystemDesc": "Sistem manajemen dan otomatisasi untuk perusahaan.",
+    "graphicDesign": "Desain Grafis",
+    "graphicDesignDesc": "Desain visual profesional untuk branding dan marketing.",
+    "whatsappAPI": "WhatsApp API",
+    "whatsappAPIDesc": "Integrasi WhatsApp Business API untuk komunikasi bisnis yang lebih efektif.",
+    "whatsappChatbot": "WhatsApp Chatbot AI",
+    "whatsappChatbotDesc": "Bot WhatsApp dengan AI untuk melayani pelanggan 24/7 secara otomatis.",
+    "seoSpecialist": "SEO Specialist",
+    "seoSpecialistDesc": "Optimasi website agar mudah ditemukan di Google.",
+    "socialMedia": "Social Media Management",
+    "socialMediaDesc": "Kelola dan tingkatkan performa media sosial Anda.",
+    "googleBusiness": "Google Bisnis",
+    "googleBusinessDesc": "Optimasi Google Bisnismu agar mudah ditemukan.",
+    "companyProfile": "Company Profile Design",
+    "companyProfileDesc": "Profil perusahaan yang menarik dan informatif.",
+    "corporateBranding": "Corporate Branding",
+    "corporateBrandingDesc": "Bangun identitas merek perusahaan Anda.",      "techSupport": "Tech Support",
+    "techSupportDesc": "Bantuan teknis untuk kelancaran bisnis Anda."
+  },
+  "HowToOrder": {
+    "title": "Cara Pesan",
+    "subtitle": "Panduan lengkap untuk melakukan pemesanan",
+    "description": "Ikuti proses pemesanan komprehensif kami untuk memulai proyek Anda dengan Genfity.",
+    "orderingProcess": {
+      "title": "Proses Pemesanan",
+      "subtitle": "8 langkah mudah untuk menyelesaikan pesanan Anda",
+      "steps": {
+        "addToCart": {
+          "title": "Tambah ke Keranjang",
+          "description": "Jelajahi layanan kami dan tambahkan produk yang diinginkan ke keranjang. Anda dapat memilih beberapa layanan jika diperlukan."
+        },
+        "fillForm": {
+          "title": "Isi Formulir",
+          "description": "Lengkapi formulir pemesanan dengan detail proyek, kebutuhan, dan informasi kontak Anda."
+        },
+        "voucher": {
+          "title": "Gunakan Voucher",
+          "description": "Masukkan kode voucher jika Anda memilikinya untuk mendapatkan diskon pada pesanan Anda."
+        },
+        "verifyOrder": {
+          "title": "Verifikasi Pesanan",
+          "description": "Tinjau detail pesanan, layanan yang dipilih, dan total biaya sebelum melanjutkan."
+        },
+        "checkout": {
+          "title": "Checkout",
+          "description": "Konfirmasi pesanan Anda dan lanjutkan ke gateway pembayaran."
+        },
+        "payment": {
+          "title": "Gateway Pembayaran",
+          "description": "Pilih metode pembayaran yang diinginkan dan masukkan detail pembayaran dengan aman."
+        },
+        "pay": {
+          "title": "Selesaikan Pembayaran",
+          "description": "Finalisasi pembayaran Anda untuk memulai proses pesanan."
+        },
+        "checkStatus": {
+          "title": "Cek Status Pesanan",
+          "description": "Pantau progress pesanan Anda melalui sistem tracking kami."
+        }
+      }
+    },
+    "mainWorkflow": {
+      "title": "Alur Kerja Produk Utama",
+      "subtitle": "Bagaimana kami memproses pesanan produk utama Anda",
+      "steps": {
+        "orderReceived": {
+          "title": "Pesanan Diterima",
+          "description": "Pesanan Anda dikonfirmasi dan ditambahkan ke antrian pemrosesan kami."
+        },
+        "whatsappContact": {
+          "title": "Kontak WhatsApp",
+          "description": "Tim kami akan menghubungi Anda melalui WhatsApp untuk diskusi dan klarifikasi proyek."
+        },
+        "workExecution": {
+          "title": "Eksekusi Pekerjaan",
+          "description": "Tim ahli kami mulai mengerjakan proyek Anda sesuai dengan spesifikasi."
+        },
+        "delivery": {
+          "title": "Pengiriman Proyek",
+          "description": "Proyek lengkap dikirim dengan dokumentasi dan dukungan."
+        }
+      }
+    },
+    "revisionProcess": {
+      "title": "Proses Revisi",
+      "subtitle": "Bagaimana kami menangani revisi proyek",
+      "steps": {
+        "meetings": {
+          "title": "Pertemuan Klien",
+          "description": "Jadwalkan pertemuan untuk membahas kebutuhan revisi dan feedback."
+        },
+        "revisionRequests": {
+          "title": "Permintaan Revisi",
+          "description": "Kirimkan permintaan revisi detail melalui platform kami."
+        },
+        "processing": {
+          "title": "Pemrosesan Revisi",
+          "description": "Tim kami mengimplementasikan perubahan yang diminta dan menyampaikan hasil yang diperbarui."
+        }
+      }
+    },
+    "whatsappApiWorkflow": {
+      "title": "Alur Kerja Layanan WhatsApp API",
+      "subtitle": "Proses aktivasi layanan otomatis",
+      "steps": {
+        "automaticActivation": {
+          "title": "Aktivasi Otomatis",
+          "description": "Layanan WhatsApp API Anda secara otomatis diaktifkan setelah pembayaran berhasil."
+        },
+        "dashboardAccess": {
+          "title": "Akses Dashboard",
+          "description": "Dapatkan akses instan ke dashboard WhatsApp API Anda untuk mulai mengelola komunikasi bisnis."
+        }
+      }
+    },      
+    "needHelp": {
+      "title": "Butuh Bantuan?",
+      "description": "Jika Anda memiliki pertanyaan tentang proses pemesanan, jangan ragu untuk menghubungi tim dukungan kami.",
+      "contactButton": "Hubungi Dukungan"
+    }
+  },
+  "Auth": {
+    "signIn": {
+      "title": "Masuk",
+      "subtitle": "Masuk ke akun Anda",
+      "description": "Masuk untuk mengakses dashboard dan mengelola akun Anda",
+      "sessionExpired": "Sesi Berakhir",
+      "sessionExpiredMessage": "Sesi Anda telah berakhir. Silakan masuk lagi untuk melanjutkan.",
+      "accessPageMessage": "Silakan masuk untuk mengakses halaman ini.",
+      "loginModes": {
+        "password": "Kata Sandi",
+        "sso": "Masuk Cepat"
+      },
+      "form": {
+        "emailOrPhone": "Email atau Nomor Telepon",
+        "emailOrPhonePlaceholder": "Masukkan email atau nomor telepon Anda",
+        "password": "Kata Sandi",
+        "passwordPlaceholder": "Masukkan Kata Sandi Anda",
+        "ssoIdentifier": "Email atau Nomor WhatsApp",
+        "ssoIdentifierPlaceholder": "Masukkan email atau nomor WhatsApp Anda",
+        "forgotPassword": "Lupa Kata Sandi?",
+        "signInButton": "Masuk",
+        "sendCodeButton": "Kirim Kode",
+        "rememberMe": "Ingat saya"
+      },
+      "otp": {
+        "title": "Masukkan Kode Verifikasi",
+        "description": "Kami telah mengirim kode verifikasi ke",
+        "enterCode": "Masukkan kode 6 digit",
+        "resendCode": "Kirim Ulang Kode",
+        "resendIn": "Kirim ulang dalam",
+        "seconds": "detik",
+        "back": "Kembali",
+        "verify": "Verifikasi"
+      },
+      "google": {
+        "signInWith": "Masuk dengan Google"
+      },
+      "errors": {
+        "invalidCredentials": "Kredensial tidak valid. Silakan coba lagi.",
+        "unknownError": "Terjadi kesalahan yang tidak diketahui saat masuk.",
+        "unexpectedError": "Terjadi kesalahan yang tidak terduga. Silakan coba lagi.",
+        "ssoFailed": "Gagal mengirim kode verifikasi. Silakan coba lagi.",
+        "ssoUnknownError": "Terjadi kesalahan yang tidak diketahui saat mengirim kode verifikasi.",
+        "verifyFailed": "Kode verifikasi tidak valid. Silakan coba lagi.",
+        "verifyUnknownError": "Terjadi kesalahan yang tidak diketahui saat verifikasi."
+      },
+      "links": {
+        "noAccount": "Belum punya akun?",
+        "signUp": "Daftar"
+      }
+    },
+    "signUp": {
+      "title": "Daftar",
+      "subtitle": "Buat akun Anda",
+      "description": "Bergabunglah dengan kami dan mulai perjalanan Anda bersama Genfity",
+      "form": {
+        "name": "Nama Lengkap",
+        "namePlaceholder": "Masukkan nama lengkap Anda",
+        "email": "Alamat Email",
+        "emailPlaceholder": "Masukkan alamat email Anda",
+        "phone": "Nomor Telepon",
+        "phonePlaceholder": "Masukkan nomor telepon Anda",
+        "password": "Kata Sandi",
+        "passwordPlaceholder": "Masukkan kata sandi Anda",
+        "signUpButton": "Daftar",
+        "creating": "Membuat akun..."
+      },
+      "verification": {
+        "title": "Verifikasi Nomor Telepon Anda",
+        "description": "Kami telah mengirim kode verifikasi ke",
+        "enterCode": "Masukkan kode 4 digit",
+        "resendCode": "Kirim Ulang Kode",
+        "resendIn": "Kirim ulang dalam",
+        "seconds": "detik",
+        "back": "Kembali ke Daftar",
+        "verify": "Verifikasi & Selesaikan Pendaftaran"
+      },
+      "errors": {
+        "signupFailed": "Gagal mendaftar. Silakan coba lagi.",
+        "unexpectedError": "Terjadi kesalahan yang tidak terduga. Silakan coba lagi.",
+        "invalidOtp": "OTP tidak valid. Silakan coba lagi.",
+        "resendFailed": "Gagal mengirim ulang kode. Silakan coba lagi."
+      },
+      "links": {
+        "hasAccount": "Sudah punya akun?",
+        "signIn": "Masuk"
+      }
+    },
+    "forgotPassword": {
+      "title": "Lupa Kata Sandi",
+      "subtitle": "Reset kata sandi Anda",
+      "description": "Masukkan email atau nomor telepon Anda untuk menerima kode reset",
+      "steps": {
+        "request": {
+          "title": "Reset Kata Sandi",
+          "description": "Masukkan email atau nomor telepon Anda dan kami akan mengirimkan kode reset",
+          "form": {
+            "identifier": "Email atau Nomor Telepon",
+            "identifierPlaceholder": "Masukkan email atau nomor telepon Anda",
+            "sendCode": "Kirim Kode Reset"
+          }
+        },
+        "verify": {
+          "title": "Masukkan Kode Reset",
+          "description": "Kami telah mengirim kode reset ke",
+          "form": {
+            "enterCode": "Masukkan kode 4 digit",
+            "newPassword": "Kata Sandi Baru",
+            "newPasswordPlaceholder": "Masukkan kata sandi baru Anda",
+            "confirmPassword": "Konfirmasi Kata Sandi",
+            "confirmPasswordPlaceholder": "Konfirmasi kata sandi baru Anda",
+            "resetPassword": "Reset Kata Sandi"
+          },
+          "resendCode": "Kirim Ulang Kode",
+          "resendIn": "Kirim ulang dalam",
+          "seconds": "detik"
+        },
+        "success": {
+          "title": "Kata Sandi Berhasil Direset",
+          "description": "Kata sandi Anda telah berhasil direset. Anda sekarang dapat masuk dengan kata sandi baru Anda.",
+          "signIn": "Masuk Sekarang"
+        }
+      },
+      "errors": {
+        "sendFailed": "Gagal mengirim kode reset. Silakan coba lagi.",
+        "unexpectedError": "Terjadi kesalahan yang tidak terduga. Silakan coba lagi.",
+        "passwordMismatch": "Kata sandi tidak cocok",
+        "resetFailed": "Gagal mereset kata sandi. Silakan coba lagi.",
+        "resendFailed": "Gagal mengirim ulang kode. Silakan coba lagi."
+      },      "links": {
+        "backToSignIn": "Kembali ke Masuk",
+        "rememberPassword": "Ingat kata sandi Anda?",
+        "signIn": "Masuk"
+      }
+    },
+    "common": {
+      "back": "Kembali",
+      "loading": "Memuat...",
+      "or": "atau",
+      "showPassword": "Tampilkan kata sandi",
+      "hidePassword": "Sembunyikan kata sandi"
+    }
+  }
+}

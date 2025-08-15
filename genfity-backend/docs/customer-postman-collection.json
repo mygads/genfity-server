@@ -1,0 +1,613 @@
+{
+  "info": {
+    "name": "Genfity Customer API",
+    "description": "Customer-facing API endpoints for Genfity platform. Includes authentication, checkout, payment, and service management for customers only.",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "transaction_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "payment_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "package_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "addon_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Customer Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data.access_token) {",
+                  "        pm.collectionVariables.set('access_token', response.data.access_token);",
+                  "        console.log('Access token saved:', response.data.access_token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signin",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "signin"]
+            }
+          }
+        },
+        {
+          "name": "Customer Register",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"confirmPassword\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signup",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "signup"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "💳 Payment Methods",
+      "item": [
+        {
+          "name": "Get Available Payment Methods - IDR",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/payment-methods?currency=idr",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "payment-methods"],
+              "query": [
+                {
+                  "key": "currency",
+                  "value": "idr",
+                  "description": "Currency for payment methods"
+                }
+              ]
+            },
+            "description": "Get all available payment methods for IDR currency with fees"
+          }
+        },
+        {
+          "name": "Get Available Payment Methods - USD",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/payment-methods?currency=usd",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "payment-methods"],
+              "query": [
+                {
+                  "key": "currency",
+                  "value": "usd",
+                  "description": "Currency for payment methods"
+                }
+              ]
+            },
+            "description": "Get all available payment methods for USD currency with fees"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🛒 Checkout & Products",
+      "item": [
+        {
+          "name": "Get Products/Packages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/products/packages",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "products", "packages"]
+            },
+            "description": "Get available packages for purchase"
+          }
+        },
+        {
+          "name": "Get Addons",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/products/addons",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "products", "addons"]
+            },
+            "description": "Get available addons for purchase"
+          }
+        },
+        {
+          "name": "Unified Checkout - Products Only",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data.transactionId) {",
+                  "        pm.collectionVariables.set('transaction_id', response.data.transactionId);",
+                  "        console.log('Transaction ID saved:', response.data.transactionId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packages\": [\n    {\n      \"id\": \"{{package_id}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"currency\": \"idr\",\n  \"notes\": \"Customer order from API\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/checkout",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "checkout"]
+            },
+            "description": "Create transaction with product checkout. Response includes available payment methods and fees."
+          }
+        },
+        {
+          "name": "Unified Checkout - Mixed Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data.transactionId) {",
+                  "        pm.collectionVariables.set('transaction_id', response.data.transactionId);",
+                  "        console.log('Transaction ID saved:', response.data.transactionId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packages\": [\n    {\n      \"id\": \"{{package_id}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"addons\": [\n    {\n      \"id\": \"{{addon_id}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"whatsapp\": [\n    {\n      \"packageId\": \"whatsapp-package-id\",\n      \"duration\": \"month\"\n    }\n  ],\n  \"currency\": \"idr\",\n  \"voucherCode\": \"DISCOUNT20\",\n  \"notes\": \"Mixed checkout with discount\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/checkout",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "checkout"]
+            },
+            "description": "Create transaction with mixed products (packages, addons, WhatsApp services) with voucher discount."
+          }
+        },
+        {
+          "name": "Check Voucher Validity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"DISCOUNT20\",\n  \"orderAmount\": 100000,\n  \"items\": [\n    {\n      \"type\": \"product\",\n      \"id\": \"{{package_id}}\",\n      \"amount\": 100000\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/check-voucher",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "check-voucher"]
+            },
+            "description": "Validate voucher code before checkout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "💰 Payment Processing",
+      "item": [
+        {
+          "name": "Create Payment - Manual Bank Transfer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data.payment.id) {",
+                  "        pm.collectionVariables.set('payment_id', response.data.payment.id);",
+                  "        console.log('Payment ID saved:', response.data.payment.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transaction_id}}\",\n  \"paymentMethod\": \"manual_bank_transfer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/payment/create",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "payment", "create"]
+            },
+            "description": "Create payment for manual bank transfer. Response includes bank details and instructions."
+          }
+        },
+        {
+          "name": "Create Payment - QRIS",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transaction_id}}\",\n  \"paymentMethod\": \"qris\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/payment/create",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "payment", "create"]
+            },
+            "description": "Create payment for QRIS. Response includes QR code and instructions."
+          }
+        },
+        {
+          "name": "Create Payment - E-Wallet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transaction_id}}\",\n  \"paymentMethod\": \"gopay\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/payment/create",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "payment", "create"]
+            },
+            "description": "Create payment for e-wallet (GoPay). Response includes app redirect instructions."
+          }
+        },
+        {
+          "name": "Create Payment - Credit Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transaction_id}}\",\n  \"paymentMethod\": \"credit_card\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/payment/create",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "payment", "create"]
+            },
+            "description": "Create payment for credit card. Response includes payment gateway URL."
+          }
+        },
+        {
+          "name": "Get Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/payments/status/{{payment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "payments", "status", "{{payment_id}}"]
+            },
+            "description": "Check current payment status and gateway information"
+          }
+        },
+        {
+          "name": "Get My Payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/payments?page=1&limit=10&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "payments"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "all",
+                  "description": "pending, paid, failed, or all"
+                }
+              ]
+            },
+            "description": "Get customer's payment history with pagination"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Transaction Management",
+      "item": [
+        {
+          "name": "Get My Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/transactions?page=1&limit=10&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "transactions"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "all",
+                  "description": "pending, paid, failed, or all"
+                }
+              ]
+            },
+            "description": "Get customer's transaction history with filtering"
+          }
+        },
+        {
+          "name": "Get Transaction Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/transactions/{{transaction_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "transactions", "{{transaction_id}}"]
+            },
+            "description": "Get detailed information about a specific transaction"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📱 WhatsApp Services",
+      "item": [
+        {
+          "name": "Get WhatsApp Packages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/whatsapp/packages",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "whatsapp", "packages"]
+            },
+            "description": "Get available WhatsApp API packages"
+          }
+        },
+        {
+          "name": "Get My WhatsApp Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/whatsapp/services",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "whatsapp", "services"]
+            },
+            "description": "Get customer's active WhatsApp services"
+          }
+        }
+      ]
+    },
+    {
+      "name": "💸 Service Fees",
+      "item": [
+        {
+          "name": "Preview Service Fee Calculation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100000,\n  \"currency\": \"idr\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/service-fees/preview",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "service-fees", "preview"]
+            },
+            "description": "Calculate service fees for all available payment methods for given amount"
+          }
+        },
+        {
+          "name": "Get Active Service Fees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/service-fees?currency=idr",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "service-fees"],
+              "query": [
+                {
+                  "key": "currency",
+                  "value": "idr",
+                  "description": "Currency filter (idr or usd)"
+                }
+              ]
+            },
+            "description": "Get all active service fees for specified currency"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 Account Management",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/profile",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "profile"]
+            },
+            "description": "Get customer profile information"
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe Updated\",\n  \"phone\": \"+62123456789\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customer/profile",
+              "host": ["{{base_url}}"],
+              "path": ["customer", "profile"]
+            },
+            "description": "Update customer profile information"
+          }
+        }
+      ]
+    }
+  ]
+}

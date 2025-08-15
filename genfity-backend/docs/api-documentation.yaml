@@ -1,0 +1,857 @@
+openapi: 3.0.3
+info:
+  title: Genfity API - Comprehensive Checkout & Transaction System
+  description: |
+    Complete transaction and payment processing system for Genfity platform.
+    Supports unified checkout for products, addons, and WhatsApp services with
+    multi-currency support and various payment methods.
+  version: 1.0.0
+  contact:
+    name: Genfity Dev Team
+    email: dev@genfity.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://api.genfity.com/api
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /customer/checkout:
+    post:
+      summary: Create Unified Checkout Transaction
+      description: |
+        Create a comprehensive transaction that can include products (packages), 
+        addons, and WhatsApp services in a single request. Supports multi-currency 
+        pricing and automatic free product activation.
+      tags:
+        - Checkout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+            examples:              mixed_checkout:
+                summary: Mixed Checkout (Packages + Addons + WhatsApp)
+                value:
+                  packages:
+                    - id: "clh123abc"
+                      quantity: 1
+                  addons:
+                    - id: "clh456def"
+                      quantity: 2
+                  whatsapp:
+                    - packageId: "clh789ghi"
+                      duration: "month"
+                  currency: "idr"
+                  referenceLink: "https://example.com/ref"
+                  voucherCode: "SAVE20"
+                  notes: "Mixed checkout with voucher"
+              product_only:
+                summary: Packages and Addons Only
+                value:
+                  packages:
+                    - id: "clh123abc"
+                      quantity: 1
+                  addons:
+                    - id: "clh456def"
+                      quantity: 1
+                  currency: "usd"
+              backward_compatible:
+                summary: Backward Compatible (Items Format)
+                value:
+                  items:
+                    - productId: "clh123abc"
+                      type: "package"
+                      quantity: 1
+                    - productId: "clh456def"
+                      type: "addon"
+                      quantity: 2
+                  currency: "idr"
+                  voucherCode: "LEGACY10"
+              whatsapp_only:
+                summary: WhatsApp Services Only
+                value:
+                  whatsapp:
+                    - packageId: "clh789ghi"
+                      duration: "year"
+                  currency: "idr"
+              free_products:
+                summary: Free Products (Auto-completed)
+                value:
+                  products:
+                    - id: "clh000free"
+                      type: "package"
+                      quantity: 1
+                  currency: "idr"
+      responses:
+        '200':
+          description: Transaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutResponse'
+              examples:
+                paid_transaction:
+                  summary: Paid Transaction
+                  value:
+                    success: true
+                    data:
+                      transaction:
+                        id: "clh987xyz"
+                        amount: 150000
+                        currency: "idr"
+                        status: "pending"
+                        type: "mixed_checkout"
+                        transactionDate: "2024-01-15T10:00:00Z"
+                        isFree: false
+                      payment:
+                        id: "clh988abc"
+                        amount: 150000
+                        method: "pending"
+                        status: "pending"
+                        paymentDate: null
+                      items:
+                        - type: "package"
+                          item:
+                            id: "clh123abc"
+                            name_en: "Premium Package"
+                            name_id: "Paket Premium"
+                            price_idr: 100000
+                            price_usd: 7.0
+                          quantity: 1
+                          unitPrice: 100000
+                          totalPrice: 100000
+                        - type: "whatsapp"
+                          item:
+                            id: "clh789ghi"
+                            name: "WhatsApp Basic"
+                            priceMonth: 50000
+                            priceYear: 500000
+                          duration: "month"
+                          unitPrice: 50000
+                          totalPrice: 50000
+                      summary:
+                        totalItems: 2
+                        totalAmount: 150000
+                        currency: "idr"
+                        needsPayment: true
+                    message: "Transaction created successfully. Please proceed with payment."
+                free_transaction:
+                  summary: Free Transaction (Auto-completed)
+                  value:
+                    success: true
+                    data:
+                      transaction:
+                        id: "clh987xyz"
+                        amount: 0
+                        currency: "idr"
+                        status: "paid"
+                        type: "mixed_checkout"
+                        transactionDate: "2024-01-15T10:00:00Z"
+                        isFree: true
+                      payment:
+                        id: "clh988abc"
+                        amount: 0
+                        method: "free"
+                        status: "paid"
+                        paymentDate: "2024-01-15T10:00:00Z"
+                      items:
+                        - type: "package"
+                          item:
+                            id: "clh000free"
+                            name_en: "Free Starter Package"
+                            price_idr: 0
+                            price_usd: 0
+                          quantity: 1
+                          unitPrice: 0
+                          totalPrice: 0
+                      summary:
+                        totalItems: 1
+                        totalAmount: 0
+                        currency: "idr"
+                        needsPayment: false
+                    message: "Free transaction completed successfully! All services have been activated."
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /payments/process:
+    post:
+      summary: Process Payment for Transaction
+      description: |
+        Process payment for any transaction type including mixed checkout.
+        Supports multiple payment gateways and includes test mode for development.
+      tags:
+        - Payments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+            examples:
+              midtrans_payment:
+                summary: Midtrans Payment
+                value:
+                  transactionId: "clh987xyz"
+                  method: "midtrans"
+                  amount: 150000
+              test_payment:
+                summary: Test Payment (Auto-verified)
+                value:
+                  transactionId: "clh987xyz"
+                  method: "test"
+                  amount: 150000
+              manual_payment:
+                summary: Manual Bank Transfer
+                value:
+                  transactionId: "clh987xyz"
+                  method: "manual"
+                  amount: 150000
+      responses:
+        '200':
+          description: Payment processing initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+              examples:
+                midtrans_response:
+                  summary: Midtrans Payment Response
+                  value:
+                    success: true
+                    data:
+                      transaction_id: "clh987xyz"
+                      payment_id: "clh988abc"
+                      method: "midtrans"
+                      amount: 150000
+                      status: "pending"
+                      transaction_type: "mixed_checkout"
+                      item_name: "Mixed Checkout Transaction"
+                      payment_url: "https://app.sandbox.midtrans.com/snap/v1/transactions/clh987xyz"
+                      token: "mt_1642234567890"
+                      redirect_url: "https://app.sandbox.midtrans.com/snap/v4/redirection/clh987xyz"
+                      instructions: "Complete payment via Midtrans payment page"
+                    message: "Payment processing initiated"
+                test_response:
+                  summary: Test Payment Response
+                  value:
+                    success: true
+                    data:
+                      transaction_id: "clh987xyz"
+                      payment_id: "clh988abc"
+                      method: "test"
+                      amount: 150000
+                      status: "pending"
+                      transaction_type: "mixed_checkout"
+                      instructions: "Test payment - will be automatically verified in 3 seconds"
+                      test_mode: true
+                    message: "Payment initiated. Will be automatically verified in 3 seconds."
+                manual_response:
+                  summary: Manual Payment Response
+                  value:
+                    success: true
+                    data:
+                      transaction_id: "clh987xyz"
+                      payment_id: "clh988abc"
+                      method: "manual"
+                      amount: 150000
+                      status: "pending"
+                      bank_account:
+                        bank_name: "Bank Central Asia"
+                        account_number: "1234567890"
+                        account_name: "PT Genfity Indonesia"
+                      payment_code: "PAY_H987XYZ"
+                      instructions: "Transfer exact amount to the bank account with payment code in description"
+                    message: "Payment processing initiated"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /customer/transactions:
+    get:
+      summary: Get User Transactions
+      description: Retrieve all transactions for the authenticated user with pagination
+      tags:
+        - Transactions
+      parameters:
+        - name: status
+          in: query
+          description: Filter transactions by status
+          schema:
+            type: string
+            enum: [pending, paid, failed, expired, cancelled]
+        - name: limit
+          in: query
+          description: Number of transactions to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: offset
+          in: query
+          description: Number of transactions to skip
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Transactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionsListResponse'
+
+  /customer/transactions/{transactionId}:
+    get:
+      summary: Get Transaction Details
+      description: Get detailed information about a specific transaction
+      tags:
+        - Transactions
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          description: ID of the transaction
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transaction details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /customer/payments/status/{paymentId}:
+    get:
+      summary: Check Payment Status
+      description: Check the current status of a payment
+      tags:
+        - Payments
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          description: ID of the payment
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStatusResponse'
+
+  /customer/catalog/packages:
+    get:
+      summary: Get Available Packages
+      description: Retrieve all available packages for purchase
+      tags:
+        - Catalog
+      parameters:
+        - name: categoryId
+          in: query
+          description: Filter packages by category
+          schema:
+            type: string
+        - name: currency
+          in: query
+          description: Preferred currency for pricing
+          schema:
+            type: string
+            enum: [idr, usd]
+            default: idr
+      responses:
+        '200':
+          description: Packages retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageListResponse'
+
+  /customer/catalog/addons:
+    get:
+      summary: Get Available Addons
+      description: Retrieve all available addons for purchase
+      tags:
+        - Catalog
+      parameters:
+        - name: categoryId
+          in: query
+          description: Filter addons by category
+          schema:
+            type: string
+        - name: currency
+          in: query
+          description: Preferred currency for pricing
+          schema:
+            type: string
+            enum: [idr, usd]
+            default: idr
+      responses:
+        '200':
+          description: Addons retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddonListResponse'
+
+  /customer/whatsapp/packages:
+    get:
+      summary: Get WhatsApp Service Packages
+      description: Retrieve all available WhatsApp service packages
+      tags:
+        - WhatsApp Services
+      responses:
+        '200':
+          description: WhatsApp packages retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppPackageListResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CheckoutRequest:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Product ID (package or addon)
+              type:
+                type: string
+                enum: [package, addon]
+              quantity:
+                type: integer
+                minimum: 1
+                default: 1
+            required: [id, type]
+        addons:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Addon ID
+              quantity:
+                type: integer
+                minimum: 1
+                default: 1
+            required: [id]
+        whatsapp:
+          type: array
+          items:
+            type: object
+            properties:
+              packageId:
+                type: string
+                description: WhatsApp package ID
+              duration:
+                type: string
+                enum: [month, year]
+            required: [packageId, duration]
+        currency:
+          type: string
+          enum: [idr, usd]
+          default: idr
+        referenceLink:
+          type: string
+          format: uri
+          description: Optional reference link
+
+    CheckoutResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            transaction:
+              $ref: '#/components/schemas/Transaction'
+            payment:
+              $ref: '#/components/schemas/Payment'
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/TransactionItem'
+            summary:
+              $ref: '#/components/schemas/TransactionSummary'
+        message:
+          type: string
+
+    PaymentRequest:
+      type: object
+      properties:
+        transactionId:
+          type: string
+          description: ID of the transaction to process payment for
+        method:
+          type: string
+          enum: [midtrans, xendit, manual, test]
+          description: Payment method to use
+        amount:
+          type: number
+          minimum: 0
+          description: Payment amount
+      required: [transactionId, method, amount]
+
+    PaymentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            transaction_id:
+              type: string
+            payment_id:
+              type: string
+            method:
+              type: string
+            amount:
+              type: number
+            status:
+              type: string
+            transaction_type:
+              type: string
+            item_name:
+              type: string
+            payment_url:
+              type: string
+            token:
+              type: string
+            redirect_url:
+              type: string
+            external_id:
+              type: string
+            invoice_id:
+              type: string
+            bank_account:
+              type: object
+              properties:
+                bank_name:
+                  type: string
+                account_number:
+                  type: string
+                account_name:
+                  type: string
+            payment_code:
+              type: string
+            instructions:
+              type: string
+            test_mode:
+              type: boolean
+        message:
+          type: string
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [pending, paid, failed, expired, cancelled]
+        type:
+          type: string
+          enum: [product, whatsapp_service, mixed_checkout]
+        transactionDate:
+          type: string
+          format: date-time
+        isFree:
+          type: boolean
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        amount:
+          type: number
+        method:
+          type: string
+        status:
+          type: string
+          enum: [pending, paid, failed]
+        paymentDate:
+          type: string
+          format: date-time
+          nullable: true
+
+    TransactionItem:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [package, addon, whatsapp]
+        item:
+          oneOf:
+            - $ref: '#/components/schemas/Package'
+            - $ref: '#/components/schemas/Addon'
+            - $ref: '#/components/schemas/WhatsAppPackage'
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+        totalPrice:
+          type: number
+        duration:
+          type: string
+          enum: [month, year]
+          description: Only for WhatsApp services
+
+    TransactionSummary:
+      type: object
+      properties:
+        totalItems:
+          type: integer
+        totalAmount:
+          type: number
+        currency:
+          type: string
+        needsPayment:
+          type: boolean
+
+    Package:
+      type: object
+      properties:
+        id:
+          type: string
+        name_en:
+          type: string
+        name_id:
+          type: string
+        price_idr:
+          type: number
+        price_usd:
+          type: number
+        image:
+          type: string
+          nullable: true
+
+    Addon:
+      type: object
+      properties:
+        id:
+          type: string
+        name_en:
+          type: string
+        name_id:
+          type: string
+        price_idr:
+          type: number
+        price_usd:
+          type: number
+        image:
+          type: string
+          nullable: true
+
+    WhatsAppPackage:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        priceMonth:
+          type: number
+        priceYear:
+          type: number
+        maxSession:
+          type: integer
+
+    TransactionsListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionWithDetails'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    TransactionDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/TransactionWithDetails'
+
+    TransactionWithDetails:
+      allOf:
+        - $ref: '#/components/schemas/Transaction'
+        - type: object
+          properties:
+            payment:
+              $ref: '#/components/schemas/Payment'
+            productTransaction:
+              type: object
+              nullable: true
+            whatsappTransaction:
+              type: object
+              nullable: true
+
+    PaymentStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          allOf:
+            - $ref: '#/components/schemas/Payment'
+            - type: object
+              properties:
+                gateway_info:
+                  type: object
+                  description: Gateway-specific status information
+
+    PackageListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Package'
+
+    AddonListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Addon'
+
+    WhatsAppPackageListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WhatsAppPackage'
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+        hasMore:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Bad request - Invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Validation failed"
+
+    Unauthorized:
+      description: Unauthorized - Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Authentication required"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Resource not found"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Internal server error"
+
+tags:
+  - name: Checkout
+    description: Unified checkout system for all product types
+  - name: Payments
+    description: Payment processing and status checking
+  - name: Transactions
+    description: Transaction management and history
+  - name: Catalog
+    description: Product and service catalog
+  - name: WhatsApp Services
+    description: WhatsApp API service packages

@@ -1,0 +1,926 @@
+openapi: 3.0.3
+info:
+  title: GENFITY Customer API - Complete Documentation
+  description: |
+    Comprehensive customer API documentation for GENFITY platform.
+    
+    ## Authentication Methods
+    
+    ### 1. JWT Token Authentication (Recommended for API clients)
+    ```
+    Authorization: Bearer <your_jwt_token>
+    ```
+    
+    ### 2. Session Authentication (Web browsers)
+    Uses HTTP-only cookies automatically managed by the browser.
+    
+    ## Base URL
+    - **Production**: `https://api.genfity.com`
+    - **Development**: `http://localhost:3000`
+    
+    ## Response Format
+    All endpoints return responses in this format:
+    ```json
+    {
+      "success": true|false,
+      "message": "Human readable message",
+      "data": {...},     // Only on success
+      "error": "CODE",   // Only on error  
+      "details": "..."   // Optional error details
+    }
+    ```
+    
+    ## Error Codes
+    - `NOT_AUTHENTICATED` - User not logged in
+    - `INVALID_TOKEN` - JWT token invalid/expired
+    - `VALIDATION_ERROR` - Request validation failed
+    - `USER_NOT_FOUND` - User doesn't exist
+    - `DUPLICATE_EMAIL` - Email already registered
+    - `DUPLICATE_PHONE` - Phone already registered
+    - `WHATSAPP_SERVICE_UNAVAILABLE` - WhatsApp service down
+    - `INTERNAL_SERVER_ERROR` - Server error
+    
+  version: 3.0.0
+  contact:
+    name: GENFITY API Support
+    email: api-support@genfity.com
+    url: https://genfity.com/support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.genfity.com
+    description: Production server
+  - url: http://localhost:3000
+    description: Development server
+
+security:
+  - bearerAuth: []
+  - cookieAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+      description: Session cookie for web browsers
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique user identifier
+          example: "user_123456789"
+        name:
+          type: string
+          description: Full name
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: Email address
+          example: "john@example.com"
+        phone:
+          type: string
+          description: Normalized phone number
+          example: "628123456789"
+        emailVerified:
+          type: string
+          format: date-time
+          nullable: true
+          description: Email verification timestamp
+          example: "2025-05-27T10:30:00Z"
+        phoneVerified:
+          type: string
+          format: date-time
+          nullable: true
+          description: Phone verification timestamp
+          example: "2025-05-27T10:30:00Z"
+        role:
+          type: string
+          enum: [customer, admin]
+          description: User role
+          example: "customer"
+        isActive:
+          type: boolean
+          description: Account status
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+          example: "2025-05-27T10:30:00Z"
+
+    StandardResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Operation success status
+        message:
+          type: string
+          description: Human-readable message
+        data:
+          type: object
+          description: Response data (only on success)
+        error:
+          type: string
+          description: Error code (only on error)
+        details:
+          type: string
+          description: Additional error details (optional)
+
+    AuthTokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Login successful"
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            token:
+              type: string
+              description: JWT token for API authentication
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            expiresIn:
+              type: number
+              description: Token expiration in seconds
+              example: 86400
+
+paths:
+  # Authentication Endpoints
+  /api/auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Register new customer account
+      description: |
+        Create a new customer account with WhatsApp OTP verification.
+        
+        **Requirements:**
+        - WhatsApp number is mandatory
+        - Name is required
+        - Email is optional
+        - Password is optional (auto-generated if not provided)
+        
+        **Process:**
+        1. Account is created
+        2. OTP is sent to WhatsApp
+        3. Email verification is sent (if email provided)
+        4. User must verify OTP to activate account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - phone
+              properties:
+                name:
+                  type: string
+                  description: Full name of the customer
+                  example: "John Doe"
+                  minLength: 1
+                phone:
+                  type: string
+                  description: WhatsApp number (Indonesian format)
+                  example: "+628123456789"
+                  pattern: "^(\\+?62|0)8[1-9][0-9]{6,10}$"
+                email:
+                  type: string
+                  format: email
+                  description: Email address (optional)
+                  example: "john@example.com"
+                password:
+                  type: string
+                  minLength: 6
+                  description: Password (optional)
+                  example: "password123"
+            examples:
+              complete_signup:
+                summary: Complete signup
+                value:
+                  name: "John Doe"
+                  phone: "+628123456789"
+                  email: "john@example.com"
+                  password: "password123"
+              minimal_signup:
+                summary: Minimal signup (WhatsApp only)
+                value:
+                  name: "John Doe"
+                  phone: "+628123456789"
+      responses:
+        '201':
+          description: Account created successfully, OTP sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Pengguna berhasil dibuat. Silakan cek WhatsApp Anda untuk kode OTP."
+                  userId:
+                    type: string
+                    example: "user_123456789"
+                  nextStep:
+                    type: string
+                    enum: [VERIFY_OTP]
+                    example: "VERIFY_OTP"
+                  phoneVerificationRequired:
+                    type: boolean
+                    example: true
+                  emailVerificationRequired:
+                    type: boolean
+                    example: true
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Name is required"
+                  error:
+                    type: string
+                    enum: [NAME_REQUIRED, PHONE_REQUIRED, INVALID_PHONE_FORMAT, INVALID_EMAIL_FORMAT]
+                    example: "NAME_REQUIRED"
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "WhatsApp number already registered"
+                  error:
+                    type: string
+                    enum: [DUPLICATE_PHONE, DUPLICATE_EMAIL, DUPLICATE_PHONE_AND_EMAIL]
+                    example: "DUPLICATE_PHONE"
+        '503':
+          description: WhatsApp service unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Layanan WhatsApp sedang tidak tersedia"
+                  error:
+                    type: string
+                    example: "WHATSAPP_SERVICE_UNAVAILABLE"
+
+  /api/auth/signin:
+    post:
+      tags:
+        - Authentication
+      summary: Login customer
+      description: |
+        Login with email/phone and password. Returns JWT token for API access.
+        
+        **Login Options:**
+        - Email + Password
+        - Phone + Password
+        
+        **Response includes JWT token for subsequent API calls.**
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - identifier
+                - password
+              properties:
+                identifier:
+                  type: string
+                  description: Email or phone number
+                  example: "john@example.com"
+                password:
+                  type: string
+                  description: User password
+                  example: "password123"
+            examples:
+              email_login:
+                summary: Login with email
+                value:
+                  identifier: "john@example.com"
+                  password: "password123"
+              phone_login:
+                summary: Login with phone
+                value:
+                  identifier: "+628123456789"
+                  password: "password123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Invalid credentials"
+                  error:
+                    type: string
+                    example: "INVALID_CREDENTIALS"
+  /api/auth/verify-otp:
+    post:
+      tags:
+        - Authentication
+      summary: Universal OTP verification
+      description: |
+        Universal OTP verification endpoint supporting multiple purposes:
+        
+        **Supported Purposes:**
+        - `signup` - Verify WhatsApp OTP during registration
+        - `email-verification` - Verify email OTP for email verification  
+        - `password-reset` - Verify OTP for password reset
+        - `sso-login` - Verify OTP for secure login
+        
+        **Important Notes:**
+        - OTP is valid for 1 hour
+        - User will be automatically logged in for signup and sso-login purposes
+        - Auto-generated password provided if no password set during signup
+        
+        **Example Request:**
+        ```json
+        {
+          "identifier": "081233784490",
+          "otp": "8650", 
+          "purpose": "signup"
+        }
+        ```
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - identifier
+                - otp
+              properties:
+                identifier:
+                  type: string
+                  description: Phone number (for WhatsApp) or email address
+                  example: "081233784490"
+                otp:
+                  type: string
+                  description: 4-digit OTP code received via WhatsApp or Email
+                  example: "8650"
+                purpose:
+                  type: string
+                  enum: [signup, email-verification, password-reset, sso-login]
+                  default: signup
+                  description: Purpose of OTP verification
+                  example: "signup"
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Invalid or expired OTP"
+                  error:
+                    type: string
+                    enum: [INVALID_OTP, EXPIRED_OTP, OTP_REQUIRED]
+                    example: "INVALID_OTP"
+
+  /api/auth/session:
+    get:
+      tags:
+        - Authentication
+      summary: Get current session
+      description: |
+        Get current user session information. 
+        Works with both JWT tokens and session cookies.
+      responses:
+        '200':
+          description: Session information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Session active"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      expires:
+                        type: string
+                        format: date-time
+                        example: "2025-05-28T10:30:00Z"
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Not authenticated"
+                  error:
+                    type: string
+                    example: "NOT_AUTHENTICATED"
+
+  # Account Management Endpoints  /api/account/logout:
+    post:
+      tags:
+        - Account Management
+      summary: Logout user
+      description: |
+        Logout user and invalidate authentication.
+        
+        **Authentication Priority:**
+        1. JWT Token (via Authorization header) - Token will be blacklisted
+        2. Session Auth (fallback) - Session will be destroyed
+        
+        **No request body required** - Authentication is handled via:
+        - Authorization header: `Bearer <token>` (for JWT)
+        - Session cookies (for admin dashboard)
+        
+        **Response includes logout type and timestamp for audit purposes.**
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Logout successful. Token has been invalidated."
+                  data:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum: [JWT_LOGOUT, SESSION_LOGOUT]
+                        example: "JWT_LOGOUT"
+                      userId:
+                        type: string
+                        example: "user_123456"
+                      timestamp:
+                        type: string
+                        format: date-time
+                        example: "2025-05-27T10:30:00.000Z"
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "No authentication found. Please provide a valid token in Authorization header."
+                  error:
+                    type: string
+                    enum: [INVALID_TOKEN, NO_AUTHENTICATION]
+                    example: "NO_AUTHENTICATION"
+
+  /api/account/change-password:
+    post:
+      tags:
+        - Account Management
+      summary: Change user password
+      description: |
+        Change current user's password with validation.
+        
+        **Requirements:**
+        - Current password must be correct
+        - New password must be at least 6 characters
+        - User must be authenticated
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                  description: Current password for verification
+                  example: "oldpassword123"
+                newPassword:
+                  type: string
+                  minLength: 6
+                  description: New password
+                  example: "newpassword123"
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Password changed successfully"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "New password must be at least 6 characters"
+                  error:
+                    type: string
+                    example: "PASSWORD_TOO_SHORT"
+        '401':
+          description: Current password incorrect
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Current password is incorrect"
+                  error:
+                    type: string
+                    example: "INVALID_CURRENT_PASSWORD"
+
+  /api/account/resend-verification-email:
+    post:
+      tags:
+        - Account Management
+      summary: Resend email verification
+      description: |
+        Resend verification email to user's email address.
+        
+        **Requirements:**
+        - User must have an email address
+        - Email must not be already verified
+        - User must be authenticated
+      responses:
+        '200':
+          description: Verification email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Verification email sent successfully"
+        '400':
+          description: Email already verified or missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Email is already verified"
+                  error:
+                    type: string
+                    example: "EMAIL_ALREADY_VERIFIED"
+
+  # Password Reset Endpoints
+  /api/auth/send-password-reset-otp:
+    post:
+      tags:
+        - Password Reset
+      summary: Send password reset OTP
+      description: |
+        Send OTP for password reset via WhatsApp or email.
+        
+        **Methods:**
+        - WhatsApp: Send OTP to registered phone number
+        - Email: Send OTP to registered email address
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - identifier
+                - method
+              properties:
+                identifier:
+                  type: string
+                  description: Email or phone number
+                  example: "john@example.com"
+                method:
+                  type: string
+                  enum: [email, whatsapp]
+                  description: Method to send OTP
+                  example: "whatsapp"
+      responses:
+        '200':
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "OTP sent successfully"
+                  data:
+                    type: object
+                    properties:
+                      method:
+                        type: string
+                        example: "whatsapp"
+                      identifier:
+                        type: string
+                        example: "+628123456789"
+
+  /api/auth/verify-password-reset-otp:
+    post:
+      tags:
+        - Password Reset
+      summary: Verify password reset OTP and set new password
+      description: |
+        Verify OTP and set new password in one step.
+        
+        **Process:**
+        1. Verify the OTP received
+        2. Set new password
+        3. Invalidate all existing sessions/tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - identifier
+                - otp
+                - newPassword
+              properties:
+                identifier:
+                  type: string
+                  description: Email or phone number
+                  example: "john@example.com"
+                otp:
+                  type: string
+                  description: OTP received
+                  example: "1234"
+                newPassword:
+                  type: string
+                  minLength: 6
+                  description: New password
+                  example: "newpassword123"
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Password reset successfully"
+
+  # Email Verification
+  /api/auth/verify-email/{token}:
+    get:
+      tags:
+        - Email Verification
+      summary: Verify email address
+      description: |
+        Verify email address using token from verification email.
+        This endpoint is typically called when user clicks link in email.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: Email verification token
+          schema:
+            type: string
+            example: "abcd1234567890efgh"
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Email verified successfully"
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Invalid or expired verification token"
+                  error:
+                    type: string
+                    example: "INVALID_TOKEN"
+
+  # User Profile
+  /api/customer/profile:
+    get:
+      tags:
+        - Profile Management
+      summary: Get user profile
+      description: Get current user's profile information
+      responses:
+        '200':
+          description: Profile information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Profile retrieved successfully"
+                  data:
+                    $ref: '#/components/schemas/User'
+
+    put:
+      tags:
+        - Profile Management
+      summary: Update user profile
+      description: |
+        Update user profile information.
+        
+        **Updatable fields:**
+        - name
+        - email (requires verification if changed)
+        
+        **Non-updatable fields:**
+        - phone (contact support to change)
+        - role (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Full name
+                  example: "John Doe Updated"
+                email:
+                  type: string
+                  format: email
+                  description: Email address
+                  example: "newemail@example.com"
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Profile updated successfully"
+                  data:
+                    $ref: '#/components/schemas/User'
+
+tags:
+  - name: Authentication
+    description: User authentication endpoints
+  - name: Account Management
+    description: Account management operations
+  - name: Password Reset
+    description: Password reset functionality
+  - name: Email Verification
+    description: Email verification process
+  - name: Profile Management
+    description: User profile operations
+
+externalDocs:
+  description: Find more info at GENFITY documentation
+  url: https://docs.genfity.com

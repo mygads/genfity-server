@@ -1,0 +1,2422 @@
+openapi: 3.0.0
+info:
+  title: Genfity API - Authentication, Account, and Product Management
+  version: 1.1.0
+  description: |
+    API untuk manajemen user (sign up, sign in, session, verifikasi email/OTP, password), serta manajemen produk (kategori, subkategori, addon, paket) untuk platform Genfity. Mendukung login berbasis session/cookie (NextAuth.js) dan endpoint CRUD produk.
+
+servers:
+  - url: api.genfity.com/api
+
+components:  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for API authentication
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the user.
+        name:
+          type: string
+          nullable: true
+          description: User's name.
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: User's email address (unique).
+        phone:
+          type: string
+          nullable: true
+          description: User's phone number (unique, normalized to 62xxxx).
+        emailVerified:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the email was verified.
+        phoneVerified:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the phone number was verified.        image:
+          type: string
+          format: url
+          nullable: true
+          description: URL to the user's profile image.
+        role:
+          type: string
+          enum: [customer, admin]
+          default: customer
+          description: User's role in the system.
+        isActive:
+          type: boolean
+          default: true
+          description: Whether the user account is active or deactivated.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the user was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the user was last updated.
+
+    Session:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        expires:
+          type: string
+          format: date-time
+          description: Session expiry timestamp.
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A human-readable error message.
+        details:
+          type: string
+          nullable: true
+
+    SignUpRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address.
+        password:
+          type: string
+          format: password
+          minLength: 6
+          description: User's desired password.
+        name:
+          type: string
+          description: User's full name.
+        phone: # Optional
+          type: string
+          description: User's phone number (e.g., 081234567890 or +6281234567890).
+
+    SignUpResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        user:
+          $ref: '#/components/schemas/User' # Or a subset of user fields
+
+    SignInRequest:
+      type: object
+      required:
+        - identifier # Can be email or phone
+        - password
+      properties:
+        identifier:
+          type: string
+          description: User's email address or phone number.
+        password:
+          type: string
+          format: password
+          description: User's password.
+
+    SignInResponse: # Typically handled by NextAuth, but if direct API login:
+      type: object
+      properties:
+        message:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+        # Potentially include JWT token if not using cookie-based sessions directly from NextAuth
+        # token:
+        #   type: string
+
+    VerifyOtpRequest:
+      type: object
+      required:
+        - identifier # email or phone
+        - otp
+      properties:
+        identifier:
+          type: string
+          description: User's email or phone number used for OTP request.
+        otp:
+          type: string
+          description: The OTP received by the user.
+
+    VerifyOtpResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+        # Potentially include JWT token for auto-login
+
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - identifier # email or phone
+        - method # 'email' or 'whatsapp'
+      properties:
+        identifier:
+          type: string
+          description: User's email or phone number to send OTP to.
+        method:
+          type: string
+          enum: [email, whatsapp]
+          description: Method to send OTP.
+
+    ForgotPasswordResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - identifier # email or phone
+        - otp
+        - newPassword
+      properties:
+        identifier:
+          type: string
+          description: User's email or phone number.
+        otp:
+          type: string
+          description: The OTP received by the user.
+        newPassword:
+          type: string
+          format: password
+          minLength: 6
+          description: The new password for the user.
+
+    ResetPasswordResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+          format: password
+          description: User's current password.
+        newPassword:
+          type: string
+          format: password
+          minLength: 6
+          description: User's new desired password.
+
+    ChangePasswordResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    ResendVerificationEmailResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    FeatureResponse: # Renamed from Feature and added id
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the feature.
+        name:
+          type: string
+          description: Name of the feature.
+        included:
+          type: boolean
+          description: Whether the feature is included.
+      required:
+        - id
+        - name
+        - included
+
+    FeatureInput:
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+          description: Unique identifier for the feature (used for updates, optional for new features within a package update).
+        name:
+          type: string
+          description: Name of the feature.
+        included:
+          type: boolean
+          description: Whether the feature is included.
+      required:
+        - name
+        - included
+
+    CategoryBrief:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the category.
+        name:
+          type: string
+          description: Name of the category.
+        icon:
+          type: string
+          nullable: true
+          description: Icon for the category (e.g., SVG content or a class name).
+      required:
+        - id
+        - name
+
+    SubcategoryBrief:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the subcategory.
+        name:
+          type: string
+          description: Name of the subcategory.
+        categoryId:
+          type: string
+          description: ID of the parent category.
+      required:
+        - id
+        - name
+        - categoryId
+
+    AddonBrief:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: float
+        image:
+          type: string
+          format: url
+          nullable: true
+        categoryId:
+          type: string
+      required:
+        - id
+        - name
+        - price
+        - categoryId
+
+    PackageBrief:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: float
+        image:
+          type: string
+          format: url
+          nullable: true
+        categoryId:
+          type: string
+        subcategoryId:
+          type: string
+        popular:
+          type: boolean
+          nullable: true
+        bgColor:
+          type: string
+          nullable: true
+      required:
+        - id
+        - name
+        - price
+        - categoryId
+        - subcategoryId
+
+    Category: # Updated to be CategoryFullResponse
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+          nullable: true
+        subcategories:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubcategoryBrief'
+        addons:
+          type: array
+          items:
+            $ref: '#/components/schemas/AddonBrief'
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/PackageBrief'
+      required:
+        - id
+        - name
+
+    CreateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the category.
+        icon:
+          type: string
+          nullable: true
+          description: Icon for the category.
+      required:
+        - name
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: New name for the category.
+        icon:
+          type: string
+          nullable: true
+          description: New icon for the category.
+
+    Subcategory: # Updated to be SubcategoryFullResponse
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        categoryId:
+          type: string
+        category:
+          $ref: '#/components/schemas/CategoryBrief'
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/PackageBrief'
+      required:
+        - id
+        - name
+        - categoryId
+
+    CreateSubcategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the subcategory.
+        categoryId:
+          type: string
+          description: ID of the parent category.
+      required:
+        - name
+        - categoryId
+
+    UpdateSubcategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: New name for the subcategory.
+        categoryId:
+          type: string
+          description: New parent category ID.
+
+    Addon: # Updated to be AddonFullResponse
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: float
+        image:
+          type: string
+          format: url
+          nullable: true
+        categoryId:
+          type: string
+        category:
+          $ref: '#/components/schemas/CategoryBrief'
+      required:
+        - id
+        - name
+        - price
+        - categoryId
+
+    CreateAddonRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: float
+        image:
+          type: string
+          format: url
+          nullable: true
+        categoryId:
+          type: string
+      required:
+        - name
+        - price
+        - categoryId
+
+    UpdateAddonRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: float
+        image:
+          type: string
+          format: url
+          nullable: true
+        categoryId:
+          type: string
+
+    Package: # Updated to be PackageFullResponse
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: float
+        image:
+          type: string
+          format: url
+          nullable: true
+        categoryId:
+          type: string
+        subcategoryId:
+          type: string
+        popular:
+          type: boolean
+          nullable: true
+        bgColor:
+          type: string
+          nullable: true
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureResponse'
+        category:
+          $ref: '#/components/schemas/CategoryBrief'
+        subcategory:
+          $ref: '#/components/schemas/SubcategoryBrief'
+      required:
+        - id
+        - name
+        - price
+        - categoryId
+        - subcategoryId
+
+    CreatePackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: float
+        image:
+          type: string
+          format: url
+          nullable: true
+        categoryId:
+          type: string
+        subcategoryId:
+          type: string
+        popular:
+          type: boolean
+          default: false
+        bgColor:
+          type: string
+          nullable: true
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureInput' # id should not be provided for new features
+          description: List of features for the package.
+      required:
+        - name
+        - price
+        - categoryId
+        - subcategoryId
+        - features
+
+    UpdatePackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: float
+        image:
+          type: string
+          format: url
+          nullable: true
+        categoryId:
+          type: string
+        subcategoryId:
+          type: string
+        popular:
+          type: boolean
+        bgColor:
+          type: string
+          nullable: true # Allow explicitly setting to null
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureInput' # id can be used to update existing, or omitted for new
+          description: List of features to update/replace for the package.
+
+security:
+  - cookieAuth: []
+
+paths:  /api/auth/signup:
+    post:
+      summary: Register a new user with WhatsApp OTP verification
+      tags: [Authentication]
+      description: |
+        Register a new customer account with comprehensive validation and OTP verification:
+        - **WhatsApp number is mandatory** - All users must provide a valid WhatsApp number
+        - **Email is optional** - Users can provide email for additional verification
+        - **Password is optional** - If not provided, temporary password will be generated after OTP verification
+        - **OTP verification required** - All registrations require WhatsApp OTP verification
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - phone
+              properties:
+                name:
+                  type: string
+                  description: Full name of the user (required)
+                  example: "John Doe"
+                  minLength: 1
+                phone:
+                  type: string
+                  description: WhatsApp number (mandatory) - supports Indonesian format
+                  example: "+628123456789"
+                  pattern: "^(\\+?62|0)8[1-9][0-9]{6,10}$"
+                email:
+                  type: string
+                  format: email
+                  description: Email address (optional)
+                  example: "john@example.com"
+                password:
+                  type: string
+                  minLength: 6
+                  description: Password (optional - auto-generated if not provided)
+                  example: "password123"
+            examples:
+              complete_signup:
+                summary: Complete signup with all fields
+                value:
+                  name: "John Doe"
+                  phone: "+628123456789"
+                  email: "john@example.com"
+                  password: "password123"
+              whatsapp_with_password:
+                summary: WhatsApp + Password only
+                value:
+                  name: "John Doe"
+                  phone: "+628123456789"
+                  password: "password123"
+              whatsapp_only:
+                summary: WhatsApp only (password auto-generated)
+                value:
+                  name: "John Doe"
+                  phone: "+628123456789"
+      responses:
+        '201':
+          description: Account created successfully, OTP sent via WhatsApp
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Pengguna berhasil dibuat. Silakan cek WhatsApp Anda untuk kode OTP."
+                  userId:
+                    type: string
+                    example: "user_123456"
+                  nextStep:
+                    type: string
+                    enum: [VERIFY_OTP]
+                    example: "VERIFY_OTP"
+                  phoneVerificationRequired:
+                    type: boolean
+                    example: true
+                  emailVerificationRequired:
+                    type: boolean
+                    example: true
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Name is required"
+                  error:
+                    type: string
+                    enum: [NAME_REQUIRED, PHONE_REQUIRED, INVALID_PHONE_FORMAT, INVALID_EMAIL_FORMAT]
+                    example: "NAME_REQUIRED"
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "WhatsApp number already registered"
+                  error:
+                    type: string
+                    enum: [DUPLICATE_PHONE, DUPLICATE_EMAIL, DUPLICATE_PHONE_AND_EMAIL]
+                    example: "DUPLICATE_PHONE"
+        '503':
+          description: WhatsApp service unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Layanan WhatsApp sedang tidak tersedia. Silakan coba lagi dalam beberapa menit."
+                  error:
+                    type: string
+                    enum: [WHATSAPP_SERVICE_UNAVAILABLE, WHATSAPP_TIMEOUT, WHATSAPP_NETWORK_ERROR, WHATSAPP_AUTH_ERROR, WHATSAPP_OTP_FAILED]
+                    example: "WHATSAPP_SERVICE_UNAVAILABLE"
+                  details:
+                    type: string
+                    example: "WhatsApp server tidak dapat dijangkau atau nomor tidak valid"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Internal server error."
+                  error:
+                    type: string
+                    example: "INTERNAL_SERVER_ERROR"
+
+  /auth/signin:
+    post:
+      summary: Login user (NextAuth Credentials Provider)
+      tags: [Authentication]
+      description: |
+        Endpoint login utama. Jika sukses, session cookie akan di-set otomatis oleh NextAuth.js. Untuk login via API, gunakan body sesuai schema.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+      responses:
+        '200':
+          description: User signed in successfully. Session cookie is set.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: Redirect URL after successful sign-in.
+        '401':
+          description: Unauthorized (invalid credentials).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/session:
+    get:
+      summary: Get current session (cek status login)
+      tags: [Authentication]
+      description: |
+        Endpoint untuk mendapatkan data session user yang sedang login. Jika tidak login, akan return 401.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Session information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          description: Not authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/signout:
+    post:
+      summary: Logout user (NextAuth)
+      tags: [Authentication]
+      description: Menghapus session login user.
+      responses:
+        '200':
+          description: User signed out successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: Redirect URL after successful sign-out.
+
+  /auth/verify-email/{token}:
+    get:
+      summary: Verifikasi email user via token
+      tags: [Account Management]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: Token verifikasi email.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email verified successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Invalid or expired token, or email already verified.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found for this token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/verify-otp:
+    post:
+      summary: Universal OTP verification for multiple purposes
+      tags: [Authentication, Account Management]
+      description: |
+        Universal OTP verification endpoint that supports multiple verification purposes:
+        
+        **Supported Purposes:**
+        - `signup` - Verify WhatsApp OTP during registration
+        - `email-verification` - Verify email OTP for email verification
+        - `password-reset` - Verify OTP for password reset (doesn't set new password)
+        - `sso-login` - Verify OTP for secure single sign-on login
+        
+        **Request Format:**
+        ```json
+        {
+          "identifier": "081233784490", // Phone or email
+          "otp": "8650",                 // 4-digit OTP code
+          "purpose": "signup"            // Verification purpose
+        }
+        ```
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - identifier
+                - otp
+              properties:
+                identifier:
+                  type: string
+                  description: User's phone number (for WhatsApp) or email address
+                  example: "081233784490"
+                otp:
+                  type: string
+                  description: 4-digit OTP code received via WhatsApp or Email
+                  example: "8650"
+                purpose:
+                  type: string
+                  enum: [signup, email-verification, password-reset, sso-login]
+                  default: signup
+                  description: Purpose of OTP verification
+                  example: "signup"
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "OTP verified successfully"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      purpose:
+                        type: string
+                        example: "signup"
+                      autoLogin:
+                        type: boolean
+                        description: Whether user was automatically logged in
+                        example: true
+                      generatedPassword:
+                        type: string
+                        nullable: true
+                        description: Auto-generated password (only for signup without password)
+                        example: "TempPass123"
+        '400':
+          description: Invalid OTP, expired OTP, or missing fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Invalid OTP code"
+                  error:
+                    type: string
+                    enum: [MISSING_FIELDS, INVALID_PURPOSE, INVALID_OTP, OTP_EXPIRED]
+                    example: "INVALID_OTP"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "User not found"
+                  error:
+                    type: string
+                    example: "USER_NOT_FOUND"
+
+  /account/resend-verification-email:
+    post:
+      summary: Resend email verification (token or OTP based on your setup)
+      tags: [Account Management]
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Verification email/OTP resent successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendVerificationEmailResponse'
+        '400':
+          description: Email already verified.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error or failed to send email/OTP.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/forgot-password:
+    post:
+      summary: Request a password reset OTP
+      tags: [Account Management]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: OTP sent successfully via the specified method.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForgotPasswordResponse'
+        '400':
+          description: Invalid input (e.g., invalid method, identifier and method mismatch).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error or failed to send OTP.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/reset-password:
+    post:
+      summary: Reset user password using OTP
+      tags: [Account Management]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResetPasswordResponse'
+        '400':
+          description: Invalid/expired OTP, or new password too short.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'  /api/account/logout:
+    post:
+      summary: Logout user (supports both JWT and session-based auth)
+      tags: [Account Management]
+      description: |
+        Logout endpoint that supports both JWT token and session-based authentication.
+        
+        **Authentication Priority:**
+        1. JWT Token (via Authorization header) - Token will be blacklisted
+        2. Session Auth (fallback) - Session will be destroyed
+        
+        **No request body required** - Authentication is handled via:
+        - Authorization header: `Bearer <token>` (for JWT)
+        - Session cookies (for admin dashboard)
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Logout successful. Token has been invalidated."
+                  data:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum: [JWT_LOGOUT, SESSION_LOGOUT]
+                        example: "JWT_LOGOUT"
+                      userId:
+                        type: string
+                        example: "user_123456"
+                      timestamp:
+                        type: string
+                        format: date-time
+                        example: "2024-01-15T10:30:00.000Z"
+        '401':
+          description: Not authenticated or invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "No authentication found. Please provide a valid token in Authorization header."
+                  error:
+                    type: string
+                    enum: [INVALID_TOKEN, NO_AUTHENTICATION]
+                    example: "NO_AUTHENTICATION"
+                    example: "NOT_AUTHENTICATED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Internal server error"
+                  error:
+                    type: string
+                    example: "INTERNAL_SERVER_ERROR"
+
+  /api/account/change-password:
+    post:
+      summary: Change current user's password (supports both JWT and session-based auth)
+      tags: [Account Management]
+      description: |
+        Change password endpoint that supports both JWT token and session-based authentication.
+        Validates current password and updates to new password with proper hashing.
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                  description: Current password for verification
+                  example: "oldpassword123"
+                newPassword:
+                  type: string
+                  minLength: 6
+                  description: New password (minimum 6 characters)
+                  example: "newpassword123"
+                token:
+                  type: string
+                  description: JWT token (optional if using session auth)
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Password changed successfully"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Current password and new password are required"
+                  error:
+                    type: string
+                    example: "MISSING_FIELDS"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Current password is incorrect"
+                  error:
+                    type: string
+                    example: "INVALID_CURRENT_PASSWORD"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "User not found"
+                  error:
+                    type: string
+                    example: "USER_NOT_FOUND"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Internal server error"
+                  error:
+                    type: string
+                    example: "INTERNAL_SERVER_ERROR"
+
+  /api/account/resend-verification-email:
+    post:
+      summary: Resend email verification (supports both JWT and session-based auth)
+      tags: [Account Management]
+      description: |
+        Resend email verification endpoint that supports both authentication methods.
+        Generates new verification token and sends email if user's email is not yet verified.
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: JWT token (optional if using session auth)
+      responses:
+        '200':
+          description: Verification email sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Verification email sent successfully"
+        '400':
+          description: Email already verified or missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Email is already verified"
+                  error:
+                    type: string
+                    example: "EMAIL_ALREADY_VERIFIED"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Not authenticated"
+                  error:
+                    type: string
+                    example: "NOT_AUTHENTICATED"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "User not found"
+                  error:
+                    type: string
+                    example: "USER_NOT_FOUND"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Failed to send verification email"
+                  error:
+                    type: string
+                    example: "EMAIL_SEND_FAILED"
+
+  /api/account/deactivate-account:
+    post:
+      summary: Deactivate user account (Admin only - supports both JWT and session-based auth)
+      tags: [Account Management]
+      description: |
+        Deactivate/reactivate user account endpoint for admin use only.
+        Supports both JWT token and session-based authentication.
+        Includes audit logging with admin details and reason.
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - action
+              properties:
+                userId:
+                  type: string
+                  description: ID of the user to deactivate/reactivate
+                  example: "user_123456"
+                action:
+                  type: string
+                  enum: [deactivate, reactivate]
+                  description: Action to perform
+                  example: "deactivate"
+                reason:
+                  type: string
+                  description: Reason for the action (optional)
+                  example: "Policy violation"
+                token:
+                  type: string
+                  description: JWT token (optional if using session auth)
+      responses:
+        '200':
+          description: Account action completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "User account deactivated successfully"
+                  data:
+                    type: object
+                    properties:
+                      userId:
+                        type: string
+                        example: "user_123456"
+                      action:
+                        type: string
+                        example: "deactivate"
+                      isActive:
+                        type: boolean
+                        example: false
+                      performedBy:
+                        type: string
+                        example: "admin_789"
+                      performedAt:
+                        type: string
+                        format: date-time
+                        example: "2025-05-27T10:30:00Z"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "User ID and action are required"
+                  error:
+                    type: string
+                    example: "MISSING_REQUIRED_FIELDS"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Not authenticated"
+                  error:
+                    type: string
+                    example: "NOT_AUTHENTICATED"
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Admin access required"
+                  error:
+                    type: string
+                    example: "INSUFFICIENT_PERMISSIONS"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "User not found"
+                  error:
+                    type: string
+                    example: "USER_NOT_FOUND"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Internal server error"
+                  error:
+                    type: string
+                    example: "INTERNAL_SERVER_ERROR"
+
+  /product/categories:
+    post:
+      summary: Create a new category
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '201':
+          description: Category created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category' # Returns the full category object
+        '400':
+          description: Invalid input (e.g., name missing, validation error).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict (e.g., category with this name already exists).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: Get all categories
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved all categories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category' # Returns full category objects with relations
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /product/categories/{categoryId}:
+    parameters:
+      - name: categoryId
+        in: path
+        required: true
+        description: ID of the category.
+        schema:
+          type: string
+    get:
+      summary: Get a specific category by ID
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved the category.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category' # Returns full category object
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Category not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a category
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+      responses:
+        '200':
+          description: Category updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category' # Returns the updated full category object
+        '400':
+          description: Invalid input or category has related items preventing update.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Category not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict (e.g., category with this name already exists).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete a category
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: Category deleted successfully.
+        '400':
+          description: Category cannot be deleted (e.g., has associated subcategories, packages, or addons).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Category not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /product/subcategories:
+    post:
+      summary: Create a new subcategory
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubcategoryRequest'
+      responses:
+        '201':
+          description: Subcategory created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subcategory' # Returns full subcategory
+        '400':
+          description: Invalid input (e.g., name missing, parent category not found, name conflict).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent category not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict (e.g., subcategory with this name already exists in the parent category).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: Get all subcategories
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          description: Filter subcategories by parent category ID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved subcategories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Subcategory' # Returns full subcategories
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /product/subcategories/{subcategoryId}:
+    parameters:
+      - name: subcategoryId
+        in: path
+        required: true
+        description: ID of the subcategory.
+        schema:
+          type: string
+    get:
+      summary: Get a specific subcategory by ID
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved the subcategory.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subcategory' # Returns full subcategory
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Subcategory not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a subcategory
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSubcategoryRequest'
+      responses:
+        '200':
+          description: Subcategory updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subcategory' # Returns updated full subcategory
+        '400':
+          description: Invalid input (e.g., parent category not found, name conflict).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Subcategory or target parent category not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict (e.g., subcategory with this name already exists in the target category).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete a subcategory
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: Subcategory deleted successfully.
+        '400':
+          description: Subcategory cannot be deleted (e.g., has associated packages).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Subcategory not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /product/addons:
+    post:
+      summary: Create a new addon
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAddonRequest'
+      responses:
+        '201':
+          description: Addon created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Addon' # Returns full addon
+        '400':
+          description: Invalid input (e.g., name missing, parent category not found, name conflict).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent category not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict (e.g., addon with this name already exists in the parent category).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: Get all addons
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          description: Filter addons by parent category ID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved addons.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Addon' # Returns full addons
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /product/addons/{addonId}:
+    parameters:
+      - name: addonId
+        in: path
+        required: true
+        description: ID of the addon.
+        schema:
+          type: string
+    get:
+      summary: Get a specific addon by ID
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved the addon.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Addon' # Returns full addon
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Addon not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update an addon
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAddonRequest'
+      responses:
+        '200':
+          description: Addon updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Addon' # Returns updated full addon
+        '400':
+          description: Invalid input (e.g., parent category not found, name conflict).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Addon or target parent category not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict (e.g., addon with this name already exists in the target category).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete an addon
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: Addon deleted successfully.
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Addon not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /product/packages:
+    post:
+      summary: Create a new package
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePackageRequest'
+      responses:
+        '201':
+          description: Package created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Package' # Returns full package with features
+        '400':
+          description: Invalid input (e.g., missing fields, category/subcategory mismatch, name conflict).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Category or Subcategory not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict (e.g., package with this name already exists).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: Get all packages
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          description: Filter packages by category ID.
+          schema:
+            type: string
+        - name: subcategoryId
+          in: query
+          required: false
+          description: Filter packages by subcategory ID.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved packages.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Package' # Returns full packages with features
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /product/packages/{packageId}:
+    parameters:
+      - name: packageId
+        in: path
+        required: true
+        description: ID of the package.
+        schema:
+          type: string
+    get:
+      summary: Get a specific package by ID
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved the package.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Package' # Returns full package with features
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Package not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a package
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePackageRequest'
+      responses:
+        '200':
+          description: Package updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Package' # Returns updated full package with features
+        '400':
+          description: Invalid input (e.g., category/subcategory mismatch, name conflict).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Package, Category, or Subcategory not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict (e.g., package with this name already exists).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete a package
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: Package deleted successfully.
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Package not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /product/images/upload:
+    post:
+      summary: Upload a product image
+      tags: [Products]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The image file to upload (jpeg, png, gif, webp). Max 5MB.
+      responses:
+        '200': # Changed from 201 to 200 as it's returning data about an existing resource (the file path)
+          description: File uploaded successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: File uploaded successfully
+                  filePath:
+                    type: string
+                    format: uri-relative
+                    example: /product-images/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.png
+                    description: The public relative path to the uploaded image.
+        '400':
+          description: Bad request (e.g., no file, invalid file type, file too large).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error during file upload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Account Management
+    description: User account related operations
+  - name: Products
+    description: Product, Category, Subcategory, Addon, and Package management operations
