@@ -1,4 +1,5 @@
 import { PrismaClient } from '../src/generated/prisma';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -16,6 +17,8 @@ async function main() {
   await prisma.subcategory.deleteMany();
   await prisma.category.deleteMany();
   await prisma.whatsappApiPackage.deleteMany();
+  await prisma.userSession.deleteMany();
+  await prisma.user.deleteMany();
 
   // 1. Create Categories
   console.log('📂 Creating categories...');
@@ -386,6 +389,40 @@ async function main() {
     }
   });
 
+  // 7. Create Users
+  console.log('👥 Creating users...');
+  
+  // Hash password for both users
+  const hashedPassword = await bcrypt.hash('1234abcd', 12);
+  
+  // Create customer user
+  const customerUser = await prisma.user.create({
+    data: {
+      name: 'M. Yoga Adi',
+      email: 'm.yogaadi1234@gmail.com',
+      phone: '081233784490',
+      password: hashedPassword,
+      role: 'customer',
+      isActive: true,
+      emailVerified: new Date(),
+      phoneVerified: new Date()
+    }
+  });
+
+  // Create admin user
+  const adminUser = await prisma.user.create({
+    data: {
+      name: 'Genfity Admin',
+      email: 'genfity@gmail.com',
+      phone: '081234567890',
+      password: hashedPassword,
+      role: 'admin',
+      isActive: true,
+      emailVerified: new Date(),
+      phoneVerified: new Date()
+    }
+  });
+
   console.log('✅ Database seeding completed successfully!');
   
   // Print summary
@@ -395,6 +432,7 @@ async function main() {
   console.log(`📦 Packages: 5`);
   console.log(`🔧 Addons: 10`);
   console.log(`💬 WhatsApp Packages: 3`);
+  console.log(`👥 Users: 2`);
   
   console.log('\n🎯 Categories Created:');
   console.log(`   • Web Development (${webDevCategory.id})`);
@@ -417,6 +455,11 @@ async function main() {
   console.log(`   • Starter: ${basicWhatsappPackage.id}`);
   console.log(`   • Business: ${businessWhatsappPackage.id}`);
   console.log(`   • Enterprise: ${enterpriseWhatsappPackage.id}`);
+
+  console.log('\n👥 Test Users Created:');
+  console.log(`   • Customer: m.yogaadi1234@gmail.com (${customerUser.id})`);
+  console.log(`   • Admin: genfity@gmail.com (${adminUser.id})`);
+  console.log(`   • Password: 1234abcd (for both users)`);
 }
 
 main()
