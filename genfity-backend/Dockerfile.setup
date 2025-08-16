@@ -11,8 +11,12 @@ RUN apk add --no-cache \
 # Install global packages
 RUN npm install -g prisma
 
+# Create non-root user with same IDs as dev container
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
 # Set proper permissions
-RUN chown -R node:node /app
-USER node
+RUN chown -R nextjs:nodejs /app
+USER nextjs
 
 CMD ["/bin/sh"]

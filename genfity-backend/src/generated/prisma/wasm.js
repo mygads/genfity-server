@@ -20,12 +20,12 @@ exports.Prisma = Prisma
 exports.$Enums = {}
 
 /**
- * Prisma Client JS version: 6.10.1
- * Query Engine version: 9b628578b3b7cae625e8c927178f15a170e74a9c
+ * Prisma Client JS version: 6.14.0
+ * Query Engine version: 717184b7b35ea05dfa71a3236b7af656013e1e49
  */
 Prisma.prismaVersion = {
-  client: "6.10.1",
-  engine: "9b628578b3b7cae625e8c927178f15a170e74a9c"
+  client: "6.14.0",
+  engine: "717184b7b35ea05dfa71a3236b7af656013e1e49"
 }
 
 Prisma.PrismaClientKnownRequestError = () => {
@@ -488,267 +488,20 @@ exports.Prisma.NullableJsonNullValueInput = {
   JsonNull: Prisma.JsonNull
 };
 
+exports.Prisma.QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+};
+
 exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
-};
-
-exports.Prisma.UserOrderByRelevanceFieldEnum = {
-  id: 'id',
-  name: 'name',
-  email: 'email',
-  phone: 'phone',
-  password: 'password',
-  otp: 'otp',
-  image: 'image',
-  emailVerificationToken: 'emailVerificationToken',
-  role: 'role',
-  apiKey: 'apiKey',
-  emailOtp: 'emailOtp',
-  resetPasswordOtp: 'resetPasswordOtp',
-  ssoOtp: 'ssoOtp'
-};
-
-exports.Prisma.AccountOrderByRelevanceFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  type: 'type',
-  provider: 'provider',
-  providerAccountId: 'providerAccountId',
-  refresh_token: 'refresh_token',
-  access_token: 'access_token',
-  token_type: 'token_type',
-  scope: 'scope',
-  id_token: 'id_token',
-  session_state: 'session_state'
-};
-
-exports.Prisma.SessionOrderByRelevanceFieldEnum = {
-  id: 'id',
-  sessionToken: 'sessionToken',
-  userId: 'userId'
-};
-
-exports.Prisma.VerificationTokenOrderByRelevanceFieldEnum = {
-  identifier: 'identifier',
-  token: 'token'
-};
-
-exports.Prisma.FeatureOrderByRelevanceFieldEnum = {
-  id: 'id',
-  name_en: 'name_en',
-  name_id: 'name_id',
-  packageId: 'packageId'
-};
-
-exports.Prisma.SubcategoryOrderByRelevanceFieldEnum = {
-  id: 'id',
-  name_en: 'name_en',
-  name_id: 'name_id',
-  categoryId: 'categoryId'
-};
-
-exports.Prisma.CategoryOrderByRelevanceFieldEnum = {
-  id: 'id',
-  name_en: 'name_en',
-  name_id: 'name_id',
-  icon: 'icon'
-};
-
-exports.Prisma.AddonOrderByRelevanceFieldEnum = {
-  id: 'id',
-  name_en: 'name_en',
-  name_id: 'name_id',
-  description_en: 'description_en',
-  description_id: 'description_id',
-  image: 'image',
-  categoryId: 'categoryId'
-};
-
-exports.Prisma.PackageOrderByRelevanceFieldEnum = {
-  id: 'id',
-  name_en: 'name_en',
-  name_id: 'name_id',
-  description_en: 'description_en',
-  description_id: 'description_id',
-  image: 'image',
-  categoryId: 'categoryId',
-  subcategoryId: 'subcategoryId',
-  bgColor: 'bgColor'
-};
-
-exports.Prisma.WhatsAppSessionOrderByRelevanceFieldEnum = {
-  id: 'id',
-  sessionId: 'sessionId',
-  userId: 'userId',
-  status: 'status',
-  qr: 'qr',
-  aiConfig: 'aiConfig',
-  message: 'message',
-  sessionName: 'sessionName'
-};
-
-exports.Prisma.TransactionOrderByRelevanceFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  status: 'status',
-  type: 'type',
-  voucherId: 'voucherId',
-  notes: 'notes',
-  currency: 'currency'
-};
-
-exports.Prisma.TransactionProductOrderByRelevanceFieldEnum = {
-  id: 'id',
-  transactionId: 'transactionId',
-  packageId: 'packageId',
-  status: 'status',
-  referenceLink: 'referenceLink'
-};
-
-exports.Prisma.TransactionAddonsOrderByRelevanceFieldEnum = {
-  id: 'id',
-  transactionId: 'transactionId',
-  addonId: 'addonId',
-  status: 'status'
-};
-
-exports.Prisma.TransactionWhatsappServiceOrderByRelevanceFieldEnum = {
-  id: 'id',
-  transactionId: 'transactionId',
-  whatsappPackageId: 'whatsappPackageId',
-  duration: 'duration',
-  status: 'status'
-};
-
-exports.Prisma.PaymentOrderByRelevanceFieldEnum = {
-  id: 'id',
-  transactionId: 'transactionId',
-  method: 'method',
-  status: 'status',
-  externalId: 'externalId',
-  paymentUrl: 'paymentUrl',
-  adminNotes: 'adminNotes',
-  adminAction: 'adminAction',
-  adminUserId: 'adminUserId'
-};
-
-exports.Prisma.WhatsappApiPackageOrderByRelevanceFieldEnum = {
-  id: 'id',
-  name: 'name',
-  description: 'description'
-};
-
-exports.Prisma.ServicesWhatsappCustomersOrderByRelevanceFieldEnum = {
-  id: 'id',
-  transactionId: 'transactionId',
-  customerId: 'customerId',
-  packageId: 'packageId',
-  sessionId: 'sessionId',
-  qrCode: 'qrCode',
-  status: 'status',
-  notes: 'notes'
-};
-
-exports.Prisma.UserSessionOrderByRelevanceFieldEnum = {
-  userId: 'userId',
-  token: 'token',
-  deviceInfo: 'deviceInfo',
-  ipAddress: 'ipAddress',
-  userAgent: 'userAgent',
-  id: 'id'
-};
-
-exports.Prisma.VoucherOrderByRelevanceFieldEnum = {
-  id: 'id',
-  code: 'code',
-  name: 'name',
-  description: 'description',
-  type: 'type',
-  discountType: 'discountType'
-};
-
-exports.Prisma.VoucherUsageOrderByRelevanceFieldEnum = {
-  id: 'id',
-  voucherId: 'voucherId',
-  userId: 'userId',
-  transactionId: 'transactionId'
-};
-
-exports.Prisma.ServicesProductCustomersOrderByRelevanceFieldEnum = {
-  id: 'id',
-  transactionId: 'transactionId',
-  customerId: 'customerId',
-  packageId: 'packageId',
-  websiteUrl: 'websiteUrl',
-  driveUrl: 'driveUrl',
-  textDescription: 'textDescription',
-  domainName: 'domainName',
-  fileAssets: 'fileAssets',
-  status: 'status',
-  notes: 'notes'
-};
-
-exports.Prisma.ServicesAddonsCustomersOrderByRelevanceFieldEnum = {
-  id: 'id',
-  transactionId: 'transactionId',
-  customerId: 'customerId',
-  addonDetails: 'addonDetails',
-  driveUrl: 'driveUrl',
-  fileAssets: 'fileAssets',
-  status: 'status',
-  notes: 'notes'
-};
-
-exports.Prisma.ServiceFeeOrderByRelevanceFieldEnum = {
-  id: 'id',
-  paymentMethod: 'paymentMethod',
-  name: 'name',
-  type: 'type',
-  paymentInstructions: 'paymentInstructions',
-  instructionType: 'instructionType',
-  instructionImageUrl: 'instructionImageUrl',
-  currency: 'currency'
-};
-
-exports.Prisma.BankDetailOrderByRelevanceFieldEnum = {
-  id: 'id',
-  bankName: 'bankName',
-  accountNumber: 'accountNumber',
-  accountName: 'accountName',
-  swiftCode: 'swiftCode',
-  currency: 'currency'
 };
 
 exports.Prisma.JsonNullValueFilter = {
   DbNull: Prisma.DbNull,
   JsonNull: Prisma.JsonNull,
   AnyNull: Prisma.AnyNull
-};
-
-exports.Prisma.QueryMode = {
-  default: 'default',
-  insensitive: 'insensitive'
-};
-
-exports.Prisma.ServerOrderByRelevanceFieldEnum = {
-  id: 'id',
-  dropletId: 'dropletId',
-  name: 'name',
-  status: 'status',
-  region: 'region',
-  regionSlug: 'regionSlug',
-  sizeSlug: 'sizeSlug',
-  publicIp: 'publicIp',
-  privateIp: 'privateIp',
-  imageDistribution: 'imageDistribution',
-  imageName: 'imageName'
-};
-
-exports.Prisma.WhatsAppMessageStatsOrderByRelevanceFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  sessionId: 'sessionId'
 };
 
 

@@ -5,9 +5,8 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 model User {
@@ -62,10 +61,10 @@ model Account {
   scope             String?
   id_token          String? @db.Text
   session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Account_user_fkey")
 
   @@unique([provider, providerAccountId])
-  @@index([userId], map: "Account_userId_fkey")
+  @@index([userId])
 }
 
 model Session {
@@ -73,9 +72,9 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Session_user_fkey")
 
-  @@index([userId], map: "Session_userId_fkey")
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -170,14 +169,14 @@ model WhatsAppSession {
   isNotification Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  aiConfig       String?  @db.LongText
+  aiConfig       String?  @db.Text
   message        String?
   sessionName    String?
   isTerminated   Boolean  @default(false)
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], map: "WhatsAppSession_user_fkey")
   whatsappMessageStats WhatsAppMessageStats[]
 
-  @@index([userId], map: "WhatsAppSession_userId_fkey")
+  @@index([userId])
 }
 
 model Transaction {
@@ -199,8 +198,8 @@ model Transaction {
   totalAfterDiscount  Decimal?                    @db.Decimal(10, 2)
   expiresAt           DateTime?                   // Transaction expiration (1 week from creation)
   payment             Payment?                    @relation("TransactionPayment")
-  user                User                        @relation(fields: [userId], references: [id])
-  voucher             Voucher?                    @relation(fields: [voucherId], references: [id])
+  user                User                        @relation(fields: [userId], references: [id], map: "Transaction_user_fkey")
+  voucher             Voucher?                    @relation(fields: [voucherId], references: [id], map: "Transaction_voucher_fkey")
   productTransactions TransactionProduct[]
   addonTransactions   TransactionAddons[]
   whatsappTransaction TransactionWhatsappService?
@@ -209,7 +208,7 @@ model Transaction {
   whatsappCustomers   ServicesWhatsappCustomers[] @relation("TransactionWhatsappCustomers")
   voucherUsage        VoucherUsage[]
 
-  @@index([userId], map: "Transaction_userId_fkey")
+  @@index([userId])
   @@index([voucherId], map: "Transaction_voucherId_fkey")
   @@index([status])
   @@index([expiresAt])
@@ -224,11 +223,11 @@ model TransactionProduct {
   startDate      DateTime?
   endDate        DateTime?
   referenceLink  String?
-  package        Package?    @relation(fields: [packageId], references: [id])
-  transaction    Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  package        Package?    @relation(fields: [packageId], references: [id], map: "TransactionProduct_package_fkey")
+  transaction    Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade, map: "TransactionProduct_transaction_fkey")
 
-  @@index([transactionId], map: "TransactionProduct_transactionId_fkey")
-  @@index([packageId], map: "TransactionProduct_packageId_fkey")
+  @@index([transactionId])
+  @@index([packageId])
   @@index([status])
 }
 
@@ -240,10 +239,10 @@ model TransactionAddons {
   status        String      @default("created") // created, pending, in_progress, success, cancelled
   startDate     DateTime?
   endDate       DateTime?
-  addon         Addon       @relation(fields: [addonId], references: [id])
-  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  addon         Addon       @relation(fields: [addonId], references: [id], map: "TransactionAddons_addon_fkey")
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade, map: "TransactionAddons_transaction_fkey")
 
-  @@index([transactionId], map: "TransactionAddons_transactionId_fkey")
+  @@index([transactionId])
   @@index([addonId], map: "TransactionAddons_addonId_fkey")
   @@index([status])
 }
@@ -256,10 +255,10 @@ model TransactionWhatsappService {
   status            String             @default("pending") // pending, success, failed
   startDate         DateTime?
   endDate           DateTime?
-  transaction       Transaction        @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  whatsappPackage   WhatsappApiPackage @relation(fields: [whatsappPackageId], references: [id])
+  transaction       Transaction        @relation(fields: [transactionId], references: [id], onDelete: Cascade, map: "TransactionWhatsappService_transaction_fkey")
+  whatsappPackage   WhatsappApiPackage @relation(fields: [whatsappPackageId], references: [id], map: "TransactionWhatsappService_whatsappPackage_fkey")
 
-  @@index([whatsappPackageId], map: "TransactionWhatsappService_whatsappPackageId_fkey")
+  @@index([whatsappPackageId])
   @@index([status])
 }
 
@@ -341,7 +340,7 @@ model UserSession {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([token(length: 255)])
+  @@index([token])
   @@index([expiresAt])
   @@index([isActive])
 }
@@ -401,10 +400,10 @@ model ServicesProductCustomers {
   quantity          Int       @default(1)
   websiteUrl        String?   @db.Text
   driveUrl          String?   @db.Text
-  textDescription   String?   @db.LongText
+  textDescription   String?   @db.Text
   domainName        String?
   domainExpiredAt   DateTime?
-  fileAssets        String?   @db.LongText // JSON string to store file asset information
+  fileAssets        String?   @db.Text // JSON string to store file asset information
   status            String    @default("pending") // pending, in_progress, delivered
   deliveredAt       DateTime?
   notes             String?   @db.Text
@@ -427,9 +426,9 @@ model ServicesAddonsCustomers {
   id                String    @id @default(cuid())
   transactionId     String
   customerId        String
-  addonDetails      String    @db.LongText // JSON with addon details and quantities (get addon list from TransactionAddons via transactionId)
+  addonDetails      String    @db.Text // JSON with addon details and quantities (get addon list from TransactionAddons via transactionId)
   driveUrl          String?   @db.Text // Drive URL for file delivery
-  fileAssets        String?   @db.LongText // JSON string to store file asset information
+  fileAssets        String?   @db.Text // JSON string to store file asset information
   status            String    @default("pending") // pending, in_progress, delivered
   deliveredAt       DateTime?
   notes             String?   @db.Text // Admin delivery notes
@@ -531,3 +530,4 @@ model WhatsAppMessageStats {
   @@index([sessionId])
   @@index([lastMessageSentAt])
 }
+

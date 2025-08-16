@@ -1,6 +1,7 @@
 networks:
   genfity-network:
     external: true
+    name: server_genfity-network
 
 services:
   # Development mode service
@@ -16,19 +17,22 @@ services:
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:8090}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - JWT_SECRET=${JWT_SECRET}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
     ports:
       - "8090:8090"
     networks:
       - genfity-network
-    depends_on:
-      - postgres-setup-dev
     restart: unless-stopped
     volumes:
-      - ./:/app
-      - backend_node_modules_dev:/app/node_modules
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      - ./public:/app/public
+      - ./docs:/app/docs
+      - /app/node_modules
       - /app/.next
     working_dir: /app
-    command: npm run dev
     profiles:
       - dev
 
@@ -60,45 +64,6 @@ services:
       start_period: 30s
     profiles:
       - prod
-
-  # Development postgres setup
-  postgres-setup-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.setup
-    container_name: genfity-backend-postgres-setup-dev
-    networks:
-      - genfity-network
-    environment:
-      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@genfity-db-postgres:5432/${DB_NAME}
-      - PGUSER=${DB_USER}
-      - PGPASSWORD=${DB_PASSWORD}
-      - PGHOST=genfity-db-postgres
-      - PGPORT=5432
-      - PGDATABASE=${DB_NAME}
-    volumes:
-      - ./:/app
-      - backend_node_modules_dev:/app/node_modules
-    working_dir: /app
-    command: >
-      sh -c "
-        echo 'Waiting for PostgreSQL to be ready...'
-        until pg_isready -h genfity-db-postgres -p 5432 -U ${DB_USER}; do
-          echo 'PostgreSQL is not ready - waiting...'
-          sleep 2
-        done
-        echo 'PostgreSQL is ready!'
-        echo 'Installing dependencies...'
-        npm ci
-        echo 'Generating Prisma client...'
-        npx prisma generate
-        echo 'Running Prisma migrations...'
-        npx prisma migrate deploy
-        echo 'Development setup complete!'
-      "
-    restart: "no"
-    profiles:
-      - dev
 
   # Production postgres setup
   postgres-setup-prod:
@@ -134,11 +99,12 @@ services:
         echo 'Running Prisma migrations...'
         npx prisma migrate deploy
         echo 'Production setup complete!'
+        touch /app/.setup-complete
+        echo 'Setup signal file created!'
       "
     restart: "no"
     profiles:
       - prod
 
 volumes:
-  backend_node_modules_dev:
   backend_node_modules_prod:
