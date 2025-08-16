@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { verifyUserToken } from '@/lib/admin-auth';
 import WhatsAppMessageTracker from '@/lib/whatsapp-message-tracker';
 
 // POST /api/whatsapp/session/reset-counters - Reset session message counters
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const userVerification = await verifyUserToken(request);
+    if (!userVerification.success) {
+      return NextResponse.json({ error: userVerification.error }, { status: 401 });
     }
+
+    const userId = userVerification.userId;
 
     const body = await request.json();
     const { sessionId } = body;

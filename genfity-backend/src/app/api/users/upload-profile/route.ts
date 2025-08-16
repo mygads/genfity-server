@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { verifyUserToken } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { withCORS } from "@/lib/cors";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userVerification = await verifyUserToken(req);
+    if (!userVerification.success) {
       return withCORS(NextResponse.json(
-        { success: false, error: "Authentication required" },
+        { success: false, error: userVerification.error },
         { status: 401 }
       ));
     }
+
+    const userId = userVerification.userId;
 
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -45,14 +46,14 @@ export async function POST(req: NextRequest) {
     // Upload to Vercel Blob
     const { put } = await import('@vercel/blob');
     
-    const filename = `profile-${session.user.id}-${Date.now()}.${file.name.split('.').pop()}`;
+    const filename = `profile-${userId}-${Date.now()}.${file.name.split('.').pop()}`;
     const blob = await put(filename, file, {
       access: 'public',
     });
 
     // Update user profile with new image URL
     const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: { 
         image: blob.url,
         // updatedAt will be automatically set by Prisma if the field exists

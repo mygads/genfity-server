@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { verifyAdminToken } from '@/lib/admin-auth'
 import { randomUUID } from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id || session.user.role !== 'admin') {
+    const adminVerification = await verifyAdminToken(request)
+    if (!adminVerification.success) {
       return NextResponse.json(
-        { success: false, error: 'Admin access required' },
+        { success: false, error: adminVerification.error },
         { status: 403 }
       )
     }

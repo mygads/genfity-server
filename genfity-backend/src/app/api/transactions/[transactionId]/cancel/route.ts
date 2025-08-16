@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentExpirationService } from '@/lib/payment-expiration';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { verifyUserToken } from '@/lib/admin-auth';
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ transactionId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const userVerification = await verifyUserToken(req);
     
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }    const { transactionId } = await params;
+    if (!userVerification.success) {
+      return NextResponse.json({ error: userVerification.error }, { status: 401 });
+    }
+
+    const userId = userVerification.userId;    const { transactionId } = await params;
 
     if (!transactionId) {
       return NextResponse.json({ error: 'Transaction ID is required' }, { status: 400 });
@@ -24,7 +25,7 @@ export async function POST(
     // Cancel transaction by user
     const cancelledTransaction = await PaymentExpirationService.cancelTransactionByUser(
       transactionId,
-      session.user.id
+      userId
     );    return NextResponse.json({
       success: true,
       message: 'Transaction cancelled successfully',

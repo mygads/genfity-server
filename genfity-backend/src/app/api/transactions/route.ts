@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { verifyUserToken, verifyAdminToken } from "@/lib/admin-auth";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { PaymentExpirationService } from "@/lib/payment-expiration";
 import { z } from "zod";
@@ -68,15 +67,17 @@ const createTransactionSchema = z.object({
 });
 
 // GET /api/transactions - Get transactions (unified for both customer and admin)
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userVerification = await verifyUserToken(request);
+    if (!userVerification.success) {
       return withCORS(NextResponse.json(
-        { success: false, error: "Authentication required" },
+        { success: false, error: userVerification.error },
         { status: 401 }
       ));
     }
+
+    const userId = userVerification.userId;
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'product' | 'whatsapp_service' | null (all)
@@ -87,15 +88,8 @@ export async function GET(request: Request) {
 
     const whereCondition: any = {};
 
-    // If not admin or not requesting admin view, filter by user
-    if (session.user.role !== 'admin' || !adminView) {
-      whereCondition.userId = session.user.id;
-    } else if (adminView && session.user.role !== 'admin') {
-      return withCORS(NextResponse.json(
-        { success: false, error: "Admin access required" },
-        { status: 403 }
-      ));
-    }
+    // Regular users can only see their own transactions
+    whereCondition.userId = userId;
 
     if (type) {
       whereCondition.type = type;
@@ -180,15 +174,17 @@ export async function GET(request: Request) {
 }
 
 // POST /api/transactions - Create new transaction (unified)
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userVerification = await verifyUserToken(request);
+    if (!userVerification.success) {
       return withCORS(NextResponse.json(
-        { success: false, error: "Authentication required" },
+        { success: false, error: userVerification.error },
         { status: 401 }
       ));
     }
+
+    const userId = userVerification.userId;
 
     const body = await request.json();
     const validation = createTransactionSchema.safeParse(body);
@@ -254,7 +250,7 @@ export async function POST(request: Request) {
     const result = await prisma.$transaction(async (tx) => {
       // Create main transaction with automatic expiration (1 week)
       const transaction = await PaymentExpirationService.createTransactionWithExpiration({
-        userId: session.user.id,
+        userId: userId,
         amount: amount,
         type: type,
         currency: 'idr',

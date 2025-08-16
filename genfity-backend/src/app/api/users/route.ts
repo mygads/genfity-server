@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { verifyAdminToken } from "@/lib/admin-auth";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -23,13 +22,13 @@ const updateUserSchema = z.object({
 });
 
 // GET /api/users - Get all users (admin only)
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || session.user.role !== 'admin') {
+    const adminVerification = await verifyAdminToken(request);
+    if (!adminVerification.success) {
       return withCORS(NextResponse.json(
-        { success: false, error: "Admin access required" },
-        { status: 403 }
+        { success: false, error: adminVerification.error },
+        { status: 401 }
       ));
     }
 
@@ -106,13 +105,13 @@ export async function GET(request: Request) {
 }
 
 // POST /api/users - Create new user (admin only)
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || session.user.role !== 'admin') {
+    const adminVerification = await verifyAdminToken(request);
+    if (!adminVerification.success) {
       return withCORS(NextResponse.json(
-        { success: false, error: "Admin access required" },
-        { status: 403 }
+        { success: false, error: adminVerification.error },
+        { status: 401 }
       ));
     }
 

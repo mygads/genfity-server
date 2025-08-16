@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { verifyUserToken } from "@/lib/admin-auth";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 
 function getTransactionStatusText(status: string) {
@@ -28,7 +27,7 @@ function getPaymentStatusText(status: string) {
 }
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ transactionId: string }> }
 ) {
   try {
@@ -41,18 +40,20 @@ export async function GET(
       ));
     }
 
-    const session = await getServerSession(authOptions);
+    const userVerification = await verifyUserToken(request);
     
-    if (!session?.user?.id) {
+    if (!userVerification.success) {
       return withCORS(NextResponse.json(
-        { success: false, error: "Authentication required" },
+        { success: false, error: userVerification.error },
         { status: 401 }
       ));
-    }    let whereCondition: any = { id: transactionId };
-    
-    if (session.user.role !== 'admin') {
-      whereCondition = { ...whereCondition, userId: session.user.id };
     }
+
+    const userId = userVerification.userId;
+    let whereCondition: any = { id: transactionId };
+    
+    // Non-admin users can only access their own transactions
+    whereCondition = { ...whereCondition, userId: userId };
 
     const transaction = await prisma.transaction.findFirst({
       where: whereCondition,

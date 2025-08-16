@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { verifyAdminToken } from "@/lib/admin-auth";
 
 // PUT /api/transactions/product/[id]/delivery-status - Update product delivery status
 export async function PUT(
@@ -11,11 +10,11 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const session = await getServerSession(authOptions);
+    const adminVerification = await verifyAdminToken(request);
     
-    if (!session?.user || session.user.role !== 'admin') {
+    if (!adminVerification.success) {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
+        { error: adminVerification.error },
         { status: 401 }
       );
     }

@@ -1,31 +1,24 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { verifyAdminToken } from "@/lib/admin-auth";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { PaymentExpirationService } from "@/lib/payment-expiration";
 
 // PATCH /api/transactions/[transactionId]/confirm - Confirm transaction completion (admin only)
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ transactionId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const adminVerification = await verifyAdminToken(request);
+    if (!adminVerification.success) {
       return withCORS(NextResponse.json(
-        { success: false, error: "Authentication required" },
+        { success: false, error: adminVerification.error },
         { status: 401 }
       ));
     }
 
-    // Only admins can confirm transactions
-    if (session.user.role !== 'admin') {
-      return withCORS(NextResponse.json(
-        { success: false, error: "Admin access required" },
-        { status: 403 }
-      ));
-    }    const { transactionId } = await params;
+    const { transactionId } = await params;
 
     // Auto-expire this specific transaction before confirming
     await PaymentExpirationService.autoExpireOnApiCall(transactionId);

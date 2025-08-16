@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentExpirationService } from '@/lib/payment-expiration';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { verifyUserToken } from '@/lib/admin-auth';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const userVerification = await verifyUserToken(req);
     
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userVerification.success) {
+      return NextResponse.json({ error: userVerification.error }, { status: 401 });
     }
+
+    const userId = userVerification.userId;
 
     const body = await req.json();
     const { 
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     // Create transaction with automatic expiration (1 week)
     const transaction = await PaymentExpirationService.createTransactionWithExpiration({
-      userId: session.user.id,
+      userId: userId,
       amount,
       type,
       currency,
