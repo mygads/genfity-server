@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { prisma } from "@/lib/prisma";
-import { normalizePhoneNumber } from "@/lib/auth";
-import { encode } from 'next-auth/jwt';
-import { authOptions } from '@/lib/auth';
+import { normalizePhoneNumber, generateToken } from "@/lib/auth";
+import jwt from 'jsonwebtoken';
 
 export async function OPTIONS() {
   return corsOptionsResponse();
@@ -125,50 +124,23 @@ export async function POST(request: Request) {
 
 // Helper function to create user session
 async function createUserSession(user: any): Promise<string> {
-  const { callbacks } = authOptions;
-  const secret = process.env.NEXTAUTH_SECRET;
-  
-  if (!secret) {
-    throw new Error('NEXTAUTH_SECRET not configured');
-  }
-
-  const userForJwtCallback = {
+  const token = generateToken({
     id: user.id,
-    name: user.name,
     email: user.email,
-    image: user.image,
+    name: user.name,
     phone: user.phone,
-  };
-
-  let tokenPayload: Record<string, unknown> = {
-    name: user.name,
-    email: user.email,
-    sub: user.id,
-  };
-
-  if (callbacks?.jwt) {
-    tokenPayload = await callbacks.jwt({
-      token: tokenPayload,
-      user: userForJwtCallback as import("next-auth").User | import("next-auth/adapters").AdapterUser,
-      account: null
-    });
-  }
-
-  const sessionMaxAge = authOptions.session?.maxAge || 30 * 24 * 60 * 60;
-  
-  return await encode({
-    token: tokenPayload,
-    secret: secret,
-    maxAge: sessionMaxAge,
+    role: user.role || 'customer'
   });
+  
+  return token;
 }
 
 // Helper function to set session cookie
 function setSessionCookie(response: NextResponse, sessionToken: string) {
-  const sessionMaxAge = authOptions.session?.maxAge || 30 * 24 * 60 * 60;
+  const sessionMaxAge = 30 * 24 * 60 * 60; // 30 days
   const cookieName = process.env.NEXTAUTH_URL?.startsWith("https://") 
-                     ? "__Secure-next-auth.session-token" 
-                     : "next-auth.session-token";
+                     ? "__Secure-genfity-session-token" 
+                     : "genfity-session-token";
   
   response.cookies.set({
     name: cookieName,

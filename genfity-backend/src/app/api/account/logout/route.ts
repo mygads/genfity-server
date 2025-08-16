@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import jwt from 'jsonwebtoken';
-import { prisma } from '@/lib/prisma';
 import { tokenBlacklist } from '@/lib/token-blacklist';
 
 export async function OPTIONS() {
   return corsOptionsResponse();
 }
 
-export async function POST(request: Request) {  try {
+export async function POST(request: Request) {
+  try {
     // Cek JWT token di header untuk customer logout
     const authHeader = request.headers.get("authorization");
     const token = authHeader?.split(" ")[1];
@@ -41,24 +39,10 @@ export async function POST(request: Request) {  try {
       }
     }
 
-    // Jika tidak ada JWT token, cek session untuk admin logout
-    const session = await getServerSession(authOptions);
-    if (session) {
-      return withCORS(NextResponse.json({ 
-        success: true,
-        message: "Admin session logout successful.",
-        data: {
-          type: "SESSION_LOGOUT",
-          userId: session.user?.id,
-          timestamp: new Date().toISOString()
-        }
-      }, { status: 200 }));
-    }
-
-    // Jika tidak ada token maupun session
+    // Jika tidak ada token
     return withCORS(NextResponse.json({ 
       success: false,
-      message: "No authentication found. Please provide a valid token or session.",
+      message: "No authentication found. Please provide a valid token.",
       error: "NO_AUTHENTICATION" 
     }, { status: 401 }));
   } catch (error) {

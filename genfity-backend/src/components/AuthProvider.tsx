@@ -1,13 +1,12 @@
 'use client';
 
-import { SessionProvider } from 'next-auth/react';
 import React from 'react';
 
 interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-// Backend AuthProvider for NextAuth (admin)
+// Backend AuthProvider for JWT (admin)
 export default function AuthProvider({ children }: AuthProviderProps) {
-  return <SessionProvider>{children}</SessionProvider>;
+  return <>{children}</>;
 }

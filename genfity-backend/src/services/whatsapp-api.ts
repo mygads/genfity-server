@@ -1,4 +1,3 @@
-import { apiCall, publicApiCall } from './api-call'
 import type {
   WhatsAppSession,
   WhatsAppSessionsResponse,
@@ -20,6 +19,30 @@ import type {
 // API Base URLs
 const CUSTOMER_API_BASE = '/customer/whatsapp'
 const PUBLIC_API_BASE = '/services/whatsapp/chat'
+
+// Helper function for authenticated API calls
+async function apiCall<T>(endpoint: string, options: RequestInit): Promise<T> {
+  const response = await fetch(`/api${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  })
+  return response.json()
+}
+
+// Helper function for public API calls
+async function publicApiCall<T>(endpoint: string, options: RequestInit): Promise<T> {
+  const response = await fetch(`/api${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  })
+  return response.json()
+}
 
 // API Key Management
 export async function getApiKey(): Promise<WhatsAppApiKey> {

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentExpirationService } from '@/lib/payment-expiration';
 import { TransactionStatusManager } from '@/lib/transaction-status-manager';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { verifyUserToken } from '@/lib/admin-auth';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = await verifyUserToken(req);
     
-    if (!session?.user?.id) {
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

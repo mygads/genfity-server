@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { verifyUserToken } from "@/lib/admin-auth";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { z } from "zod";
 
@@ -13,8 +12,8 @@ const purchaseWhatsappSchema = z.object({
 // POST /api/whatsapp-api/purchase - Create WhatsApp service transaction
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = await verifyUserToken(request as any);
+    if (!user) {
       return withCORS(NextResponse.json(
         { success: false, error: "Authentication required" },
         { status: 401 }
@@ -53,7 +52,7 @@ export async function POST(request: Request) {
       // Create main transaction
       const transaction = await tx.transaction.create({
         data: {
-          userId: session.user.id,
+          userId: user.id,
           type: 'whatsapp_service',
           amount,
           status: 'pending',

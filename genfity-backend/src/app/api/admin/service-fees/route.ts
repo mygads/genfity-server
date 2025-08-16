@@ -1,9 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import jwt from 'jsonwebtoken';
 import { z } from "zod";
+
+// Helper function to verify admin JWT token
+async function verifyAdminToken(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.split(" ")[1];
+  
+  if (!token) {
+    return null;
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+    if (decoded.role !== 'admin') {
+      return null;
+    }
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
 
 // Validation schema for service fee
 const serviceFeeSchema = z.object({
@@ -72,8 +91,8 @@ const serviceFeeSchema = z.object({
 // GET /api/admin/service-fees - Get all service fees
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || session.user.role !== 'admin') {
+    const adminUser = await verifyAdminToken(request);
+    if (!adminUser) {
       return withCORS(NextResponse.json(
         { success: false, error: "Admin access required" },
         { status: 403 }
@@ -100,8 +119,8 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/service-fees - Create new service fee
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || session.user.role !== 'admin') {
+    const adminUser = await verifyAdminToken(request);
+    if (!adminUser) {
       return withCORS(NextResponse.json(
         { success: false, error: "Admin access required" },
         { status: 403 }

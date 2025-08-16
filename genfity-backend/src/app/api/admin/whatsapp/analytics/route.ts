@@ -1,19 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import jwt from 'jsonwebtoken';
 import WhatsAppMessageTracker from '@/lib/whatsapp-message-tracker';
+
+// Helper function to verify admin JWT token
+async function verifyAdminToken(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.split(" ")[1];
+  
+  if (!token) {
+    return null;
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+    if (decoded.role !== 'admin') {
+      return null;
+    }
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
 
 // GET /api/admin/whatsapp/analytics - Get WhatsApp message analytics for admin
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const adminUser = await verifyAdminToken(request);
+    if (!adminUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is admin
-    if (session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
     }
 
     const url = new URL(request.url);

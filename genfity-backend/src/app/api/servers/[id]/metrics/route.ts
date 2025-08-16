@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { verifyAdminToken } from '@/lib/admin-auth';
 
 /**
  * DigitalOcean Monitoring Metrics API
@@ -39,9 +38,9 @@ export async function GET(
 ) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const adminVerification = await verifyAdminToken(request);
+    if (!adminVerification.success) {
+      return NextResponse.json({ error: adminVerification.error }, { status: 401 });
     }
 
     const { id } = await params;

@@ -3,9 +3,6 @@
 import { motion } from "framer-motion"
 import { ArrowRight, Loader2 } from "lucide-react"
 import { useState } from "react"
-import { 
-  processCheckout
-} from "@/services/checkout-api"
 import type { 
   CheckoutRequest, 
   CheckoutPackage,
@@ -89,8 +86,15 @@ export function CheckoutPhase({
       }
 
       // Process checkout
-      const response = await processCheckout(checkoutData)
-      onCheckoutSuccess(response)
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(checkoutData),
+      })
+      const result = await response.json()
+      onCheckoutSuccess(result)
 
     } catch (error: any) {
       console.error('Checkout error:', error)

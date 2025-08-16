@@ -4,9 +4,6 @@ import { motion } from "framer-motion"
 import { ArrowRight, Loader2, Check } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  createPayment
-} from "@/services/checkout-api"
 import type { 
   PaymentCreateRequest,
   PaymentCreateResponse,
@@ -43,11 +40,18 @@ export function PaymentMethodPhase({
         paymentMethod: paymentMethod
       }
 
-      const response = await createPayment(paymentData)
+      const response = await fetch("/api/payments", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(paymentData),
+      })
+      const result = await response.json()
       
       // Redirect to payment status page instead of continuing in checkout
-      if (response.success && response.data.payment.id) {
-        router.push(`/payment/status/${response.data.payment.id}`)
+      if (result.success && result.data.payment.id) {
+        router.push(`/payment/status/${result.data.payment.id}`)
       } else {
         onError("Gagal membuat pembayaran. Silakan coba lagi.")
       }

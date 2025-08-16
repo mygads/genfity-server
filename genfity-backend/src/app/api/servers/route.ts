@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { verifyAdminToken } from '@/lib/admin-auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const adminVerification = await verifyAdminToken(request);
+    if (!adminVerification.success) {
+      return NextResponse.json({ error: adminVerification.error }, { status: 401 });
     }
 
     // Get servers from database
@@ -31,9 +30,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const adminVerification = await verifyAdminToken(request);
+    if (!adminVerification.success) {
+      return NextResponse.json({ error: adminVerification.error }, { status: 401 });
     }
 
     const digitalOceanToken = process.env.DIGITALOCEAN_TOKEN;

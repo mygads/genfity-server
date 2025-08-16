@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { verifyUserToken } from "@/lib/admin-auth";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { PaymentExpirationService } from "@/lib/payment-expiration";
 import { z } from "zod";
@@ -239,15 +238,17 @@ async function processSuccessfulPayment(transactionId: string, paymentId: string
 }
 
 // POST /api/payments/process - Unified payment processing for all transaction types
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userVerification = await verifyUserToken(request);
+    if (!userVerification.success) {
       return withCORS(NextResponse.json(
-        { success: false, error: "Authentication required" },
+        { success: false, error: userVerification.error },
         { status: 401 }
       ));
     }
+
+    const userId = userVerification.userId;
 
     const body = await request.json();
     const validation = processPaymentSchema.safeParse(body);
@@ -263,7 +264,7 @@ export async function POST(request: Request) {
     const transaction = await prisma.transaction.findFirst({
       where: {
         id: transactionId,
-        userId: session.user.id,
+        userId: userId,
         status: { in: ['created', 'pending'] }, // Allow payment for both created and pending
       },
       include: {
@@ -307,7 +308,7 @@ export async function POST(request: Request) {
         transaction.payment.id,
         'pending',
         `Updated payment method to ${method}`,
-        session.user.id
+        userId
       );
       
       // Update method and amount separately since updatePaymentStatus doesn't handle these

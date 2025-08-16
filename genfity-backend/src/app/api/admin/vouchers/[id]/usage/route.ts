@@ -1,7 +1,26 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import jwt from 'jsonwebtoken';
+
+// Helper function to verify admin JWT token
+async function verifyAdminToken(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.split(" ")[1];
+  
+  if (!token) {
+    return null;
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+    if (decoded.role !== 'admin') {
+      return null;
+    }
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
 
 export async function GET(
   request: NextRequest,
@@ -9,8 +28,8 @@ export async function GET(
 ) {
   try {
     // Check if user is authenticated and is admin
-    const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
+    const adminUser = await verifyAdminToken(request);
+    if (!adminUser) {
       return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
     }
 

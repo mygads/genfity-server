@@ -1,17 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentExpirationService } from '@/lib/payment-expiration';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import jwt from 'jsonwebtoken';
+
+// Helper function to verify admin JWT token
+async function verifyAdminToken(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.split(" ")[1];
+  
+  if (!token) {
+    return null;
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+    if (decoded.role !== 'admin') {
+      return null;
+    }
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ paymentId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const adminUser = await verifyAdminToken(req);
     
-    // Check if user is admin (you can adjust this based on your auth system)
-    if (!session?.user?.id || session.user.role !== 'admin') {
+    // Check if user is admin
+    if (!adminUser) {
       return NextResponse.json({ error: 'Unauthorized - Admin access required' }, { status: 401 });
     }    const { paymentId } = await params;
     const body = await req.json();
@@ -33,7 +52,7 @@ export async function POST(
       paymentId,
       status,
       adminNotes,
-      session.user.id
+      adminUser.id
     );    return NextResponse.json({
       success: true,
       message: 'Payment status updated successfully',

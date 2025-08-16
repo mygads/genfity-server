@@ -1,10 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import jwt from 'jsonwebtoken';
 import { z } from "zod";
 import { PaymentExpirationService } from "@/lib/payment-expiration";
+
+// Helper function to verify admin JWT token
+async function verifyAdminToken(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.split(" ")[1];
+  
+  if (!token) {
+    return null;
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+    if (decoded.role !== 'admin') {
+      return null;
+    }
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
 
 const querySchema = z.object({
   page: z.string().nullable().transform(val => val || "1"),
@@ -20,8 +39,8 @@ const querySchema = z.object({
 // GET /api/admin/payments - Get all payments with filtering and pagination
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || session.user.role !== 'admin') {
+    const adminUser = await verifyAdminToken(request);
+    if (!adminUser) {
       return withCORS(NextResponse.json(
         { success: false, error: "Admin access required" },
         { status: 403 }

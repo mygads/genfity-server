@@ -1,15 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import jwt from 'jsonwebtoken';
+
+// Helper function to verify admin JWT token
+async function verifyAdminToken(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.split(" ")[1];
+  
+  if (!token) {
+    return null;
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+    // Check if user has admin role
+    if (decoded.role !== 'admin') {
+      return null;
+    }
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
 
 // GET /api/admin/addon-deliveries - Get addon deliveries with stats
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const adminUser = await verifyAdminToken(request);
     
-    if (!session?.user || session.user.role !== 'admin') {
+    if (!adminUser) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 401 }
