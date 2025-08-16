@@ -194,3 +194,6 @@ scripts/local/
 bin/
 build/
 dist/
+
+# Ignore specific backup folder
+backup-20250816-144259/
