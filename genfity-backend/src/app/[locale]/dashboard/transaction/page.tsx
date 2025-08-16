@@ -27,7 +27,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import { getCustomerTransactions, cancelTransaction } from "@/services/checkout-api"
 import type { TransactionItem, TransactionListResponse } from "@/types/checkout"
 
 interface TransactionStats {
@@ -65,11 +64,12 @@ export default function TransactionDashboardPage() {
   const loadTransactions = async (offset: number = 0) => {
     try {
       setLoading(true)
-      const response: TransactionListResponse = await getCustomerTransactions(Math.floor(offset / pagination.limit) + 1, pagination.limit)
+      const response = await fetch(`/api/transaction?page=${Math.floor(offset / pagination.limit) + 1}&limit=${pagination.limit}`)
+      const result: TransactionListResponse = await response.json()
       
-      if (response.success) {
-        setTransactions(response.data)
-        setPagination(response.pagination)
+      if (result.success) {
+        setTransactions(result.data)
+        setPagination(result.pagination)
       }
     } catch (error) {
       console.error("Failed to load transactions:", error)
@@ -87,15 +87,30 @@ export default function TransactionDashboardPage() {
   const handleCancelTransaction = async (transactionId: string) => {
     try {
       setCancellingTransactionId(transactionId)
-      await cancelTransaction(transactionId, "Cancelled by user")
-      
-      toast({
-        title: "Success",
-        description: "Transaction cancelled successfully"
+      const response = await fetch(`/api/transaction/${transactionId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason: "Cancelled by user" })
       })
+      const result = await response.json()
       
-      // Reload transactions
-      loadTransactions(pagination.offset)
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: "Transaction cancelled successfully"
+        })
+        
+        // Reload transactions
+        loadTransactions(pagination.offset)
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error?.message || "Failed to cancel transaction. Please try again."
+        })
+      }
     } catch (error) {
       console.error("Failed to cancel transaction:", error)
       toast({

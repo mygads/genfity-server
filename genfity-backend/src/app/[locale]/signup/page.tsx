@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useAuth } from "@/components/Auth/AuthContext"
-import { signUp, resendOtp } from "@/services/auth-api"
 import { BorderBeam } from "@/components/ui/border-beam"
 import { ShineBorder } from "@/components/ui/shine-border"
 
@@ -32,7 +31,14 @@ export default function SignupPage() {
     setIsLoading(true)
     try {
       // Kirim data signup ke backend menggunakan API langsung
-      const result = await signUp({ name, email, phone, password })
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, email, phone, password })
+      })
+      const result = await response.json()
       
       if (result.success) {
         setStep("verify")

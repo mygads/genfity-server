@@ -5,7 +5,6 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Loader2 } from "lucide-react"
-import { sendEmailOtp, verifyOtp, resendOtp } from "@/services/auth-api"
 
 export default function EmailVerificationPage() {
   const router = useRouter()
@@ -22,7 +21,14 @@ export default function EmailVerificationPage() {
     setIsLoading(true)
 
     try {
-      const result = await sendEmailOtp({ email })
+      const response = await fetch('/api/auth/send-email-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      })
+      const result = await response.json()
 
       if (result.success) {
         setStep("verify")
@@ -56,11 +62,18 @@ export default function EmailVerificationPage() {
 
     try {
       const otpValue = otp.join("")
-      const result = await verifyOtp({ 
-        identifier: email, 
-        otp: otpValue, 
-        purpose: "verify-email" 
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          identifier: email, 
+          otp: otpValue, 
+          purpose: "verify-email" 
+        })
       })
+      const result = await response.json()
 
       if (result.success) {
         setStep("success")
@@ -83,7 +96,15 @@ export default function EmailVerificationPage() {
     setError("")
     setIsLoading(true)
     try {
-      const result = await resendOtp({ identifier: email, purpose: "verify-email" })
+      const response = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier: email, purpose: "verify-email" })
+      })
+      const result = await response.json()
+      
       if (result.success) {
         setOtp(["", "", "", ""])
         setResendCooldown(60)
@@ -178,7 +199,7 @@ export default function EmailVerificationPage() {
                   </div>
 
                   <p className="mb-11 text-center text-base font-medium text-body-color">
-                    We've sent a 4-digit verification code to {email}
+                    We&#39;ve sent a 4-digit verification code to {email}
                   </p>
 
                   {error && (
@@ -227,7 +248,7 @@ export default function EmailVerificationPage() {
 
                     <div className="text-center">
                       <p className="text-base font-medium text-body-color">
-                        Didn't receive the code?{" "}
+                        Didn&#39;t receive the code?{" "}
                         <button
                           type="button"
                           onClick={handleResendOtp}

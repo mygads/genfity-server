@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 import createIntlMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
 
@@ -172,9 +171,7 @@ export async function middleware(req: NextRequest) {
 
     // API ROUTES AUTHENTICATION
     if (isApiRoute) {
-        // Get tokens
-        const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-        
+        // Get JWT token from Authorization header
         let jwtToken = null;
         const authHeader = req.headers.get('authorization');
         if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -186,15 +183,37 @@ export async function middleware(req: NextRequest) {
             }
         }
 
-        // Public routes
+        // Public routes (tidak memerlukan token)
         const publicRoutes = [
             '/api/auth/',
             '/api/customer/catalog',
             '/api/customer/check-voucher',
             '/api/services/whatsapp/',
+            '/api/health',
+            '/api/webhook',
         ];
 
         if (publicRoutes.some(route => pathname.startsWith(route))) {
+            const response = NextResponse.next();
+            response.headers.set("Access-Control-Allow-Origin", "*");
+            response.headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+            response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+            return response;
+        }
+
+        // Account API routes - require JWT (semua user yang login)
+        if (pathname.startsWith('/api/account')) {
+            if (!jwtToken) {
+                return NextResponse.json(
+                    { 
+                        success: false, 
+                        error: 'Authentication required',
+                        message: 'Please provide a valid JWT token in Authorization header' 
+                    }, 
+                    { status: 401 }
+                );
+            }
+            
             const response = NextResponse.next();
             response.headers.set("Access-Control-Allow-Origin", "*");
             response.headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");

@@ -1,17 +1,29 @@
 'use client';
 
-import { useState } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { SessionManager } from '@/lib/storage';
 
 export default function SettingsPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    // Check authentication
+    const session = SessionManager.getSession();
+    if (!session) {
+      router.push('/auth/signin');
+      return;
+    }
+    setUser(session);
+    setLoading(false);
+  }, [router]);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +90,8 @@ export default function SettingsPage() {
         setMessage({ type: 'error', text: data.message || 'Gagal menghapus akun.' });
       } else {
         setMessage({ type: 'success', text: data.message || 'Akun berhasil dihapus.' });
-        await signOut({ redirect: false });
+        // Clear session and redirect
+        SessionManager.clearSession();
         router.push('/'); // Redirect ke homepage atau halaman login
       }
     } catch (error) {
@@ -87,11 +100,11 @@ export default function SettingsPage() {
     }
   };
 
-  if (status === 'loading') {
+  if (loading) {
     return <p>Loading...</p>;
   }
 
-  if (status === 'unauthenticated') {
+  if (!user) {
     router.push('/auth/signin');
     return null;
   }
@@ -152,10 +165,10 @@ export default function SettingsPage() {
         </form>
       </section>
 
-      {session?.user?.email && !(session.user as typeof session.user & { emailVerified?: boolean }).emailVerified && (
+      {user?.email && !user?.emailVerified && (
         <section style={{ marginBottom: '30px' }}>
           <h2>Verifikasi Email</h2>
-          <p>Email Anda ({session.user.email}) belum diverifikasi.</p>
+          <p>Email Anda ({user.email}) belum diverifikasi.</p>
           <button onClick={handleResendVerificationEmail} style={{ padding: '10px 15px' }}>
             Kirim Ulang Email Verifikasi
           </button>

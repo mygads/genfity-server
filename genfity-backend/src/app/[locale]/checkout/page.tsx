@@ -18,8 +18,8 @@ import { OrderSummary } from "@/components/Checkout/OrderSummary"
 import { PaymentOrderSummary } from "@/components/Checkout/PaymentOrderSummary"
 
 import { 
-  checkVoucher, 
-} from "@/services/checkout-api"
+  // checkVoucher function will be replaced with direct fetch 
+} from "@/types/checkout"
 import type { 
   VoucherCheckRequest,
   VoucherCheckItem,
@@ -313,7 +313,16 @@ export default function CheckoutPage() {
         items: voucherItems
       }
 
-      const voucherResponse = await checkVoucher(voucherRequest)
+      // Direct API call to check voucher
+      const response = await fetch('/api/voucher/check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(voucherRequest)
+      })
+      
+      const voucherResponse = await response.json()
       
       if (voucherResponse.success && voucherResponse.isValid && voucherResponse.data) {
         updateVoucherState({

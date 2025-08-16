@@ -29,7 +29,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
-import { getTransactionDetails, cancelTransaction, createPayment, cancelPayment } from "@/services/checkout-api"
 import type { TransactionItem, TransactionDetailResponse } from "@/types/checkout"
 
 export default function TransactionDetailPage() {
@@ -115,9 +114,10 @@ export default function TransactionDetailPage() {
   const fetchTransactionDetails = async () => {
     try {
       setRefreshing(true)
-      const response: TransactionDetailResponse = await getTransactionDetails(transactionId)
-      console.log('Transaction data received:', response.data) // Debug log
-      setTransactionData(response.data)
+      const response = await fetch(`/api/transaction/${transactionId}`)
+      const result: TransactionDetailResponse = await response.json()
+      console.log('Transaction data received:', result.data) // Debug log
+      setTransactionData(result.data)
       
       // Show success toast only when manually refreshing (not on initial load)
       if (!loading) {
@@ -207,15 +207,30 @@ export default function TransactionDetailPage() {
   const handleCancelTransaction = async () => {
     try {
       setCancellingTransaction(true)
-      await cancelTransaction(transactionId, "Cancelled by user")
-      
-      toast({
-        title: "Success",
-        description: "Transaction cancelled successfully"
+      const response = await fetch(`/api/transaction/${transactionId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason: "Cancelled by user" })
       })
+      const result = await response.json()
       
-      // Refresh transaction data
-      await fetchTransactionDetails()
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: "Transaction cancelled successfully"
+        })
+        
+        // Refresh transaction data
+        await fetchTransactionDetails()
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error?.message || "Failed to cancel transaction"
+        })
+      }
     } catch (error) {
       console.error("Failed to cancel transaction:", error)
       toast({
@@ -230,17 +245,30 @@ export default function TransactionDetailPage() {
   const handleCreatePayment = async (paymentMethod: string) => {
     try {
       setCreatingPayment(true)
-      const response = await createPayment({
-        transactionId: transactionId,
-        paymentMethod: paymentMethod
+      const response = await fetch('/api/payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          transactionId: transactionId,
+          paymentMethod: paymentMethod
+        })
       })
+      const result = await response.json()
       
-      if (response.success && response.data.payment.id) {
+      if (result.success && result.data.payment.id) {
         toast({
           title: "Payment Created",
           description: "Redirecting to payment page..."
         })
-        router.push(`/dashboard/transaction/${transactionId}/${response.data.payment.id}`)
+        router.push(`/dashboard/transaction/${transactionId}/${result.data.payment.id}`)
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error?.message || "Failed to create payment"
+        })
       }
     } catch (error) {
       console.error("Failed to create payment:", error)
@@ -259,15 +287,30 @@ export default function TransactionDetailPage() {
     
     try {
       setCancellingPayment(true)
-      await cancelPayment(transactionData.payment.id, "Cancelled by user")
-      
-      toast({
-        title: "Success",
-        description: "Payment cancelled successfully"
+      const response = await fetch(`/api/payment/${transactionData.payment.id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason: "Cancelled by user" })
       })
+      const result = await response.json()
       
-      // Refresh transaction data to show updated payment status
-      await fetchTransactionDetails()
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: "Payment cancelled successfully"
+        })
+        
+        // Refresh transaction data to show updated payment status
+        await fetchTransactionDetails()
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error?.message || "Failed to cancel payment"
+        })
+      }
     } catch (error) {
       console.error("Failed to cancel payment:", error)
       toast({
@@ -961,7 +1004,7 @@ export default function TransactionDetailPage() {
                 
                 <div className="flex justify-between font-semibold">
                   <span>Total Payment:</span>
-                  <span className="text-primary">Rp {parseInt(transactionData.finalAmount).toLocaleString('id-ID')}</span>
+                  <span className="text-primary">Rp {parseInt(transactionData.finalAmount || "0").toLocaleString('id-ID')}</span>
                 </div>
               </div>
 

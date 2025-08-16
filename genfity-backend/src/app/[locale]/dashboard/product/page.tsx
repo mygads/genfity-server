@@ -32,7 +32,6 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/Auth/AuthContext"
 import { useCart } from "@/components/Cart/CartContext"
-import { fetchCatalog } from "@/services/product-data-api"
 import type { Category, Package, Addon, WhatsAppPackage } from "@/types/product"
 import { FaWhatsapp } from "react-icons/fa"
 import { GradientCard } from "@/components/ui/gradient-card"
@@ -75,12 +74,13 @@ export default function DashboardProductPage() {
   // Checkout state
   const [cartOpen, setCartOpen] = useState(false)
 
-  // Load products on component mount - use catalog like /products page
+  // Load products on component mount - use direct API call
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
       try {
-        const catalogResponse = await fetchCatalog()
+        const response = await fetch('/api/catalog')
+        const catalogResponse = await response.json()
         
         console.log("Dashboard Catalog Response:", catalogResponse)
         

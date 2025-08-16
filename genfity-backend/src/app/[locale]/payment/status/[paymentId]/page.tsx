@@ -18,7 +18,6 @@ import {
   Loader2
 } from "lucide-react"
 import Link from "next/link"
-import { checkPaymentStatus, cancelPayment } from "@/services/checkout-api"
 import { PaymentStatus } from "@/types/checkout"
 import { useAuth } from "@/components/Auth/AuthContext"
 
@@ -47,19 +46,20 @@ export default function PaymentStatusPage() {
     const checkStatus = async () => {
       try {
         setLoading(currentAttempts === 0) // Only show loading on first attempt
-        const response = await checkPaymentStatus(paymentId)
-        setPaymentData(response)
+        const response = await fetch(`/api/payment/${paymentId}/status`)
+        const result = await response.json()
+        setPaymentData(result)
         setError(null)
 
         // If payment is successful, redirect to success page
-        if (response.data.payment.status === "paid") {
+        if (result.data.payment.status === "paid") {
           if (intervalId) clearInterval(intervalId)
           router.push(`/payment/success/${paymentId}`)
           return
         }
 
         // If payment failed, expired, cancelled, or rejected, stop polling
-        if (["failed", "expired", "cancelled", "rejected"].includes(response.data.payment.status)) {
+        if (["failed", "expired", "cancelled", "rejected"].includes(result.data.payment.status)) {
           if (intervalId) clearInterval(intervalId)
           return
         }
@@ -161,11 +161,18 @@ export default function PaymentStatusPage() {
     
     try {
       setCancellingPayment(true)
-      await cancelPayment(paymentData.data.payment.id, "Cancelled by user")
+      const response = await fetch(`/api/payment/${paymentData.data.payment.id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason: "Cancelled by user" })
+      })
       
       // Refresh payment data to show updated status
-      const response = await checkPaymentStatus(paymentId)
-      setPaymentData(response)
+      const statusResponse = await fetch(`/api/payment/${paymentId}/status`)
+      const result = await statusResponse.json()
+      setPaymentData(result)
     } catch (error) {
       console.error("Failed to cancel payment:", error)
       setError("Gagal membatalkan pembayaran")

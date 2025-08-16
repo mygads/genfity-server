@@ -27,7 +27,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
-import { checkPaymentStatus } from "@/services/checkout-api"
 import type { PaymentStatus } from "@/types/checkout"
 
 export default function PaymentInstructionPage() {
@@ -104,18 +103,19 @@ export default function PaymentInstructionPage() {
     const checkStatus = async () => {
       try {
         setRefreshing(true)
-        const response = await checkPaymentStatus(paymentId)
-        setPaymentData(response)
+        const response = await fetch(`/api/payment/${paymentId}/status`)
+        const result: PaymentStatus = await response.json()
+        setPaymentData(result)
         setError(null)
 
         // If payment is successful, redirect to success page
-        if (response.data.payment.status === "paid") {
+        if (result.data.payment.status === "paid") {
           if (intervalId) clearInterval(intervalId)
           return
         }
 
         // If payment failed, expired, cancelled, or rejected, stop polling
-        if (["failed", "expired", "cancelled", "rejected"].includes(response.data.payment.status)) {
+        if (["failed", "expired", "cancelled", "rejected"].includes(result.data.payment.status)) {
           if (intervalId) clearInterval(intervalId)
           return
         }

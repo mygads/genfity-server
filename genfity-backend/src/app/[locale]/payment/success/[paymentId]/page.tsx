@@ -14,7 +14,6 @@ import {
 import Link from "next/link"
 import { useAuth } from "@/components/Auth/AuthContext"
 import { useToast } from "@/components/ui/use-toast"
-import { getCustomerPaymentDetails } from "@/services/checkout-api"
 import { PaymentStatus } from "@/types/checkout"
 
 export default function PaymentSuccessPage() {
@@ -54,8 +53,9 @@ export default function PaymentSuccessPage() {
     const fetchPaymentDetails = async () => {
       try {
         setLoading(true)
-        const response = await getCustomerPaymentDetails(paymentId)
-        setPaymentData(response)
+        const response = await fetch(`/api/payment/${paymentId}`)
+        const result = await response.json()
+        setPaymentData(result)
         setError(null)      } catch (err: unknown) {
         console.error("Error fetching payment details:", err)
         setError("Gagal memuat detail pembayaran")

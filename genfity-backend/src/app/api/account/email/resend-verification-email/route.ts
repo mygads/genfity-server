@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { getUserFromToken } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/prisma';
 import { sendVerificationEmail } from '@/lib/mailer';
 import { randomBytes } from 'crypto';
 import { withCORS, corsOptionsResponse } from '@/lib/cors';
-import jwt from 'jsonwebtoken';
 
 export async function OPTIONS() {
   return corsOptionsResponse();
@@ -13,47 +11,19 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    // Check for session-based auth (admin dashboard)
-    const session = await getServerSession(authOptions);
-    
-    // Check for JWT token (customer API)
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.split(" ")[1];
+    // Check for JWT token authentication
+    const userAuth = await getUserFromToken(request);
 
-    let userId: string | null = null;
-    let userEmail: string | null = null;
-    let authType: 'session' | 'jwt' = 'session';
-
-    // Determine authentication method and get user info
-    if (session?.user?.id && session?.user?.email) {
-      userId = session.user.id;
-      userEmail = session.user.email;
-      authType = 'session';
-    } else if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
-        userId = decoded.userId;
-        authType = 'jwt';
-        // For JWT, we'll get email from database
-      } catch (jwtError) {
-        return withCORS(NextResponse.json({ 
-          success: false,
-          message: 'Token tidak valid',
-          error: 'INVALID_TOKEN'
-        }, { status: 401 }));
-      }
-    }
-
-    if (!userId) {
+    if (!userAuth) {
       return withCORS(NextResponse.json({ 
         success: false,
-        message: 'Tidak terautentikasi. Session atau token diperlukan.',
+        message: 'Tidak terautentikasi. Token diperlukan.',
         error: 'AUTHENTICATION_REQUIRED'
       }, { status: 401 }));
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userAuth.id },
       select: {
         id: true,
         email: true,
@@ -116,7 +86,6 @@ export async function POST(request: Request) {
     return withCORS(NextResponse.json({ 
       success: true,
       message: 'Email verifikasi telah dikirim ulang. Silakan cek kotak masuk Anda.',
-      authType: authType,
       user: {
         id: user.id,
         email: user.email,

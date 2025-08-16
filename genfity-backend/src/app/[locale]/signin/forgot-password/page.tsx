@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useAuth } from "@/components/Auth/AuthContext"
-import { sendPasswordResetOtp, verifyPasswordResetOtp, resendOtp } from "@/services/auth-api"
 import { BorderBeam } from "@/components/ui/border-beam"
 import { ShineBorder } from "@/components/ui/shine-border"
 
@@ -39,13 +38,23 @@ export default function ForgotPasswordPage() {
       let formattedIdentifier = identifier
       if (!isEmailInput && identifier.startsWith("0")) {
         formattedIdentifier = "+62" + identifier.substring(1)
-      }      const result = await sendPasswordResetOtp({ 
-        identifier: formattedIdentifier, 
-        method: isEmailInput ? "email" : "whatsapp" 
+      }
+      
+      const response = await fetch('/api/auth/send-password-reset-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          identifier: formattedIdentifier, 
+          method: isEmailInput ? "email" : "whatsapp" 
+        })
       })
+      const result = await response.json()
 
       if (result.success) {
-        setStep("verify")      } else if (result.error) {
+        setStep("verify")
+      } else if (result.error) {
         setError(result.error.message || t('errors.sendFailed'))
       }
     } catch (err) {
@@ -74,20 +83,31 @@ export default function ForgotPasswordPage() {
     setError("")
     setIsLoading(true)
 
-    try {      if (newPassword !== confirmPassword) {
+    try {
+      if (newPassword !== confirmPassword) {
         setError(t('errors.passwordMismatch'))
         setIsLoading(false)
         return
-      }const otpValue = otp.join("")
+      }
+      
+      const otpValue = otp.join("")
 
-      const result = await verifyPasswordResetOtp({ 
-        identifier, 
-        otp: otpValue, 
-        newPassword 
+      const response = await fetch('/api/auth/verify-password-reset-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          identifier, 
+          otp: otpValue, 
+          newPassword 
+        })
       })
+      const result = await response.json()
 
       if (result.success) {
-        setStep("success")      } else if (result.error) {
+        setStep("success")
+      } else if (result.error) {
         setError(result.error.message || t('errors.resetFailed'))
       }
     } catch (err) {
@@ -102,7 +122,15 @@ export default function ForgotPasswordPage() {
     setError("")
     setIsLoading(true)
     try {
-      const result = await resendOtp({ identifier, purpose: "reset-password" })
+      const response = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier, purpose: "reset-password" })
+      })
+      const result = await response.json()
+      
       if (result.success) {
         setOtp(["", "", "", ""])
         setResendCooldown(60)

@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { withCORS, corsOptionsResponse } from '@/lib/cors';
-import jwt from 'jsonwebtoken';
+import { getUserFromToken } from '@/lib/auth-helpers';
 
 export async function OPTIONS() {
   return corsOptionsResponse();
@@ -12,38 +10,13 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    // Check for session-based auth (admin dashboard)
-    const session = await getServerSession(authOptions);
+    // Get user from JWT token (universal for all authenticated users)
+    const userAuth = await getUserFromToken(request);
     
-    // Check for JWT token (customer API)
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.split(" ")[1];
-
-    let userId: string | null = null;
-    let authType: 'session' | 'jwt' = 'session';
-
-    // Determine authentication method and get user ID
-    if (session?.user?.id) {
-      userId = session.user.id;
-      authType = 'session';
-    } else if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
-        userId = decoded.userId;
-        authType = 'jwt';
-      } catch (jwtError) {
-        return withCORS(NextResponse.json({ 
-          success: false,
-          message: 'Token tidak valid',
-          error: 'INVALID_TOKEN'
-        }, { status: 401 }));
-      }
-    }
-
-    if (!userId) {
+    if (!userAuth?.id) {
       return withCORS(NextResponse.json({ 
         success: false,
-        message: 'Tidak terautentikasi. Session atau token diperlukan.',
+        message: 'Authentication required. Please provide a valid JWT token.',
         error: 'AUTHENTICATION_REQUIRED'
       }, { status: 401 }));
     }
@@ -53,7 +26,7 @@ export async function POST(request: Request) {
     if (!currentPassword || !newPassword) {
       return withCORS(NextResponse.json({ 
         success: false,
-        message: 'Kata sandi saat ini dan kata sandi baru diperlukan',
+        message: 'Current password and new password are required',
         error: 'MISSING_REQUIRED_FIELDS'
       }, { status: 400 }));
     }
@@ -61,13 +34,13 @@ export async function POST(request: Request) {
     if (newPassword.length < 6) {
       return withCORS(NextResponse.json({ 
         success: false,
-        message: 'Kata sandi baru minimal 6 karakter',
+        message: 'New password must be at least 6 characters',
         error: 'PASSWORD_TOO_SHORT'
       }, { status: 400 }));
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userAuth.id },
       select: {
         id: true,
         password: true,
@@ -80,7 +53,7 @@ export async function POST(request: Request) {
     if (!user) {
       return withCORS(NextResponse.json({ 
         success: false,
-        message: 'Pengguna tidak ditemukan',
+        message: 'User not found',
         error: 'USER_NOT_FOUND'
       }, { status: 404 }));
     }
@@ -88,7 +61,7 @@ export async function POST(request: Request) {
     if (!user.password) {
       return withCORS(NextResponse.json({ 
         success: false,
-        message: 'Pengguna tidak memiliki kata sandi (mungkin login via OAuth)',
+        message: 'User does not have a password set',
         error: 'NO_PASSWORD_SET'
       }, { status: 400 }));
     }
@@ -97,22 +70,31 @@ export async function POST(request: Request) {
     if (!isPasswordValid) {
       return withCORS(NextResponse.json({ 
         success: false,
-        message: 'Kata sandi saat ini salah',
+        message: 'Current password is incorrect',
         error: 'INCORRECT_PASSWORD'
       }, { status: 403 }));
+    }
+
+    // Check if new password is same as current password
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    if (isSamePassword) {
+      return withCORS(NextResponse.json({ 
+        success: false,
+        message: 'New password must be different from current password',
+        error: 'SAME_PASSWORD'
+      }, { status: 400 }));
     }
 
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
     await prisma.user.update({
-      where: { id: userId },
+      where: { id: userAuth.id },
       data: { password: hashedNewPassword },
     });
 
     return withCORS(NextResponse.json({ 
       success: true,
-      message: 'Kata sandi berhasil diubah',
-      authType: authType,
+      message: 'Password changed successfully',
       user: {
         id: user.id,
         name: user.name,
@@ -124,7 +106,7 @@ export async function POST(request: Request) {
     console.error('Change password error:', error);
     return withCORS(NextResponse.json({ 
       success: false,
-      message: 'Terjadi kesalahan internal',
+      message: 'Internal server error',
       error: 'INTERNAL_SERVER_ERROR'
     }, { status: 500 }));
   }

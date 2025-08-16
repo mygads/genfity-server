@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { CheckCircle, Download, Home, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { checkPaymentStatus } from "@/services/checkout-api"
 import { PaymentStatus } from "@/types/checkout"
 
 export default function CheckoutSuccessPage() {
@@ -40,7 +39,8 @@ export default function CheckoutSuccessPage() {
       }
 
       try {
-        const status = await checkPaymentStatus(paymentId)
+        const response = await fetch(`/api/payment/status/${paymentId}`)
+        const status = await response.json()
         setPaymentStatus(status)
       } catch (error: any) {
         console.error("Error fetching payment status:", error)

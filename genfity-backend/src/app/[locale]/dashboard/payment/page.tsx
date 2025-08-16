@@ -44,7 +44,6 @@ import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/components/Auth/AuthContext"
 import { useRouter } from "next/navigation"
-import { getCustomerPayments, cancelPayment } from "@/services/checkout-api"
 import type { 
   CustomerPaymentsResponse, 
   PaymentListItem,
@@ -79,11 +78,18 @@ export default function PaymentDashboardPage() {
   const loadPayments = async (page = 1) => {
     try {
       setLoading(true)
-      const response = await getCustomerPayments(page, pagination.limit)
+      const response = await fetch(`/api/payment/customer?page=${page}&limit=${pagination.limit}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
       
-      if (response.success) {
-        setPayments(response.data.payments)
-        setPagination(response.data.pagination)
+      const data = await response.json()
+      
+      if (data.success) {
+        setPayments(data.data.payments)
+        setPagination(data.data.pagination)
       }
     } catch (error) {
       console.error("Failed to load payments:", error)
@@ -101,15 +107,28 @@ export default function PaymentDashboardPage() {
   const handleCancelPayment = async (paymentId: string) => {
     try {
       setCancellingPaymentId(paymentId)
-      await cancelPayment(paymentId, "Cancelled by user")
       
-      toast({
-        title: "Success",
-        description: "Payment cancelled successfully"
+      const response = await fetch(`/api/payment/${paymentId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: "Cancelled by user" })
       })
       
-      // Reload payments
-      loadPayments(pagination.page)
+      const data = await response.json()
+      
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "Payment cancelled successfully"
+        })
+        
+        // Reload payments
+        loadPayments(pagination.page)
+      } else {
+        throw new Error(data.message || "Failed to cancel payment")
+      }
     } catch (error) {
       console.error("Failed to cancel payment:", error)
       toast({

@@ -14,7 +14,6 @@
     "db:reset": "npx prisma migrate reset --force && npm run db:seed"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.9.0",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.0.1",
     "@prisma/client": "^6.9.0",
@@ -54,7 +53,6 @@
     "mini-svg-data-uri": "^1.4.4",
     "motion": "^11.18.2",
     "next": "15.3.1",
-    "next-auth": "^4.24.11",
     "next-intl": "^4.1.0",
     "next-themes": "^0.2.1",
     "node-fetch": "^3.3.2",

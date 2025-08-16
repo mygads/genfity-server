@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { getAdminAuth } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/prisma';
 import { withCORS, corsOptionsResponse } from '@/lib/cors';
 
@@ -8,32 +7,18 @@ export async function OPTIONS() {
   return corsOptionsResponse();
 }
 
-// Deactivate Account - Only for Admin using session auth
+// Deactivate Account - Only for Admin using JWT auth
 export async function POST(request: Request) {
   try {
-    // Only session-based auth for admin dashboard
-    const session = await getServerSession(authOptions);
+    // Check admin authentication
+    const adminAuth = await getAdminAuth(request);
 
-    if (!session?.user?.id) {
+    if (!adminAuth) {
       return withCORS(NextResponse.json({ 
         success: false,
         message: 'Tidak terautentikasi. Session admin diperlukan.',
         error: 'AUTHENTICATION_REQUIRED'
       }, { status: 401 }));
-    }
-
-    // Check if user is admin
-    const adminUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true, id: true, name: true }
-    });
-
-    if (!adminUser || adminUser.role !== 'admin') {
-      return withCORS(NextResponse.json({ 
-        success: false,
-        message: 'Akses ditolak. Hanya admin yang dapat menonaktifkan akun.',
-        error: 'ACCESS_DENIED'
-      }, { status: 403 }));
     }
 
     const { userId, reason } = await request.json();
@@ -47,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     // Prevent admin from deactivating their own account
-    if (userId === session.user.id) {
+    if (userId === adminAuth.id) {
       return withCORS(NextResponse.json({ 
         success: false,
         message: 'Tidak dapat menonaktifkan akun Anda sendiri',
@@ -101,7 +86,7 @@ export async function POST(request: Request) {
     });
 
     // Log the deactivation action
-    console.log(`Admin ${adminUser.name} (${adminUser.id}) deactivated user ${targetUser.name} (${targetUser.id}). Reason: ${reason || 'No reason provided'}`);
+    console.log(`Admin ${adminAuth.email} (${adminAuth.id}) deactivated user ${targetUser.name} (${targetUser.id}). Reason: ${reason || 'No reason provided'}`);
 
     return withCORS(NextResponse.json({ 
       success: true,
@@ -116,8 +101,8 @@ export async function POST(request: Request) {
         deactivatedAt: updatedUser.updatedAt
       },
       deactivatedBy: {
-        id: adminUser.id,
-        name: adminUser.name
+        id: adminAuth.id,
+        email: adminAuth.email
       },
       reason: reason || null
     }, { status: 200 }));
@@ -144,32 +129,18 @@ export async function POST(request: Request) {
   }
 }
 
-// Reactivate Account - Only for Admin using session auth
+// Reactivate Account - Only for Admin using JWT auth
 export async function PATCH(request: Request) {
   try {
-    // Only session-based auth for admin dashboard
-    const session = await getServerSession(authOptions);
+    // Check admin authentication
+    const adminAuth = await getAdminAuth(request);
 
-    if (!session?.user?.id) {
+    if (!adminAuth) {
       return withCORS(NextResponse.json({ 
         success: false,
         message: 'Tidak terautentikasi. Session admin diperlukan.',
         error: 'AUTHENTICATION_REQUIRED'
       }, { status: 401 }));
-    }
-
-    // Check if user is admin
-    const adminUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true, id: true, name: true }
-    });
-
-    if (!adminUser || adminUser.role !== 'admin') {
-      return withCORS(NextResponse.json({ 
-        success: false,
-        message: 'Akses ditolak. Hanya admin yang dapat mengaktifkan kembali akun.',
-        error: 'ACCESS_DENIED'
-      }, { status: 403 }));
     }
 
     const { userId, reason } = await request.json();
@@ -227,7 +198,7 @@ export async function PATCH(request: Request) {
     });
 
     // Log the reactivation action
-    console.log(`Admin ${adminUser.name} (${adminUser.id}) reactivated user ${targetUser.name} (${targetUser.id}). Reason: ${reason || 'No reason provided'}`);
+    console.log(`Admin ${adminAuth.email} (${adminAuth.id}) reactivated user ${targetUser.name} (${targetUser.id}). Reason: ${reason || 'No reason provided'}`);
 
     return withCORS(NextResponse.json({ 
       success: true,
@@ -242,8 +213,8 @@ export async function PATCH(request: Request) {
         reactivatedAt: updatedUser.updatedAt
       },
       reactivatedBy: {
-        id: adminUser.id,
-        name: adminUser.name
+        id: adminAuth.id,
+        email: adminAuth.email
       },
       reason: reason || null
     }, { status: 200 }));

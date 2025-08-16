@@ -1,32 +1,26 @@
-import { NextAuthOptions } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@auth/prisma-adapter';
 import { PrismaClient } from '../generated/prisma'; // Adjusted path
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
-// Extend the Session and User types to include 'id' and 'phone'
-declare module 'next-auth' {
-  interface Session {
-    user: {
-      id: string;
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-      phone?: string | null; // Added phone
-      role?: string | null; // Tambah role
-    }
-  }
-  interface User {
-    id: string;
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-    password?: string | null;
-    phone?: string | null; // Added phone
-    phoneVerified?: Date | null; // Added phoneVerified
-    emailVerified?: Date | null; // Ensure emailVerified is here if used
-    role?: string | null; // Tambah role
-  }
+// User interface for JWT payload
+export interface User {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  phone?: string | null;
+  role?: string | null;
+}
+
+// JWT payload interface
+export interface JWTPayload {
+  id: string;
+  email?: string | null;
+  phone?: string | null;
+  name?: string | null;
+  role?: string | null;
+  iat?: number;
+  exp?: number;
 }
 
 const prisma = new PrismaClient();
@@ -44,114 +38,91 @@ export function normalizePhoneNumber(phone: string): string {
   return '62' + phone.replace(/\D/g, '');
 }
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
-  providers: [
-    CredentialsProvider({
-      name: 'Credentials',
-      credentials: {
-        identifier: { label: "Email atau Nomor WhatsApp", type: "text" },
-        password: { label: "Password", type: "password" }
-      },
-      async authorize(credentials) {
-        if (!credentials?.identifier || !credentials?.password) {
-          throw new Error('Email/Telepon dan kata sandi diperlukan.');
-        }
+// Generate JWT token
+export function generateToken(user: User): string {
+  const payload: JWTPayload = {
+    id: user.id,
+    email: user.email,
+    phone: user.phone,
+    name: user.name,
+    role: user.role,
+  };
 
-        const { identifier, password } = credentials;
-        let user;
-        const isEmail = identifier.includes('@');
+  return jwt.sign(payload, process.env.NEXTAUTH_SECRET || 'fallback-secret', {
+    expiresIn: '7d',
+  });
+}
 
-        if (isEmail) {
-          user = await prisma.user.findUnique({
-            where: { email: identifier },
-            select: { id: true, name: true, email: true, image: true, password: true, phone: true, phoneVerified: true, emailVerified: true, role: true },
-          });
-        } else {
-          const normalizedPhone = normalizePhoneNumber(identifier);
-          user = await prisma.user.findUnique({
-            where: { phone: normalizedPhone },
-            select: { id: true, name: true, email: true, image: true, password: true, phone: true, phoneVerified: true, emailVerified: true, role: true },
-          });
-        }
+// Verify JWT token
+export function verifyToken(token: string): JWTPayload | null {
+  try {
+    const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as JWTPayload;
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
 
-        if (!user) {
-          throw new Error('Pengguna tidak ditemukan.');
-        }
+// Login function
+export async function loginUser(identifier: string, password: string): Promise<{ user: User; token: string } | null> {
+  if (!identifier || !password) {
+    throw new Error('Email/Telepon dan kata sandi diperlukan.');
+  }
 
-        if (isEmail && !user.emailVerified) {
-          throw new Error('Email belum diverifikasi. Silakan cek email Anda untuk link verifikasi atau daftar ulang untuk OTP WhatsApp.');
-        }
-        if (!isEmail && !user.phoneVerified) {
-          throw new Error('Nomor WhatsApp belum diverifikasi. Silakan selesaikan proses OTP.');
-        }
+  let user;
+  const isEmail = identifier.includes('@');
 
-        if (user.role !== 'admin') {
-          throw new Error('Akses hanya untuk admin.');
-        }
+  if (isEmail) {
+    user = await prisma.user.findUnique({
+      where: { email: identifier },
+      select: { id: true, name: true, email: true, image: true, password: true, phone: true, phoneVerified: true, emailVerified: true, role: true },
+    });
+  } else {
+    const normalizedPhone = normalizePhoneNumber(identifier);
+    user = await prisma.user.findUnique({
+      where: { phone: normalizedPhone },
+      select: { id: true, name: true, email: true, image: true, password: true, phone: true, phoneVerified: true, emailVerified: true, role: true },
+    });
+  }
 
-        if (!user.password) {
-          throw new Error('Konfigurasi akun tidak lengkap (tidak ada kata sandi).');
-        }
+  if (!user) {
+    throw new Error('Pengguna tidak ditemukan.');
+  }
 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (isEmail && !user.emailVerified) {
+    throw new Error('Email belum diverifikasi. Silakan cek email Anda untuk link verifikasi atau daftar ulang untuk OTP WhatsApp.');
+  }
+  if (!isEmail && !user.phoneVerified) {
+    throw new Error('Nomor WhatsApp belum diverifikasi. Silakan selesaikan proses OTP.');
+  }
 
-        if (!isPasswordValid) {
-          throw new Error('Kata sandi salah.');
-        }
+  if (user.role !== 'admin') {
+    throw new Error('Akses hanya untuk admin.');
+  }
 
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-          phone: user.phone, // Make sure to return phone
-          role: user.role, // Penting untuk middleware admin
-        };
-      }
-    })
-  ],
-  session: {
-    strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60, // 7 hari
-  },
-  pages: {
-    signIn: '/auth/signin',
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        // Cast user to include phone if it exists
-        const userWithPhone = user as { phone?: string | null; role?: string | null };
-        if (userWithPhone.phone) {
-            (token as { [key: string]: unknown }).phone = userWithPhone.phone;
-        }
-        if (userWithPhone.role) {
-            (token as any).role = userWithPhone.role;
-        }
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        // Add custom fields to session if they exist in token
-        interface CustomToken {
-            id?: string;
-            phone?: string | null;
-            [key: string]: unknown;
-        }
-        const customToken = token as CustomToken;
-        if (customToken.phone) {
-            session.user.phone = customToken.phone;
-        }
-        if ((token as any).role) {
-          session.user.role = (token as any).role as string;
-        }
-      }
-      return session;
-    },
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-};
+  if (!user.password) {
+    throw new Error('Konfigurasi akun tidak lengkap (tidak ada kata sandi).');
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+
+  if (!isPasswordValid) {
+    throw new Error('Kata sandi salah.');
+  }
+
+  const userForToken: User = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    image: user.image,
+    phone: user.phone,
+    role: user.role,
+  };
+
+  const token = generateToken(userForToken);
+
+  return {
+    user: userForToken,
+    token,
+  };
+}

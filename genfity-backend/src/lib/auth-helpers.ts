@@ -1,5 +1,3 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { verifyUserSession, extractTokenFromRequest } from "./jwt-session-manager";
 import { NextRequest } from "next/server";
 
@@ -11,8 +9,7 @@ export interface UserAuthInfo {
 }
 
 /**
- * Get user authentication information from JWT token or NextAuth session
- * Priority: JWT Token > NextAuth Session
+ * Get user authentication information from JWT token
  * @param request - The request object
  * @returns User auth info or null if not authenticated
  */
@@ -46,16 +43,6 @@ export async function getUserAuth(request: Request | NextRequest): Promise<UserA
         email: userEmail || '',
         role: userRole || 'customer',
         sessionId: sessionId || undefined
-      };
-    }
-
-    // Priority 3: Fallback to NextAuth session (for admin/dashboard routes)
-    const session = await getServerSession(authOptions);
-    if (session?.user?.id) {
-      return {
-        id: session.user.id,
-        email: session.user.email || '',
-        role: session.user.role || 'customer'
       };
     }
 
@@ -107,6 +94,51 @@ export async function getCustomerAuth(request: Request | NextRequest): Promise<U
     };
   } catch (error) {
     console.error('[AUTH_HELPERS] Error getting customer auth:', error);
+    return null;
+  }
+}
+
+/**
+ * Universal token-based authentication for /api/account routes
+ * Works for all authenticated users (customer, admin, super_admin)
+ */
+export async function getUserFromToken(request: Request | NextRequest): Promise<UserAuthInfo | null> {
+  try {
+    // Check JWT token in Authorization header
+    const token = extractTokenFromRequest(request as NextRequest);
+    if (!token) {
+      // Check JWT token headers (set by middleware for non-NextRequest)
+      if ('headers' in request) {
+        const userId = request.headers.get('x-user-id');
+        const userEmail = request.headers.get('x-user-email');
+        const userRole = request.headers.get('x-user-role');
+        const sessionId = request.headers.get('x-session-id');
+
+        if (userId) {
+          return {
+            id: userId,
+            email: userEmail || '',
+            role: userRole || 'customer',
+            sessionId: sessionId || undefined
+          };
+        }
+      }
+      return null;
+    }
+
+    const sessionData = await verifyUserSession(token);
+    if (!sessionData) {
+      return null;
+    }
+
+    return {
+      id: sessionData.user.id,
+      email: sessionData.user.email || '',
+      role: sessionData.user.role,
+      sessionId: sessionData.session.id
+    };
+  } catch (error) {
+    console.error('[AUTH_HELPERS] Error getting user from token:', error);
     return null;
   }
 }

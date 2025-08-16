@@ -1,7 +1,6 @@
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import ScrollToTop from "@/components/ScrollToTop";
-import { Inter } from "next/font/google";
 import "../../styles/index.css";
 import {notFound} from 'next/navigation';
 import {routing} from '@/i18n/routing';
@@ -58,8 +57,6 @@ export async function generateMetadata({params}: {params: Promise<{locale: strin
 
 export const revalidate = 60;
 
-const inter = Inter({ subsets: ["latin"] });
-
 export default async function LocaleLayout({children, params}: {children: React.ReactNode, params: Promise<{locale: string}>}) {
   const {locale} = await params;
   if (!hasLocale(routing.locales, locale)) {
@@ -67,23 +64,19 @@ export default async function LocaleLayout({children, params}: {children: React.
   }
   setRequestLocale(locale);
   return (
-    <html suppressHydrationWarning lang={locale}>
-      <body className={inter.className}>
-        <Providers>
-          <AuthProvider>
-            <CartProvider>
-              <ToastProvider>
-                <NextIntlClientProvider locale={locale}>
-                  <ConditionalLayoutWrapper>
-                    {children}
-                  </ConditionalLayoutWrapper>
-                </NextIntlClientProvider>
-              </ToastProvider>
-            </CartProvider>
-          </AuthProvider>
-        </Providers>
-      </body>
-    </html>
+    <Providers>
+      <AuthProvider>
+        <CartProvider>
+          <ToastProvider>
+            <NextIntlClientProvider locale={locale}>
+              <ConditionalLayoutWrapper>
+                {children}
+              </ConditionalLayoutWrapper>
+            </NextIntlClientProvider>
+          </ToastProvider>
+        </CartProvider>
+      </AuthProvider>
+    </Providers>
   );
 }
 

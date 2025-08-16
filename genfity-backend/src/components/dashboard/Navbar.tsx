@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Bell, LogOut, Menu, Settings, User, ChevronDown } from "lucide-react"
-import { signOut } from 'next-auth/react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,18 +14,36 @@ import {
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { SessionManager } from "@/lib/storage"
 
 interface NavbarProps {
     onMenuButtonClick: () => void
 }
 
 export default function Navbar({ onMenuButtonClick }: NavbarProps) {
-    const [showNotifications, setShowNotifications] = useState(false)    // TODO - in a real app, this would come from your auth system
+    const [showNotifications, setShowNotifications] = useState(false)
+    const router = useRouter()
+
+    // TODO - in a real app, this would come from your auth system
     const user = {
         name: "Admin User",
         role: "Administrator",
         image: "/logo-light.svg", // Placeholder image
         initials: "AU",
+    }
+
+    const handleLogout = async () => {
+        try {
+            // Clear session from localStorage
+            SessionManager.clearSession()
+            
+            // Redirect to signin page
+            router.push('/auth/signin')
+        } catch (error) {
+            console.error('Logout error:', error)
+            // Still redirect even if there's an error
+            router.push('/auth/signin')
+        }
     }
 
     return (
@@ -78,7 +96,7 @@ export default function Navbar({ onMenuButtonClick }: NavbarProps) {
                                 <span>Settings</span>
                             </DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-700/50" />
-                        <DropdownMenuItem className="hover:bg-red-100/80 dark:hover:bg-red-900/20 focus:bg-red-100/80 dark:focus:bg-red-900/20 text-red-600 dark:text-red-400" onClick={() => signOut({ callbackUrl: '/auth/signin' })}>
+                        <DropdownMenuItem className="hover:bg-red-100/80 dark:hover:bg-red-900/20 focus:bg-red-100/80 dark:focus:bg-red-900/20 text-red-600 dark:text-red-400" onClick={handleLogout}>
                             <LogOut className="mr-2 h-4 w-4" />
                             <span>Log out</span>
                         </DropdownMenuItem>

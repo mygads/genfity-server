@@ -29,25 +29,69 @@ import { FaWhatsapp } from "react-icons/fa"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { SimpleBarChart, SimpleDonutChart } from "@/components/ui/simple-charts"
-import { fetchDashboardData, DashboardData } from "@/services/dashboard-api"
 import Link from "next/link"
+
+// Dashboard data types
+interface DashboardData {
+  transactionSummary: {
+    totalOverall: number;
+    success: {
+      total: number;
+      product: number;
+      whatsapp: number;
+    };
+    pending: {
+      awaitingPayment: number;
+      awaitingVerification: number;
+    };
+    failed: number;
+  };
+  whatsappSummary: {
+    sessionQuota: {
+      used: number;
+      remaining: number;
+      total: number;
+    };
+    messageStats: {
+      sent: number;
+      failed: number;
+    };
+    activeSessions: number;
+    expiration: string | null;
+  };
+  recentHistory: {
+    products: any[];
+    whatsapp: any[];
+  };
+  productDeliveryLog: any[];
+}
 
 export default function Home() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
-  const fetchData = async () => {    try {
+  const fetchData = async () => {
+    try {
       setLoading(true)
       setError(null)
-      const response = await fetchDashboardData()
-      if (response && response.success && response.data) {
-        setDashboardData(response.data)
+      
+      const response = await fetch('/api/dashboard', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      const data = await response.json()
+      
+      if (data && data.success && data.data) {
+        setDashboardData(data.data)
         setLastRefresh(new Date())
         // Clear any previous errors
         setError(null)
       } else {
-        setError(response?.error?.message || "Failed to fetch dashboard data")
+        setError(data?.error?.message || "Failed to fetch dashboard data")
       }
     } catch (err) {
       setError("Error loading dashboard data")
@@ -100,7 +144,7 @@ export default function Home() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome back! Here's what's happening with your business today.</p>
+          <p className="text-muted-foreground mt-1">Welcome back! Here&#39;s what&#39;s happening with your business today.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -115,7 +159,8 @@ export default function Home() {
           </Button>
           <div className="text-sm text-muted-foreground">
             Last updated: {lastRefresh.toLocaleTimeString()}
-          </div>        </div>
+          </div>        
+          </div>
       </div>
 
       {/* Development Mode Indicator */}

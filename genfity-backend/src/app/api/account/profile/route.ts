@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
-import { getCustomerAuth } from "@/lib/auth-helpers";
+import { getUserFromToken } from "@/lib/auth-helpers";
 
-// GET /api/customer/profile - Get user profile
+// GET /api/account/profile - Get user profile (universal for all roles)
 export async function GET(request: Request) {
   try {
-    const userAuth = await getCustomerAuth(request);
+    const userAuth = await getUserFromToken(request);
     if (!userAuth?.id) {
       return withCORS(NextResponse.json(
         { success: false, error: "Authentication required" },
         { status: 401 }
       ));
-    }    const user = await prisma.user.findUnique({
+    }
+
+    const user = await prisma.user.findUnique({
       where: { id: userAuth.id },
       select: {
         id: true,
@@ -22,7 +24,8 @@ export async function GET(request: Request) {
         image: true,
         emailVerified: true,
         phoneVerified: true,
-        role: true,        _count: {
+        role: true,
+        _count: {
           select: {
             transactions: true,
           },
@@ -35,26 +38,57 @@ export async function GET(request: Request) {
         { success: false, error: "User not found" },
         { status: 404 }
       ));
-    }    // Get active WhatsApp services
-    const activeWhatsappServices = await prisma.servicesWhatsappCustomers.count({
-      where: {
-        customerId: userAuth.id,
-        expiredAt: { gt: new Date() },
-      },
-    });
+    }
 
-    // Get WhatsApp transactions count
-    const whatsappTransactionCount = await prisma.transaction.count({
-      where: {
-        userId: userAuth.id,
-        type: 'whatsapp_service',
-      },
-    });    // Get total WhatsApp services count
-    const totalWhatsappServices = await prisma.servicesWhatsappCustomers.count({
-      where: {
-        customerId: userAuth.id,
-      },
-    });
+    // Get stats berdasarkan role
+    let stats = {};
+    
+    if (user.role === 'customer') {
+      // Get active WhatsApp services
+      const activeWhatsappServices = await prisma.servicesWhatsappCustomers.count({
+        where: {
+          customerId: userAuth.id,
+          expiredAt: { gt: new Date() },
+        },
+      });
+
+      // Get WhatsApp transactions count
+      const whatsappTransactionCount = await prisma.transaction.count({
+        where: {
+          userId: userAuth.id,
+          type: 'whatsapp_service',
+        },
+      });
+
+      // Get total WhatsApp services count
+      const totalWhatsappServices = await prisma.servicesWhatsappCustomers.count({
+        where: {
+          customerId: userAuth.id,
+        },
+      });
+
+      stats = {
+        totalTransactions: user._count.transactions,
+        totalWhatsappTransactions: whatsappTransactionCount,
+        activeWhatsappServices,
+        totalWhatsappServices,
+      };
+    } else if (user.role === 'admin' || user.role === 'super_admin') {
+      // Admin stats
+      const totalUsers = await prisma.user.count({
+        where: { role: 'customer' }
+      });
+      
+      const totalTransactions = await prisma.transaction.count();
+      
+      const totalServices = await prisma.servicesWhatsappCustomers.count();
+
+      stats = {
+        totalUsers,
+        totalTransactions,
+        totalServices,
+      };
+    }
 
     return withCORS(NextResponse.json({
       success: true,
@@ -64,16 +98,11 @@ export async function GET(request: Request) {
           emailVerified: !!user.emailVerified,
           phoneVerified: !!user.phoneVerified,
         },
-        stats: {
-          totalTransactions: user._count.transactions,
-          totalWhatsappTransactions: whatsappTransactionCount,
-          activeWhatsappServices,
-          totalWhatsappServices,
-        },
+        stats,
       },
     }));
   } catch (error) {
-    console.error("[CUSTOMER_PROFILE_GET]", error);
+    console.error("[ACCOUNT_PROFILE_GET]", error);
     return withCORS(NextResponse.json(
       { success: false, error: "Failed to fetch profile" },
       { status: 500 }
@@ -81,10 +110,10 @@ export async function GET(request: Request) {
   }
 }
 
-// PUT /api/customer/profile - Update user profile
+// PUT /api/account/profile - Update user profile (universal for all roles)
 export async function PUT(request: Request) {
   try {
-    const userAuth = await getCustomerAuth(request);
+    const userAuth = await getUserFromToken(request);
     if (!userAuth?.id) {
       return withCORS(NextResponse.json(
         { success: false, error: "Authentication required" },
@@ -105,7 +134,9 @@ export async function PUT(request: Request) {
         { success: false, error: "No valid fields to update" },
         { status: 400 }
       ));
-    }    const updatedUser = await prisma.user.update({
+    }
+
+    const updatedUser = await prisma.user.update({
       where: { id: userAuth.id },
       data: updateData,
       select: {
@@ -116,6 +147,7 @@ export async function PUT(request: Request) {
         image: true,
         emailVerified: true,
         phoneVerified: true,
+        role: true,
       },
     });
 
@@ -125,7 +157,7 @@ export async function PUT(request: Request) {
       message: "Profile updated successfully",
     }));
   } catch (error) {
-    console.error("[CUSTOMER_PROFILE_PUT]", error);
+    console.error("[ACCOUNT_PROFILE_PUT]", error);
     return withCORS(NextResponse.json(
       { success: false, error: "Failed to update profile" },
       { status: 500 }

@@ -33,7 +33,6 @@ import { useRouter } from "next/navigation"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { getCustomerPaymentDetails, cancelPayment } from "@/services/checkout-api"
 import type { PaymentStatus } from "@/types/checkout"
 import Invoice from "@/components/dashboard/Invoice"
 
@@ -51,8 +50,15 @@ export default function PaymentDetailPage() {
   useEffect(() => {
     const fetchPaymentDetails = async () => {
       try {
-        const response = await getCustomerPaymentDetails(paymentId)
-        setPaymentData(response)
+        const response = await fetch(`/api/payment/${paymentId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        const data = await response.json()
+        setPaymentData(data)
       } catch (error) {
         console.error("Failed to fetch payment details:", error)
         toast({
@@ -91,16 +97,36 @@ export default function PaymentDetailPage() {
   const handleCancelPayment = async () => {
     try {
       setCancellingPayment(true)
-      await cancelPayment(paymentId, "Cancelled by user")
       
-      toast({
-        title: "Success",
-        description: "Payment cancelled successfully"
+      const response = await fetch(`/api/payment/${paymentId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: "Cancelled by user" })
       })
       
-      // Refresh payment data
-      const response = await getCustomerPaymentDetails(paymentId)
-      setPaymentData(response)
+      const data = await response.json()
+      
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "Payment cancelled successfully"
+        })
+        
+        // Refresh payment data
+        const refreshResponse = await fetch(`/api/payment/${paymentId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        const refreshData = await refreshResponse.json()
+        setPaymentData(refreshData)
+      } else {
+        throw new Error(data.message || "Failed to cancel payment")
+      }
     } catch (error) {
       console.error("Failed to cancel payment:", error)
       toast({

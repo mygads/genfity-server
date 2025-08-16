@@ -6,17 +6,6 @@ import { PhoneAuthService } from "./services/phone-auth-service"
 import { PasswordAuthService } from "./services/password-auth-service"
 import { CheckoutAuthService } from "./services/checkout-auth-service"
 import { AuthResponse, ProfileUpdateData, TempCheckoutData, User, VerifyCheckoutOtpResponse, VerifyOtpResponse } from "./types"
-import { 
-  apiRequest, 
-  signIn, 
-  signUp, 
-  verifyOtp as verifyOtpAPI, 
-  resendOtp, 
-  sendPasswordResetOtp, 
-  verifyPasswordResetOtp, 
-  sendEmailOtp,
-  ssoSignin
-} from "@/services/auth-api"
 import { SessionManager, UserSession } from "@/lib/storage"
 
 interface AuthContextType {
@@ -109,7 +98,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithPhone = async (identifier: string, password: string) => {
     setError(null)
     try {
-      const result = await signIn({ identifier, password })
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier, password })
+      })
+      const result = await response.json()
+      
       if (result.success && result.user) {
         setUser(result.user)
         return { error: null, success: true }
@@ -127,7 +124,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const verifyOtp = async (identifier: string, otp: string) => {
     setError(null)
     try {
-      const result = await verifyOtpAPI({ identifier, otp, purpose: "signup" })
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier, otp, purpose: "signup" })
+      })
+      const result = await response.json()
       console.log("[AuthContext] verifyOtp result:", result)
       
       if (result.success && result.data?.user) {
@@ -289,13 +293,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setError(err.message)
       return { error: err, success: false }
     }
-    // const result = await ProfileService.updateProfile(user.id, user, data)
-    // if (result.success && result.updatedUser) {
-    //   setUser(result.updatedUser)
-    // } else if (result.error) {
-    //   setError(result.error.message)
-    // }
-    // return { error: result.error, success: result.success }
   }
 
   // Password Management

@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
+import Image from "next/image"
 
 import { useState, useEffect, useRef } from "react"
 import { Loader2, Save, User, Mail, Phone, Shield, BarChart3, Camera, Send, CheckCircle, AlertCircle } from "lucide-react"
 import { useAuth } from "@/components/Auth/AuthContext"
-import { getProfile, updateProfile as updateProfileAPI, resendEmailVerification, uploadProfileImage } from "@/services/auth-api"
 
 interface ProfileData {
   id: string
@@ -60,12 +60,13 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await getProfile()
-        if (response.success && response.data) {
-          setProfile(response.data)
+        const response = await fetch('/api/profile')
+        const result = await response.json()
+        if (result.success && result.data) {
+          setProfile(result.data)
           setFormData({
-            name: response.data.name,
-            email: response.data.email,
+            name: result.data.name,
+            email: result.data.email,
           })
         }
       } catch (error) {
@@ -94,20 +95,28 @@ export default function ProfilePage() {
     setProfileMessage({ type: "", text: "" })
 
     try {
-      const response = await updateProfileAPI({
-        name: formData.name,
-        email: formData.email,
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+        })
       })
+      const result = await response.json()
 
-      if (response.success) {
+      if (result.success) {
         setProfileMessage({ type: "success", text: "Profil berhasil diperbarui" })
         // Refresh profile data
-        const updatedProfile = await getProfile()
+        const profileResponse = await fetch('/api/profile')
+        const updatedProfile = await profileResponse.json()
         if (updatedProfile.success && updatedProfile.data) {
           setProfile(updatedProfile.data)
         }
       } else {
-        setProfileMessage({ type: "error", text: response.error?.message || "Gagal memperbarui profil" })
+        setProfileMessage({ type: "error", text: result.error?.message || "Gagal memperbarui profil" })
       }
     } catch (error) {
       setProfileMessage({ type: "error", text: "Terjadi kesalahan saat memperbarui profil" })
@@ -168,16 +177,25 @@ export default function ProfilePage() {
     setProfileMessage({ type: "", text: "" })
 
     try {
-      const response = await uploadProfileImage(file)
-      if (response.success) {
+      const formData = new FormData()
+      formData.append('image', file)
+      
+      const response = await fetch('/api/profile/image', {
+        method: 'POST',
+        body: formData
+      })
+      const result = await response.json()
+      
+      if (result.success) {
         setProfileMessage({ type: "success", text: "Foto profil berhasil diperbarui" })
         // Refresh profile data
-        const updatedProfile = await getProfile()
+        const profileResponse = await fetch('/api/profile')
+        const updatedProfile = await profileResponse.json()
         if (updatedProfile.success && updatedProfile.data) {
           setProfile(updatedProfile.data)
         }
       } else {
-        setProfileMessage({ type: "error", text: response.error?.message || "Gagal mengupload foto profil" })
+        setProfileMessage({ type: "error", text: result.error?.message || "Gagal mengupload foto profil" })
       }
     } catch (error) {
       setProfileMessage({ type: "error", text: "Terjadi kesalahan saat mengupload foto" })
@@ -194,11 +212,18 @@ export default function ProfilePage() {
     setEmailMessage({ type: "", text: "" })
 
     try {
-      const response = await resendEmailVerification()
-      if (response.success) {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      const result = await response.json()
+      
+      if (result.success) {
         setEmailMessage({ type: "success", text: "Email verifikasi berhasil dikirim" })
       } else {
-        setEmailMessage({ type: "error", text: response.error?.message || "Gagal mengirim email verifikasi" })
+        setEmailMessage({ type: "error", text: result.error?.message || "Gagal mengirim email verifikasi" })
       }
     } catch (error) {
       setEmailMessage({ type: "error", text: "Terjadi kesalahan saat mengirim email verifikasi" })
@@ -234,9 +259,11 @@ export default function ProfilePage() {
                 <div className="relative mb-4">
                   <div className="h-20 w-20 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center border-2 border-gray-200 dark:border-gray-700">
                     {profile?.image ? (
-                      <img
+                      <Image
                         src={profile.image}
                         alt="Profile"
+                        width={80}
+                        height={80}
                         className="h-full w-full object-cover"
                       />
                     ) : (

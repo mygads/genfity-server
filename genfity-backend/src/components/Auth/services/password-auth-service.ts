@@ -1,13 +1,15 @@
-import { apiRequest } from "@/services/auth-api"
-
 export class PasswordAuthService {
   static async signInWithPassword(identifier: string, password: string) {
     try {
       // Endpoint harus ke backend sesuai OpenAPI: /signin
-      const res = await apiRequest("/auth/sign-in", {
+      const response = await fetch("/api/auth/sign-in", {
         method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ identifier, password }),
       })
+      const res = await response.json()
       return { error: null, success: true, data: res }
     } catch (error: any) {
       return { error, success: false }
@@ -16,10 +18,14 @@ export class PasswordAuthService {
 
   static async updatePassword(currentPassword: string, newPassword: string, userEmail: string) {
     try {
-      const res = await apiRequest("/auth/change-password", {
+      const response = await fetch("/api/auth/change-password", {
         method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ currentPassword, newPassword }),
       })
+      const res = await response.json()
       return { error: null, success: true, data: res }
     } catch (error: any) {
       return { error, success: false }
@@ -30,10 +36,14 @@ export class PasswordAuthService {
     try {
       // You may want to ask user for method (email/whatsapp) if identifier is phone
       const method = identifier.includes("@") ? "email" : "whatsapp"
-      const res = await apiRequest("/auth/send-otp", {
+      const response = await fetch("/api/auth/send-otp", {
         method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ identifier, method }),
       })
+      const res = await response.json()
       return { error: null, success: true, data: res }
     } catch (error: any) {
       return { error, success: false }
@@ -42,10 +52,14 @@ export class PasswordAuthService {
 
   static async verifyPasswordReset(identifier: string, token: string, newPassword: string) {
     try {
-      const res = await apiRequest("/auth/reset-password", {
+      const response = await fetch("/api/auth/reset-password", {
         method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ identifier, otp: token, newPassword }),
       })
+      const res = await response.json()
       return { error: null, success: true, data: res }
     } catch (error: any) {
       return { error, success: false }

@@ -1,5 +1,3 @@
-import { apiRequest } from "@/services/auth-api"
-import { formatPhoneNumber, sendWhatsAppOtp } from "../utils/phone-utils"
 import type { AuthResponse, TempCheckoutData, User, VerifyCheckoutOtpResponse } from "../types"
 
 export class CheckoutAuthService {
@@ -10,14 +8,18 @@ export class CheckoutAuthService {
     email: string,
   ): Promise<AuthResponse & { checkoutData?: TempCheckoutData; otp?: string }> {
     try {
-      const res = await apiRequest<any>("/auth/signup", {
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ 
-          phone: formatPhoneNumber(phone), 
+          phone: phone, 
           name, 
           email 
         }),
       })
+      const res = await response.json()
       return { error: null, success: true, checkoutData: res.checkoutData, otp: res.otp }
     } catch (error: any) {
       return { error, success: false }
@@ -30,14 +32,18 @@ export class CheckoutAuthService {
     tempOtp: string | null,
   ): Promise<VerifyCheckoutOtpResponse> {
     try {
-      const res = await apiRequest<any>("/auth/verify-otp", {
+      const response = await fetch("/api/auth/verify-otp", {
         method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ 
-          identifier: formatPhoneNumber(phone), 
+          identifier: phone, 
           otp,
           purpose: "signup"
         }),
       })
+      const res = await response.json()
       
       // Extract data from the nested response structure
       const userData = res.data?.user || res.user
@@ -51,7 +57,8 @@ export class CheckoutAuthService {
         user: userData,
         token: token,
         passwordGenerated: passwordGenerated
-      }} catch (error: any) {
+      }
+    } catch (error: any) {
       return { error, success: false, isNewUser: false, token: undefined, user: undefined }
     }
   }

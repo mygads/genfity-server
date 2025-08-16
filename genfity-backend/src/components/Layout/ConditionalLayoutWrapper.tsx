@@ -13,6 +13,7 @@ export default function ConditionalLayoutWrapper({ children }: { children: React
   const basePath = segments.length > 2 ? segments[2] : "" 
 
   const isDashboard = basePath === "dashboard"
+  const isAdminSignin = pathname.includes("/admin/signin")
 
   return (
     <>

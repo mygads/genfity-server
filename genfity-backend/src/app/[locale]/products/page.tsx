@@ -7,7 +7,6 @@ import type { Category, Package, Addon, WhatsAppPackage } from "@/types/product"
 import { ChevronRight, MessageSquare, Globe, Monitor, PenTool, TrendingUp, Headphones, Check, ChevronDown, ShoppingCart, Crown, Eye } from "lucide-react"
 import { GradientCard } from "@/components/ui/gradient-card"
 import { AddonCard } from "@/components/ui/addon-card"
-import { fetchCatalog } from "@/services/product-data-api"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -51,7 +50,8 @@ export default function ProductsPage() {
     const loadData = async () => {
       setLoading(true)
       try {
-        const catalogResponse = await fetchCatalog()
+        const response = await fetch('/api/catalog')
+        const catalogResponse = await response.json()
         
         console.log("Catalog Response:", catalogResponse)
         

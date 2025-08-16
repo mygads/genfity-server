@@ -306,7 +306,7 @@ export default function SigninPage() {
                             required
                           />
                           <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                            We'll send a 4-digit verification code to your email or WhatsApp
+                            We&#39;ll send a 4-digit verification code to your email or WhatsApp
                           </p>
                         </div>
                         <div className="mb-6">
