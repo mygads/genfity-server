@@ -52,7 +52,7 @@ export async function GET(
       Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000).toString(); // 24 hours ago
     const endTime = searchParams.get('end') || Math.floor(Date.now() / 1000).toString(); // now
 
-    const digitalOceanToken = process.env.DIGITALOCEAN_TOKEN;
+    const digitalOceanToken = process.env.DO_API_TOKEN;
     if (!digitalOceanToken) {
       return NextResponse.json(
         { error: 'DigitalOcean token not configured' },

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: adminVerification.error }, { status: 401 });
     }
 
-    const digitalOceanToken = process.env.DIGITALOCEAN_TOKEN;
+    const digitalOceanToken = process.env.DO_API_TOKEN;
     if (!digitalOceanToken) {
       return NextResponse.json(
         { error: 'DigitalOcean token not configured' },

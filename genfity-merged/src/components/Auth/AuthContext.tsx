@@ -270,13 +270,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ identifier })
       })
       const result = await response.json()
-      console.log("[AuthContext] signInWithSSO result:", result)
+      console.log("[AuthContext] signInWithSSO result:", result, "status:", response.status)
       
       if (result.success) {
         return { error: null, success: true }
       } else if (result.error) {
-        setError(result.error.message || result.message)
-        return { error: result.error || { message: result.message }, success: false }
+        // For rate limiting (status 429), preserve the error type and message
+        const error = {
+          error: result.error,
+          message: result.message
+        }
+        setError(result.message)
+        return { error, success: false }
       }
       return { error: { message: "SSO sign in failed" }, success: false }    
     } catch (err: any) {

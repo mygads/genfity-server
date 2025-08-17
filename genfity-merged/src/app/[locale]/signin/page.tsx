@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react"
@@ -27,6 +27,8 @@ export default function SigninPage() {
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isResending, setIsResending] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [isRateLimited, setIsRateLimited] = useState(false)
   const [error, setError] = useState("")
   const [ssoIdentifier, setSsoIdentifier] = useState("")
   // Set appropriate message based on redirect reason
@@ -76,7 +78,15 @@ export default function SigninPage() {
         setLoginMode("otp")
         setIsLoading(false)
       } else if (ssoError) {
-        setError(ssoError.message || t('errors.ssoFailed'))
+        // Check if it's a rate limit error and handle it specially
+        if (ssoError.error === 'RATE_LIMITED') {
+          const cooldownSeconds = extractCooldownFromError(ssoError.message || '')
+          startCooldownTimer(cooldownSeconds)
+          setError(formatRateLimitedMessage(cooldownSeconds))
+        } else {
+          setError(ssoError.message || t('errors.ssoFailed'))
+        }
+        
         setIsLoading(false)
       } else {
         setError(t('errors.ssoUnknownError'))
@@ -113,7 +123,42 @@ export default function SigninPage() {
     }
   }
 
+  // Extract cooldown duration from error message
+  const extractCooldownFromError = (errorMessage: string) => {
+    const match = errorMessage.match(/wait (\d+) seconds?/)
+    const seconds = match ? parseInt(match[1]) : 60 // Default to 60 seconds if not found
+    return seconds
+  }
+
+  // Format rate limited error message
+  const formatRateLimitedMessage = (seconds: number) => {
+    const message = t('errors.ssoRateLimited', { seconds })
+    return message
+  }
+
+  // Start countdown timer
+  const startCooldownTimer = (seconds: number) => {
+    setIsRateLimited(true)
+    setResendCooldown(seconds)
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          setIsRateLimited(false)
+          setError("")
+          return 0
+        }
+        // Update error message with countdown
+        const newSeconds = prev - 1
+        setError(formatRateLimitedMessage(newSeconds))
+        return newSeconds
+      })
+    }, 1000)
+  }
+
   const handleResendOTP = async () => {
+    if (resendCooldown > 0) return
+    
     setError("")
     setIsResending(true)
 
@@ -122,8 +167,16 @@ export default function SigninPage() {
       
       if (success) {
         // Show success message or toast
+        setError("")
       } else if (ssoError) {
-        setError(ssoError.message || t('errors.ssoFailed'))
+        // Check if it's a rate limit error and handle it specially
+        if (ssoError.error === 'RATE_LIMITED') {
+          const cooldownSeconds = extractCooldownFromError(ssoError.message || '')
+          startCooldownTimer(cooldownSeconds)
+          setError(formatRateLimitedMessage(cooldownSeconds))
+        } else {
+          setError(ssoError.message || t('errors.ssoFailed'))
+        }
       }
     } catch (err) {
       console.error("Resend OTP catch block:", err)
@@ -177,7 +230,9 @@ export default function SigninPage() {
                       <button
                         onClick={() => {
                           setLoginMode("sso")
-                          setError("")
+                          if (!isRateLimited) {
+                            setError("")
+                          }
                         }}
                         className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 dark:text-blue-500 dark:hover:text-blue-400 transition-colors"
                       >
@@ -191,7 +246,8 @@ export default function SigninPage() {
                       onResend={handleResendOTP}
                       isLoading={isLoading}
                       isResending={isResending}
-                      error={error}
+                      resendCooldown={resendCooldown}
+                      error={isRateLimited ? "" : error}
                       identifier={ssoIdentifier}
                     />
                   </div>
@@ -203,7 +259,9 @@ export default function SigninPage() {
                       <button
                         onClick={() => {
                           setLoginMode("password")
-                          setError("")
+                          if (!isRateLimited) {
+                            setError("")
+                          }
                         }}                        
                         className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
                           loginMode === "password"
@@ -216,7 +274,9 @@ export default function SigninPage() {
                       <button
                         onClick={() => {
                           setLoginMode("sso")
-                          setError("")
+                          if (!isRateLimited) {
+                            setError("")
+                          }
                         }}
                         className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
                           loginMode === "sso"

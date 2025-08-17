@@ -138,7 +138,7 @@ async function createUserSession(user: any): Promise<string> {
 // Helper function to set session cookie
 function setSessionCookie(response: NextResponse, sessionToken: string) {
   const sessionMaxAge = 30 * 24 * 60 * 60; // 30 days
-  const cookieName = process.env.NEXTAUTH_URL?.startsWith("https://") 
+  const cookieName = process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://") 
                      ? "__Secure-genfity-session-token" 
                      : "genfity-session-token";
   
@@ -146,7 +146,7 @@ function setSessionCookie(response: NextResponse, sessionToken: string) {
     name: cookieName,
     value: sessionToken,
     httpOnly: true,
-    secure: process.env.NEXTAUTH_URL?.startsWith("https://") || false,
+    secure: process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://") || false,
     path: '/',
     sameSite: 'lax',
     maxAge: sessionMaxAge,

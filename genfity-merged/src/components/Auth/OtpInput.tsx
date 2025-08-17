@@ -9,6 +9,7 @@ interface OtpInputProps {
   onResend?: () => void
   isLoading?: boolean
   isResending?: boolean
+  resendCooldown?: number
   error?: string
   disabled?: boolean
   identifier?: string
@@ -20,6 +21,7 @@ export function OtpInput({
   onResend,
   isLoading = false,
   isResending = false,
+  resendCooldown = 0,
   error,
   disabled = false,
   identifier
@@ -149,13 +151,18 @@ export function OtpInput({
         <div className="flex justify-center">
           <button
             onClick={onResend}
-            disabled={isResending || isLoading}
+            disabled={isResending || isLoading || resendCooldown > 0}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary hover:text-primary/80 dark:text-blue-500 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isResending ? (
               <>
                 <RefreshCw className="h-4 w-4 animate-spin" />
                 Sending...
+              </>
+            ) : resendCooldown > 0 ? (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                Resend Code ({resendCooldown}s)
               </>
             ) : (
               <>

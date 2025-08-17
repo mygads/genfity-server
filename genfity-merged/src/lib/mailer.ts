@@ -16,7 +16,7 @@ export interface MailerResponse {
 
 // Modern responsive email template with professional design
 const getEmailTemplate = (content: string, title: string, headerIcon?: string) => {
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://api.genfity.com';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://genfity.com';
     
     // Simplified logo display with better fallback
     const logoDisplay = `
@@ -96,11 +96,11 @@ const getEmailTemplate = (content: string, title: string, headerIcon?: string) =
                 </div>
             </div>
             <!-- Footer Note -->
-            <div style="text-align: center; margin-top: 20px;">
-                <p style="color: #64748b; font-size: 12px; margin: 0;">
-                    Having trouble viewing this email? Contact our support team.
-                </p>
-            </div>
+            // <div style="text-align: center; margin-top: 20px;">
+            //     <p style="color: #64748b; font-size: 12px; margin: 0;">
+            //         Having trouble viewing this email? Contact our support team.
+            //     </p>
+            // </div>
         </body>
         </html>
     `;
@@ -224,18 +224,18 @@ const transporter = nodemailer.createTransport({
  * @param name User name (optional)
  */
 export async function sendVerificationEmail(email: string, token: string, name?: string | null): Promise<MailerResponse> {
-    const verificationLink = `${process.env.NEXTAUTH_URL}/auth/verify-email/${token}`;
+    const verificationLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email/${token}`;
     const userName = name || 'User';
 
     const mailOptions: MailOptions = {
-        from: `"GENFITY OFFICIAL" <${process.env.EMAIL_TITLE_USER}>`,
+        from: `"GENFITY OFFICIAL" <${process.env.EMAIL_SERVER_USER}>`,
         to: email,
         subject: 'Verify Your Email Address - GENFITY',
         html: getEmailTemplate(getVerificationLinkContent(verificationLink, userName), 'Email Verification'),
     };
 
     try {
-        if (process.env.NODE_ENV === 'production' || (process.env.EMAIL_SERVER_USER && process.env.EMAIL_SERVER_PASSWORD)) {
+        if (process.env.NODE_ENV === 'development' || (process.env.EMAIL_SERVER_USER && process.env.EMAIL_SERVER_PASSWORD)) {
             console.log(`Mailer: Sending verification email to ${email}...`);
             const result = await transporter.sendMail(mailOptions);
             console.log(`Mailer: Email sent successfully to ${email}. MessageId: ${result.messageId}`);
@@ -263,7 +263,7 @@ export async function sendVerificationEmail(email: string, token: string, name?:
  */
 export async function sendEmailOtpVerification(email: string, otp: string, userName: string | null): Promise<MailerResponse> {
     const mailOptions: MailOptions = {
-        from: `"GENFITY OFFICIAL" <${process.env.EMAIL_TITLE_USER}>`,
+        from: `"GENFITY OFFICIAL" <${process.env.EMAIL_SERVER_USER}>`,
         to: email,
         subject: 'Email Verification Code - GENFITY',
         html: getEmailTemplate(getOTPEmailContent(otp, userName, 'email-verification', 10), 'Email Verification'),
@@ -296,7 +296,7 @@ export async function sendEmailOtpVerification(email: string, otp: string, userN
  * @param userName User name
  */
 export async function sendPasswordResetEmail(email: string, token: string, userName?: string | null): Promise<MailerResponse> {
-    const resetLink = `${process.env.NEXTAUTH_URL}/auth/reset-password/${token}`;
+    const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password/${token}`;
     
     const resetContent = `
         <div style="text-align: center; margin-bottom: 24px;">
@@ -343,7 +343,7 @@ export async function sendPasswordResetEmail(email: string, token: string, userN
     `;
 
     const mailOptions: MailOptions = {
-        from: `"GENFITY OFFICIAL" <${process.env.EMAIL_TITLE_USER}>`,
+        from: `"GENFITY OFFICIAL" <${process.env.EMAIL_SERVER_USER}>`,
         to: email,
         subject: 'Reset Your Account Password - GENFITY',
         html: getEmailTemplate(resetContent, 'Password Reset'),
@@ -377,7 +377,7 @@ export async function sendPasswordResetEmail(email: string, token: string, userN
  */
 export async function sendPasswordResetOtpEmail(email: string, otp: string, userName: string | null): Promise<MailerResponse> {
     const mailOptions: MailOptions = {
-        from: `"GENFITY OFFICIAL" <${process.env.EMAIL_TITLE_USER}>`,
+        from: `"GENFITY OFFICIAL" <${process.env.EMAIL_SERVER_USER}>`,
         to: email,
         subject: 'Password Reset Code - GENFITY',
         html: getEmailTemplate(getOTPEmailContent(otp, userName, 'password-reset', 10), 'Password Reset'),
@@ -411,7 +411,7 @@ export async function sendPasswordResetOtpEmail(email: string, otp: string, user
  */
 export async function sendSSOLoginOtpEmail(email: string, otp: string, userName: string | null): Promise<MailerResponse> {
     const mailOptions: MailOptions = {
-        from: `"GENFITY OFFICIAL" <${process.env.EMAIL_TITLE_USER}>`,
+        from: `"GENFITY OFFICIAL" <${process.env.EMAIL_SERVER_USER}>`,
         to: email,
         subject: 'Secure Login Code - GENFITY',
         html: getEmailTemplate(getOTPEmailContent(otp, userName, 'sso-login', 10), 'Secure Login'),

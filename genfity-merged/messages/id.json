@@ -163,7 +163,7 @@
         "password": "Kata Sandi",
         "passwordPlaceholder": "Masukkan Kata Sandi Anda",
         "ssoIdentifier": "Email atau Nomor WhatsApp",
-        "ssoIdentifierPlaceholder": "Masukkan email atau nomor WhatsApp Anda",
+        "ssoIdentifierPlaceholder": "08** / anda@email.com",
         "forgotPassword": "Lupa Kata Sandi?",
         "signInButton": "Masuk",
         "sendCodeButton": "Kirim Kode",
@@ -187,6 +187,7 @@
         "unknownError": "Terjadi kesalahan yang tidak diketahui saat masuk.",
         "unexpectedError": "Terjadi kesalahan yang tidak terduga. Silakan coba lagi.",
         "ssoFailed": "Gagal mengirim kode verifikasi. Silakan coba lagi.",
+        "ssoRateLimited": "Terlalu banyak permintaan. Silakan tunggu {seconds} detik sebelum meminta kode lagi.",
         "ssoUnknownError": "Terjadi kesalahan yang tidak diketahui saat mengirim kode verifikasi.",
         "verifyFailed": "Kode verifikasi tidak valid. Silakan coba lagi.",
         "verifyUnknownError": "Terjadi kesalahan yang tidak diketahui saat verifikasi."

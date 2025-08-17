@@ -89,7 +89,7 @@ When DigitalOcean API is unavailable, the system generates realistic mock data:
 ## Configuration
 Environment variables required:
 ```
-DIGITALOCEAN_TOKEN=your_digitalocean_api_token
+DO_API_TOKEN=your_digitalocean_api_token
 ```
 
 ## Usage

@@ -144,10 +144,12 @@ export async function POST(request: Request) {
         }
       });
 
-      // Send OTP via WhatsApp
+      // Send OTP via WhatsApp using WhatsApp Go server
       const message = `Your new OTP *${newOtp}*
 
 Please do not share this code with anyone. The code is valid for 60 minutes.`;
+
+      console.log(`[SEND OTP] Sending WhatsApp OTP to ${user.phone} using WhatsApp Go server`);
 
       try {
         const otpResult = await sendWhatsAppMessageDetailed(user.phone!, message);
@@ -189,7 +191,7 @@ Please do not share this code with anyone. The code is valid for 60 minutes.`;
           }, { status: 503 }));
         }
 
-        console.log(`Signup OTP resent successfully to WhatsApp ${user.phone}`);
+        console.log(`Signup OTP resent successfully to WhatsApp ${user.phone} via WhatsApp Go server`);
         return withCORS(NextResponse.json({
           success: true,
           message: `New OTP has been sent to your WhatsApp ${user.phone}. Please check your messages.`,
@@ -200,7 +202,7 @@ Please do not share this code with anyone. The code is valid for 60 minutes.`;
           }
         }));
       } catch (error) {
-        console.error("Resend signup OTP WhatsApp error:", error);
+        console.error("Resend signup OTP WhatsApp Go error:", error);
         return withCORS(NextResponse.json({
           success: false,
           message: "Failed to send OTP to WhatsApp",
@@ -329,12 +331,14 @@ Please do not share this code with anyone. The code is valid for 60 minutes.`;
         }));
         
       } else if (user.phone) {
-        // Send via WhatsApp
+        // Send via WhatsApp using WhatsApp Go server
         const message = `Your new password reset OTP: *${newResetOtp}*
 
 Please do not share this code with anyone. The code is valid for 1 hour.
 
 If you did not request a password reset, please ignore this message.`;
+
+        console.log(`[SEND OTP] Sending password reset OTP to ${user.phone} using WhatsApp Go server`);
 
         try {
           const otpResult = await sendWhatsAppMessageDetailed(user.phone, message);
@@ -375,7 +379,7 @@ If you did not request a password reset, please ignore this message.`;
             }, { status: 503 }));
           }
 
-          console.log(`Password reset OTP resent successfully to WhatsApp ${user.phone}`);
+          console.log(`Password reset OTP resent successfully to WhatsApp ${user.phone} via WhatsApp Go server`);
           return withCORS(NextResponse.json({
             success: true,
             message: `New password reset OTP has been sent to your WhatsApp ${user.phone}. Please check your messages.`,
@@ -386,7 +390,7 @@ If you did not request a password reset, please ignore this message.`;
             }
           }));
         } catch (error) {
-          console.error("Resend password reset OTP WhatsApp error:", error);
+          console.error("Resend password reset OTP WhatsApp Go error:", error);
           return withCORS(NextResponse.json({
             success: false,
             message: "Failed to send password reset OTP to WhatsApp",

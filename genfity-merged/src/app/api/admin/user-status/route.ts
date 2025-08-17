@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     }
 
     const verificationLink = user.emailVerificationToken 
-      ? `${process.env.NEXTAUTH_URL}/auth/verify-email/${user.emailVerificationToken}`
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email/${user.emailVerificationToken}`
       : null;
 
     return withCORS(NextResponse.json({ 

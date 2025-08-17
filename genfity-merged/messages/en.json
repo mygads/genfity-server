@@ -167,7 +167,7 @@
         "password": "Password",
         "passwordPlaceholder": "Enter your Password",
         "ssoIdentifier": "Email or WhatsApp Number",
-        "ssoIdentifierPlaceholder": "Enter your email or WhatsApp number",
+        "ssoIdentifierPlaceholder": "08** / you@email.com",
         "forgotPassword": "Forgot Password?",
         "signInButton": "Sign in",
         "sendCodeButton": "Send Code",
@@ -191,6 +191,7 @@
         "unknownError": "An unknown error occurred during sign in.",
         "unexpectedError": "An unexpected error occurred. Please try again.",
         "ssoFailed": "Failed to send verification code. Please try again.",
+        "ssoRateLimited": "Too many requests. Please wait {seconds} seconds before requesting another code.",
         "ssoUnknownError": "An unknown error occurred while sending verification code.",
         "verifyFailed": "Invalid verification code. Please try again.",
         "verifyUnknownError": "An unknown error occurred during verification."

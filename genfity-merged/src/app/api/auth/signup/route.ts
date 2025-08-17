@@ -130,6 +130,9 @@ export async function POST(request: Request) {
     const message = `Your OTP *${otp}* 
 
 Please do not share this code with anyone.`;
+    
+    // console.log(`[SIGNUP API] Sending WhatsApp OTP to ${normalizedPhone} using WhatsApp Go server`);
+    
     try {
       const otpResult = await sendWhatsAppMessageDetailed(normalizedPhone, message);
       if (!otpResult.success) {
@@ -139,10 +142,10 @@ Please do not share this code with anyone.`;
         } catch (deleteError) {
           console.error('SIGNUP API: Failed to delete user after OTP failure:', deleteError);
         }
-        console.warn(`SIGNUP API: OTP sending failed for ${normalizedPhone}. User creation rolled back.`);
+        console.warn(`SIGNUP API: WhatsApp Go OTP sending failed for ${normalizedPhone}. User creation rolled back.`);
         
         // Determine specific error message based on error type
-        let errorMessage = 'Whatsapp service unavailable.';
+        let errorMessage = 'WhatsApp service unavailable.';
         let errorCode = 'WHATSAPP_SERVICE_UNAVAILABLE';
         
         if (otpResult.error) {
@@ -175,7 +178,8 @@ Please do not share this code with anyone.`;
           error: errorCode,
           details: otpResult.error?.message || 'WhatsApp server is unreachable or the number is invalid.'
         }, { status: 503 }));
-      }      console.log(`SIGNUP API: OTP sent successfully to ${normalizedPhone}`);
+      }      
+      // console.log(`SIGNUP API: WhatsApp Go OTP sent successfully to ${normalizedPhone}`);
       responseMessage = 'User created successfully. An OTP has been sent to your WhatsApp number.' + 
         (!password ? ' Your password will be sent after verification.' : '');
       nextStep = 'VERIFY_OTP';
@@ -184,12 +188,12 @@ Please do not share this code with anyone.`;
       try {
         await prisma.user.delete({ where: { id: newUser.id } });
       } catch (deleteError) {
-        console.error('SIGNUP API: Failed to delete user after WhatsApp error:', deleteError);
+        console.error('SIGNUP API: Failed to delete user after WhatsApp Go error:', deleteError);
       }
-      console.error('SIGNUP API: WhatsApp OTP sending error:', otpError);
+      console.error('SIGNUP API: WhatsApp Go OTP sending error:', otpError);
       
       // Determine specific error message based on error type
-      let errorMessage = 'Whatsapp service unavailable.';
+      let errorMessage = 'WhatsApp service unavailable.';
       let errorCode = 'WHATSAPP_SERVICE_UNAVAILABLE';
       
       if (otpError instanceof Error) {
