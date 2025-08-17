@@ -79,7 +79,7 @@ export default function DashboardProductPage() {
     const loadData = async () => {
       setLoading(true)
       try {
-        const response = await fetch('/api/catalog')
+        const response = await fetch('/api/product')
         const catalogResponse = await response.json()
         
         console.log("Dashboard Catalog Response:", catalogResponse)

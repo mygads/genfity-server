@@ -1,23 +1,17 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '../../../../../lib/prisma';
+import { prisma } from '../../../../../../lib/prisma';
 
-// PATCH /api/whatsapp-api/packages/[id]
+// PATCH /api/whatsapp-api/service/[id] (update expiredAt)
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await request.json();
-  const { name, priceMonth, priceYear, maxSession } = body;
-  if (!name || !priceMonth || !priceYear || !maxSession) {
-    return NextResponse.json({ success: false, error: 'All fields are required' }, { status: 400 });
-  }
-  try {
-    const updated = await prisma.whatsappApiPackage.update({
+  const { expiredAt } = body;
+  if (!expiredAt) {
+    return NextResponse.json({ success: false, error: 'expiredAt is required' }, { status: 400 });
+  }  try {
+    const updated = await prisma.servicesWhatsappCustomers.update({
       where: { id },
-      data: {
-        name,
-        priceMonth: Number(priceMonth),
-        priceYear: Number(priceYear),
-        maxSession: Number(maxSession),
-      },
+      data: { expiredAt: new Date(expiredAt) },
     });
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
@@ -25,11 +19,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 }
 
-// DELETE /api/whatsapp-api/packages/[id]
+// DELETE /api/whatsapp-api/service/[id]
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
-    await prisma.whatsappApiPackage.delete({ where: { id } });
+    await prisma.servicesWhatsappCustomers.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ success: false, error: error?.toString() });

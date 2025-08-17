@@ -93,8 +93,16 @@ export default function SignupPage() {
     setError("")
     setIsLoading(true)
     try {
-      const { error, success } = await resendOtpContext(phone, "signup")
-      if (success) {
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier: phone, purpose: "signup" })
+      })
+      const result = await response.json()
+      
+      if (result.success) {
         setOtp(["", "", "", ""])
         setResendCooldown(60)
         // Mulai timer mundur
@@ -105,9 +113,10 @@ export default function SignupPage() {
               return 0
             }
             return prev - 1
-          })        }, 1000)
-      } else if (error) {
-        setError(error.message || t('errors.resendFailed'))
+          })        
+        }, 1000)
+      } else if (result.error) {
+        setError(result.error.message || result.message || t('errors.resendFailed'))
       }
     } catch (err) {
       setError(t('errors.unexpectedError'))

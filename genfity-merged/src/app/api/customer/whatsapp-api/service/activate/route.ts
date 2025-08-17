@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { addMonths, addYears } from 'date-fns';
-import { prisma } from '../../../../../lib/prisma';
+import { prisma } from '../../../../../../lib/prisma';
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 
 // POST /api/whatsapp-api/service/activate

@@ -5,7 +5,7 @@ import { sendVerificationEmail } from '@/lib/mailer';
 import { normalizePhoneNumber } from '@/lib/auth';
 import { withCORS, corsOptionsResponse } from '@/lib/cors';
 
-// Generate 6-digit OTP
+// Generate 4-digit OTP
 function generateOTP(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
@@ -68,7 +68,8 @@ export async function POST(request: Request) {
           emailVerified: true,
         }
       });
-    } else {      normalizedPhone = normalizePhoneNumber(identifier);
+    } else {      
+      normalizedPhone = normalizePhoneNumber(identifier);
       user = await prisma.user.findUnique({
         where: { phone: normalizedPhone },
         select: {

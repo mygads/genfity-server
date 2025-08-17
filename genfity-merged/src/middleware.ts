@@ -125,7 +125,7 @@ function ipToInt(ip: string): number {
 function isIndonesianIP(ip: string): boolean {
     try {
         const ipInt = ipToInt(ip);
-        console.log('IP as integer:', ipInt, 'for IP:', ip);
+        // console.log('IP as integer:', ipInt, 'for IP:', ip);
         
         const isIndonesian = INDONESIAN_IP_RANGES.some(range => {
             const startInt = ipToInt(range.start);
@@ -133,14 +133,14 @@ function isIndonesianIP(ip: string): boolean {
             const inRange = ipInt >= startInt && ipInt <= endInt;
             
             if (inRange) {
-                console.log(`✅ IP ${ip} matches Indonesian range: ${range.start} - ${range.end}`);
+                // console.log(`✅ IP ${ip} matches Indonesian range: ${range.start} - ${range.end}`);
             }
             
             return inRange;
         });
         
         if (!isIndonesian) {
-            console.log(`❌ IP ${ip} does not match any Indonesian range`);
+            // console.log(`❌ IP ${ip} does not match any Indonesian range`);
         }
         
         return isIndonesian;
@@ -182,18 +182,18 @@ function detectLocaleFromIP(request: NextRequest): string {
         const acceptLanguage = request.headers.get('accept-language');
         const hasIndoLangPref = hasIndonesianLanguagePreference(acceptLanguage);
         
-        console.log('Detected IP:', clientIP);
-        console.log('Accept-Language:', acceptLanguage);
-        console.log('Has Indonesian language preference:', hasIndoLangPref);
+        // console.log('Detected IP:', clientIP);
+        // console.log('Accept-Language:', acceptLanguage);
+        // console.log('Has Indonesian language preference:', hasIndoLangPref);
 
         // Case 1: Jika gagal detect IP dan tidak ada accept language, arahkan ke id
         if (!clientIP) {
             if (!acceptLanguage) {
-                console.log('❌ No IP detected and no Accept-Language - defaulting to Indonesian');
+                // console.log('❌ No IP detected and no Accept-Language - defaulting to Indonesian');
                 return 'id';
             }
             // Jika ada accept language, gunakan preferensi bahasa
-            console.log('❌ No IP detected but has Accept-Language:', hasIndoLangPref ? 'Indonesian' : 'English');
+            // console.log('❌ No IP detected but has Accept-Language:', hasIndoLangPref ? 'Indonesian' : 'English');
             return hasIndoLangPref ? 'id' : 'en';
         }
 
@@ -210,27 +210,27 @@ function detectLocaleFromIP(request: NextRequest): string {
             clientIP.startsWith('172.30.') ||
             clientIP.startsWith('172.31.')) {
             
-            console.log('🏠 Local IP detected - always defaulting to Indonesian locale');
+            // console.log('🏠 Local IP detected - always defaulting to Indonesian locale');
             return 'id';
         }
 
         // Check if IP is from Indonesia using our IP ranges
-        console.log('Checking if IP is Indonesian:', clientIP);
+        // console.log('Checking if IP is Indonesian:', clientIP);
         const isIndonesianIPAddress = isIndonesianIP(clientIP);
         
         if (isIndonesianIPAddress) {
             // Case 3: IP Indonesia - selalu ke Indonesian (ignore accept-language)
-            console.log('🇮🇩 Indonesian IP detected - redirecting to /id');
+            // console.log('🇮🇩 Indonesian IP detected - redirecting to /id');
             return 'id';
         } else {
             // Case 4: IP luar Indonesia
             if (hasIndoLangPref) {
                 // IP luar Indonesia tapi accept-language Indonesian - ke id
-                console.log('🌍 Foreign IP but Indonesian language preference - redirecting to /id');
+                // console.log('🌍 Foreign IP but Indonesian language preference - redirecting to /id');
                 return 'id';
             } else {
                 // IP luar Indonesia dan accept-language bukan Indonesian - ke en
-                console.log('🌍 Foreign IP and non-Indonesian language preference - redirecting to /en');
+                // console.log('🌍 Foreign IP and non-Indonesian language preference - redirecting to /en');
                 return 'en';
             }
         }
@@ -314,10 +314,9 @@ export async function middleware(req: NextRequest) {
         // Public routes (tidak memerlukan token)
         const publicRoutes = [
             '/api/auth/',
-            '/api/customer/catalog',
-            '/api/customer/check-voucher',
-            '/api/services/whatsapp/',
+            '/api/public/',
             '/api/health',
+            '/api/cron/',
             '/api/webhook',
         ];
 

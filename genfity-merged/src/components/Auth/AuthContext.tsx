@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { PhoneAuthService } from "./services/phone-auth-service"
 import { PasswordAuthService } from "./services/password-auth-service"
 import { CheckoutAuthService } from "./services/checkout-auth-service"
-import { AuthResponse, ProfileUpdateData, TempCheckoutData, User, VerifyCheckoutOtpResponse, VerifyOtpResponse } from "./types"
+import { AuthResponse, ProfileUpdateData, TempCheckoutData, User, VerifyCheckoutOtpResponse, VerifyOtpResponse } from "@/types/auth"
 import { SessionManager, UserSession } from "@/lib/storage"
 
 interface AuthContextType {
@@ -76,13 +76,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const localSession = SessionManager.getSession()
         
         if (localSession) {
-          setUser(localSession)
-          setIsLoading(false)
-          return
+          // Verify session with backend
+          try {
+            const response = await fetch('/api/auth/session', {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${SessionManager.getToken()}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            
+            if (response.ok) {
+              const result = await response.json()
+              if (result.authenticated && result.session) {
+                setUser(localSession)
+                setIsLoading(false)
+                return
+              }
+            }
+            
+            // If backend session check fails, clear local session
+            SessionManager.clearSession()
+          } catch (sessionError) {
+            console.log("[AuthContext] Backend session check failed:", sessionError)
+            // Keep local session if backend is unreachable
+            setUser(localSession)
+            setIsLoading(false)
+            return
+          }
         }
 
         // If no local session, don't check backend to avoid conflicts
-        // Let individual components handle their own redirects
         setUser(null)
       } catch (err) {
         console.log("[AuthContext] Session check error:", err)
@@ -172,13 +196,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const completeSignUp = async (email: string, password: string, name: string, phone: string) => {
     setError(null)
     try {
-      const result = await signUp({ name, email, phone, password })
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, email, phone, password })
+      })
+      const result = await response.json()
+      
       if (result.success) {
         // Don't set user yet - wait for OTP verification
         return { error: null, success: true }
       } else if (result.error) {
-        setError(result.error.message)
-        return { error: result.error, success: false }
+        setError(result.error.message || result.message)
+        return { error: result.error || { message: result.message }, success: false }
       }
       return { error: { message: "Sign up failed" }, success: false }
     } catch (err: any) {
@@ -190,7 +222,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithPassword = async (identifier: string, password: string) => {
     setError(null)
     try {
-      const result = await signIn({ identifier, password })
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier, password })
+      })
+      const result = await response.json()
       console.log("[AuthContext] signInWithPassword result:", result)
       
       if (result.success) {
@@ -208,8 +247,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return { error: { message: "Authentication successful but missing user data" }, success: false }
         }
       } else if (result.error) {
-        setError(result.error.message)
-        return { error: result.error, success: false }
+        setError(result.error.message || result.message)
+        return { error: result.error || { message: result.message }, success: false }
       }
       return { error: { message: "Sign in failed" }, success: false }
     } catch (err: any) {
@@ -223,16 +262,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithSSO = async (identifier: string) => {
     setError(null)
     try {
-      const result = await ssoSignin(identifier)
+      const response = await fetch('/api/auth/sso-signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier })
+      })
+      const result = await response.json()
       console.log("[AuthContext] signInWithSSO result:", result)
       
       if (result.success) {
         return { error: null, success: true }
       } else if (result.error) {
-        setError(result.error.message)
-        return { error: result.error, success: false }
+        setError(result.error.message || result.message)
+        return { error: result.error || { message: result.message }, success: false }
       }
-      return { error: { message: "SSO sign in failed" }, success: false }    } catch (err: any) {
+      return { error: { message: "SSO sign in failed" }, success: false }    
+    } catch (err: any) {
       const error = { message: err.message || "SSO sign in failed" }
       setError(error.message)
       return { error, success: false }
@@ -242,7 +289,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const verifySSO = async (identifier: string, otp: string) => {
     setError(null)
     try {
-      const result = await verifyOtpAPI({ identifier, otp, purpose: "sso-login" })
+      const response = await fetch('/api/auth/sso-verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier, otp, purpose: "sso-login" })
+      })
+      const result = await response.json()
       console.log("[AuthContext] verifySSO result:", result)
       
       if (result.success && result.data?.user) {
@@ -268,8 +322,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return { error: { message: "Authentication successful but missing token" }, success: false, user: null }
         }
       } else if (result.error) {
-        setError(result.error.message)
-        return { error: result.error, success: false, user: null }
+        setError(result.error.message || result.message)
+        return { error: result.error || { message: result.message }, success: false, user: null }
       }
       return { error: { message: "SSO verification failed" }, success: false, user: null }
     } catch (err: any) {
@@ -286,12 +340,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   // Profile Management
-  const updateProfile = async (data: ProfileUpdateData) => {
+  const updateProfile = async (data: { name?: string; email?: string }) => {
     setError(null)
     if (!user) {
-      const err = new Error("User not authenticated")
+      const err = { message: "User not authenticated" }
       setError(err.message)
       return { error: err, success: false }
+    }
+    
+    try {
+      const response = await fetch('/api/account/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      const result = await response.json()
+      
+      if (result.success) {
+        // Update user in state if successful
+        setUser((prev: User | null) => prev ? { ...prev, ...data } : null)
+        return { error: null, success: true }
+      } else if (result.error) {
+        setError(result.error.message || result.message)
+        return { error: result.error || { message: result.message }, success: false }
+      }
+      return { error: { message: "Profile update failed" }, success: false }
+    } catch (err: any) {
+      const error = { message: err.message || "Profile update failed" }
+      setError(error.message)
+      return { error, success: false }
     }
   }
 
@@ -312,12 +391,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const resetPassword = async (identifier: string) => {
     setError(null)
     try {
-      const result = await sendPasswordResetOtp({ identifier, method: "email" })
+      const response = await fetch('/api/auth/send-password-reset-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier, method: "email" })
+      })
+      const result = await response.json()
+      
       if (result.success) {
         return { error: null, success: true }
       } else if (result.error) {
-        setError(result.error.message)
-        return { error: result.error, success: false }
+        setError(result.error.message || result.message)
+        return { error: result.error || { message: result.message }, success: false }
       }
       return { error: { message: "Password reset failed" }, success: false }
     } catch (err: any) {
@@ -330,12 +417,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const verifyPasswordReset = async (identifier: string, token: string, newPassword: string) => {
     setError(null)
     try {
-      const result = await verifyPasswordResetOtp({ identifier, otp: token, newPassword })
+      const response = await fetch('/api/auth/verify-password-reset-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier, otp: token, newPassword })
+      })
+      const result = await response.json()
+      
       if (result.success) {
         return { error: null, success: true }
       } else if (result.error) {
-        setError(result.error.message)
-        return { error: result.error, success: false }
+        setError(result.error.message || result.message)
+        return { error: result.error || { message: result.message }, success: false }
       }
       return { error: { message: "Password reset verification failed" }, success: false }
     } catch (err: any) {
@@ -377,12 +472,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const resendOtpFunc = async (identifier: string, purpose: "signup" | "reset-password" | "verify-email" | "sso-login") => {
     setError(null)
     try {
-      const result = await resendOtp({ identifier, purpose })
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier, purpose })
+      })
+      const result = await response.json()
+      
       if (result.success) {
         return { error: null, success: true }
       } else if (result.error) {
-        setError(result.error.message)
-        return { error: result.error, success: false }
+        setError(result.error.message || result.message)
+        return { error: result.error || { message: result.message }, success: false }
       }
       return { error: { message: "Resend OTP failed" }, success: false }
     } catch (err: any) {
@@ -396,12 +499,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const sendEmailOtpFunc = async (email: string) => {
     setError(null)
     try {
-      const result = await sendEmailOtp({ email })
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier: email, method: "email" })
+      })
+      const result = await response.json()
+      
       if (result.success) {
         return { error: null, success: true }
       } else if (result.error) {
-        setError(result.error.message)
-        return { error: result.error, success: false }
+        setError(result.error.message || result.message)
+        return { error: result.error || { message: result.message }, success: false }
       }
       return { error: { message: "Send email OTP failed" }, success: false }
     } catch (err: any) {
@@ -419,7 +530,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // Try to logout from backend (optional)
       try {
-        await apiRequest("/auth/logout", { method: "POST" })
+        await fetch("/api/account/logout", { method: "POST" })
       } catch (backendError) {
         // Don't block logout if backend call fails
         console.warn("Backend logout failed:", backendError)

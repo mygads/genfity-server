@@ -50,7 +50,7 @@ export default function ProductsPage() {
     const loadData = async () => {
       setLoading(true)
       try {
-        const response = await fetch('/api/catalog')
+        const response = await fetch('/api/public/product')
         const catalogResponse = await response.json()
         
         console.log("Catalog Response:", catalogResponse)

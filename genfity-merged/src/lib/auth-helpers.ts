@@ -6,6 +6,11 @@ export interface UserAuthInfo {
   email: string;
   role: string;
   sessionId?: string;
+  name?: string;
+  phone?: string;
+  image?: string;
+  emailVerified?: Date | null;
+  phoneVerified?: Date | null;
 }
 
 /**
@@ -144,22 +149,67 @@ export async function getUserFromToken(request: Request | NextRequest): Promise<
 }
 
 /**
- * Admin authentication helper - validates user is authenticated and has admin role
- * Used for admin API endpoints that require admin privileges
+ * Get detailed user authentication information with full user data
+ * Used for /api/auth/session endpoint
  */
-export async function getAdminAuth(request: Request | NextRequest): Promise<UserAuthInfo | null> {
+export async function getDetailedUserAuth(request: Request | NextRequest): Promise<UserAuthInfo | null> {
   try {
-    // Get user authentication using the general getUserAuth function
-    const userAuth = await getUserAuth(request);
-    
-    // Check if user is authenticated and has admin role
-    if (!userAuth || userAuth.role !== 'admin') {
+    // Check JWT token in Authorization header
+    const token = extractTokenFromRequest(request as NextRequest);
+    if (!token) {
       return null;
     }
 
-    return userAuth;
+    const sessionData = await verifyUserSession(token);
+    if (!sessionData) {
+      return null;
+    }
+
+    // Get full user data from database
+    const user = await getUserFullData(sessionData.user.id);
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email || '',
+      phone: user.phone || '',
+      role: user.role,
+      image: user.image,
+      emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified,
+      sessionId: sessionData.session.id
+    };
   } catch (error) {
-    console.error('[AUTH_HELPERS] Error getting admin auth:', error);
+    console.error('[AUTH_HELPERS] Error getting detailed user auth:', error);
+    return null;
+  }
+}
+
+/**
+ * Get full user data from database
+ */
+async function getUserFullData(userId: string) {
+  try {
+    const { prisma } = await import('./prisma');
+    return await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        image: true,
+        emailVerified: true,
+        phoneVerified: true,
+        isActive: true
+      }
+    });
+  } catch (error) {
+    console.error('[AUTH_HELPERS] Error getting user full data:', error);
     return null;
   }
 }

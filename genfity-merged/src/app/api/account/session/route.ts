@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
-import { getDetailedUserAuth } from "@/lib/auth-helpers";
+import { getUserFromToken } from "@/lib/auth-helpers";
 
 export async function GET(request: Request) {
   try {
-    // Get JWT session user with full details
-    const authResult = await getDetailedUserAuth(request);
+    // Get authenticated user
+    const authResult = await getUserFromToken(request);
     
-    if (!authResult) {
+    if (!authResult?.id) {
       return withCORS(NextResponse.json({ 
-        success: true,
+        success: false,
         authenticated: false, 
         session: null,
-        message: "No active session"
-      }, { status: 200 }));
+        error: "Authentication required"
+      }, { status: 401 }));
     }
 
     return withCORS(NextResponse.json({ 
@@ -22,27 +22,19 @@ export async function GET(request: Request) {
       session: {
         user: {
           id: authResult.id,
-          name: authResult.name,
           email: authResult.email,
-          phone: authResult.phone,
           role: authResult.role,
-          image: authResult.image,
-          verification: {
-            emailVerified: !!authResult.emailVerified,
-            phoneVerified: !!authResult.phoneVerified
-          }
+          name: authResult.name
         }
-      },
-      message: "Session is active"
+      }
     }, { status: 200 }));
-    
   } catch (error) {
-    console.error("[AUTH_SESSION]", error);
+    console.error("[ACCOUNT_SESSION_GET]", error);
     return withCORS(NextResponse.json({ 
       success: false,
       authenticated: false, 
       session: null,
-      error: "Session check failed"
+      error: "Failed to get session"
     }, { status: 500 }));
   }
 }

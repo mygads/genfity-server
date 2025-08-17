@@ -2,7 +2,7 @@ export class PasswordAuthService {
   static async signInWithPassword(identifier: string, password: string) {
     try {
       // Endpoint harus ke backend sesuai OpenAPI: /signin
-      const response = await fetch("/api/auth/sign-in", {
+      const response = await fetch("/api/auth/signin", {
         method: "POST",
         headers: {
           'Content-Type': 'application/json'
@@ -36,7 +36,7 @@ export class PasswordAuthService {
     try {
       // You may want to ask user for method (email/whatsapp) if identifier is phone
       const method = identifier.includes("@") ? "email" : "whatsapp"
-      const response = await fetch("/api/auth/send-otp", {
+      const response = await fetch("/api/auth/send-password-reset-otp", {
         method: "POST",
         headers: {
           'Content-Type': 'application/json'
@@ -52,7 +52,7 @@ export class PasswordAuthService {
 
   static async verifyPasswordReset(identifier: string, token: string, newPassword: string) {
     try {
-      const response = await fetch("/api/auth/reset-password", {
+      const response = await fetch("/api/auth/verify-password-reset-otp", {
         method: "POST",
         headers: {
           'Content-Type': 'application/json'
