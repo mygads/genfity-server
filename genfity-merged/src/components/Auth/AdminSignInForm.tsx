@@ -77,14 +77,14 @@ export default function AdminSignInForm() {
         <div className="text-center space-y-4">
           <Link href="/" className="block">
             <Image
-              src="/images/logo/logo.svg"
+              src="/logo.svg"
               alt="Genfity Logo"
               width={120}
               height={40}
               className="mx-auto object-contain block dark:hidden"
             />
             <Image
-              src="/images/logo/logo-dark.svg"
+              src="/logo-dark-mode.svg"
               alt="Genfity Logo"
               width={120}
               height={40}

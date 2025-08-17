@@ -227,7 +227,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
           <Link href="/dashboard" className="flex items-center transition-transform hover:scale-105">
             {resolvedTheme === "dark" ? (
               <Image 
-                src="/logo-dark.svg" 
+                src="/logo-dark-mode.svg" 
                 alt="Genfity Logo Dark" 
                 width={0}
                 height={0}
@@ -236,8 +236,8 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
               />
             ) : (
               <Image 
-                src="/logo-light.svg" 
-                alt="Genfity Logo Light" 
+                src="/logo.svg" 
+                alt="Genfity Logo" 
                 width={0}
                 height={0}
                 style={{ height: "auto", width: "auto" }}

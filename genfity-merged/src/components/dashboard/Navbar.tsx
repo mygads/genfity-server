@@ -28,7 +28,7 @@ export default function Navbar({ onMenuButtonClick }: NavbarProps) {
     const user = {
         name: "Admin User",
         role: "Administrator",
-        image: "/logo-light.svg", // Placeholder image
+        image: "/logo.svg", // Placeholder image
         initials: "AU",
     }
 

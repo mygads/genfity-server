@@ -311,7 +311,7 @@ export async function sendWhatsAppMessageDetailed(phoneNumber: string, message: 
     const result = await whatsappGoService.sendTextMessage(phoneNumber, message);
     
     if (result.success) {
-        console.log(`[WhatsApp Go] Message sent successfully to ${phoneNumber}`);
+        // console.log(`[WhatsApp Go] Message sent successfully to ${phoneNumber}`);
     } else {
         console.error(`[WhatsApp Go] Failed to send message to ${phoneNumber}:`, result.error);
     }

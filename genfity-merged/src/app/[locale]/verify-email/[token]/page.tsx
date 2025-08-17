@@ -79,7 +79,7 @@ export default function VerifyEmailPage() {
         <div className="flex flex-col items-center mb-8 gap-4">
           
             <Image 
-              src="/logo-dark.svg" 
+              src="/logo-dark-mode.svg" 
               alt="Genfity Logo" 
               width={96} // Slightly smaller than container to ensure cover effect
               height={96} 

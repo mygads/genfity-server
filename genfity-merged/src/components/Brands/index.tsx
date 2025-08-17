@@ -30,7 +30,7 @@ const Brands = () => {
 
 const Logos = {
   butterbytes: "/images/brands/butterbytes.svg",
-  logo: "/images/brands/logo-dark.svg",
+  logo: "logo-dark-mode.svg",
   lure: "/images/brands/lure.svg",
   pommi_caters: "/images/brands/pommi_caters.svg",
 };

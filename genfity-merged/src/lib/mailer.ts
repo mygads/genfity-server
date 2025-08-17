@@ -13,98 +13,153 @@ export interface MailerResponse {
     message?: string;
     error?: unknown;
 }
-
-// Modern responsive email template with professional design
-const getEmailTemplate = (content: string, title: string, headerIcon?: string) => {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://genfity.com';
-    
-    // Simplified logo display with better fallback
-    const logoDisplay = `
-        <div style="text-align: center;">
-            <img 
-                src="${baseUrl}/logo-light.svg" 
-                alt="GENFITY" 
-                width="80"
-                height="32" 
-                style="display: inline-block; max-width: 80px; height: auto;" 
-                onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"
-            />
-            <span style="display: none; font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 700; color: #23284e; letter-spacing: -0.5px;">GENFITY</span>
-        </div>
-    `;
-
+const getEmailTemplate = (content: string, title: string) => {
     return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta http-equiv="X-UA-Compatible" content="IE=edge">
-            <title>${title} - GENFITY</title>
-            <style>
-                @media only screen and (max-width: 600px) {
-                    .email-container { width: 100% !important; margin: 0 !important; }
-                    .email-content { padding: 20px !important; }
-                    .email-header { padding: 30px 20px !important; }
-                    .email-title { font-size: 1.5rem !important; }
-                    .otp-code { font-size: 2rem !important; letter-spacing: 4px !important; }
-                    .button { padding: 12px 24px !important; font-size: 14px !important; }
-                }
-                @media only screen and (max-width: 480px) {
-                    .email-content { padding: 15px !important; }
-                    .email-header { padding: 25px 15px !important; }
-                    .otp-code { font-size: 1.8rem !important; letter-spacing: 3px !important; }
-                }
-            </style>
-        </head>
-        <body style="margin: 0; padding: 0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f8fafc; line-height: 1.6;">
-            <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);">
-                <div class="email-container" style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
-                    
-                    <!-- Compact Header -->
-                    <div class="email-header" style="background: linear-gradient(135deg, #23284e 0%, #1e293b 100%); padding: 32px 24px; text-align: center;">
-                        <div style="margin-bottom: 16px;">
-                            ${logoDisplay}
-                        </div>
-                        <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 600; letter-spacing: -0.3px;">GENFITY</h1>
-                        <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0 0; font-weight: 400;">Digital Solutions Platform</p>
-                    </div>
-                    
-                    <!-- Content Area -->
-                    <div class="email-content" style="padding: 32px 24px;">
-                        <h2 class="email-title" style="color: #1e293b; font-size: 1.75rem; margin: 0 0 20px 0; font-weight: 600; line-height: 1.3; text-align: center;">${title}</h2>
-                        <div style="text-align: center;">
-                            ${content}
-                        </div>
-                        
-                        <!-- Support Section -->
-                        <div style="margin-top: 36px; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
-                            <p style="color: #475569; font-size: 14px; margin: 0 0 12px 0; font-weight: 500;">Need help?</p>
-                            <a href="mailto:support@genfity.com" style="display: inline-block; background: #23284e; color: #ffffff; text-decoration: none; font-weight: 500; padding: 10px 20px; border-radius: 6px; font-size: 14px;">Contact Support</a>
-                        </div>
-                        
-                        <!-- Footer -->
-                        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0; text-align: center;">
-                            <p style="color: #94a3b8; font-size: 12px; margin: 0 0 4px 0;">
-                                This email was sent automatically. Please do not reply.
-                            </p>
-                            <p style="color: #cbd5e1; font-size: 11px; margin: 0;">
-                                &copy; ${new Date().getFullYear()} GENFITY. All rights reserved.
-                            </p>
-                        </div>
-                    </div>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>${title} - GENFITY</title>
+        <style>
+            @media only screen and (max-width: 600px) {
+                .email-container { width: 100% !important; margin: 0 !important; }
+                .email-content { padding: 20px !important; }
+                .email-title { font-size: 1.4rem !important; }
+                .otp-code { font-size: 1.8rem !important; letter-spacing: 3px !important; }
+                .button { padding: 12px 24px !important; font-size: 14px !important; }
+            }
+        </style>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #ffffff; line-height: 1.6;">
+        <div class="email-container" style="max-width: 600px; margin: 40px auto; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+
+            <!-- Header -->
+            <div style="text-align: center; padding-top: 26px;">
+                <img 
+                    src="https://5kc2v8tlh1bsvesh.public.blob.vercel-storage.com/logo.png" 
+                    alt="GENFITY" 
+                    width="160"
+                    style="display: inline-block; height: auto;" 
+                />
+            </div>
+
+            <!-- Content -->
+            <div class="email-content" style="padding: 16px;">
+                <h2 class="email-title" style="color: #111827; font-size: 1.75rem; margin: 0 0 20px 0; font-weight: 600; text-align: center;">
+                    ${title}
+                </h2>
+                <div style="text-align: center; font-size: 15px; color: #374151;">
+                    ${content}
+                </div>
+
+                <!-- Support -->
+                <div style="margin-top: 32px; padding: 18px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+                    <p style="color: #475569; font-size: 14px; margin: 0 0 10px 0; font-weight: 500;">Need help?</p>
+                    <a href="mailto:services@genfity.com" 
+                        style="display: inline-block; background: #23284e; color: #ffffff; text-decoration: none; font-weight: 500; padding: 10px 20px; border-radius: 6px; font-size: 14px;">
+                        Contact Support
+                    </a>
+                </div>
+
+                <!-- Footer -->
+                <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+                    <p style="color: #9ca3af; font-size: 12px; margin: 0 0 6px 0;">
+                        This email was sent automatically. Please do not reply.
+                    </p>
+                    <p style="color: #d1d5db; font-size: 11px; margin: 0;">
+                        &copy; ${new Date().getFullYear()} GENFITY. All rights reserved.
+                    </p>
                 </div>
             </div>
-            <!-- Footer Note -->
-            // <div style="text-align: center; margin-top: 20px;">
-            //     <p style="color: #64748b; font-size: 12px; margin: 0;">
-            //         Having trouble viewing this email? Contact our support team.
-            //     </p>
-            // </div>
-        </body>
-        </html>
+        </div>
+    </body>
+    </html>
     `;
 };
+
+// Modern responsive email template with professional design
+// const getEmailTemplate = (content: string, title: string, headerIcon?: string) => {
+    
+//     // Simplified logo display with better fallback
+//     const logoDisplay = `
+//         <div style="text-align: center;">
+//             <img 
+//                 src="https://5kc2v8tlh1bsvesh.public.blob.vercel-storage.com/logo-dark-mode.png" 
+//                 alt="GENFITY" 
+//                 width="200"
+//                 style="display: inline-block; height: auto;" 
+//             />
+//         </div>
+//     `;
+
+//     return `
+//         <!DOCTYPE html>
+//         <html lang="en">
+//         <head>
+//             <meta charset="UTF-8">
+//             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+//             <meta http-equiv="X-UA-Compatible" content="IE=edge">
+//             <title>${title} - GENFITY</title>
+//             <style>
+//                 @media only screen and (max-width: 600px) {
+//                     .email-container { width: 100% !important; margin: 0 !important; }
+//                     .email-content { padding: 20px !important; }
+//                     .email-header { padding: 30px 20px !important; }
+//                     .email-title { font-size: 1.5rem !important; }
+//                     .otp-code { font-size: 2rem !important; letter-spacing: 4px !important; }
+//                     .button { padding: 12px 24px !important; font-size: 14px !important; }
+//                 }
+//                 @media only screen and (max-width: 480px) {
+//                     .email-content { padding: 15px !important; }
+//                     .email-header { padding: 25px 15px !important; }
+//                     .otp-code { font-size: 1.8rem !important; letter-spacing: 3px !important; }
+//                 }
+//             </style>
+//         </head>
+//         <body style="margin: 0; padding: 0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f8fafc; line-height: 1.6;">
+//             <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);">
+//                 <div class="email-container" style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+                    
+//                     <!-- Compact Header -->
+//                     <div class="email-header" style="background: linear-gradient(135deg, #23284e 0%, #1e293b 100%); padding: 32px 24px; text-align: center;">
+//                         <div style="margin-bottom: 16px;">
+//                             ${logoDisplay}
+//                         </div>
+//                         <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0 0; font-weight: 400;">Genfity Digital Solutions</p>
+//                     </div>
+                    
+//                     <!-- Content Area -->
+//                     <div class="email-content" style="padding: 32px 24px;">
+//                         <h2 class="email-title" style="color: #1e293b; font-size: 1.75rem; margin: 0 0 20px 0; font-weight: 600; line-height: 1.3; text-align: center;">${title}</h2>
+//                         <div style="text-align: center;">
+//                             ${content}
+//                         </div>
+                        
+//                         <!-- Support Section -->
+//                         <div style="margin-top: 36px; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
+//                             <p style="color: #475569; font-size: 14px; margin: 0 0 12px 0; font-weight: 500;">Need help?</p>
+//                             <a href="mailto:support@genfity.com" style="display: inline-block; background: #23284e; color: #ffffff; text-decoration: none; font-weight: 500; padding: 10px 20px; border-radius: 6px; font-size: 14px;">Contact Support</a>
+//                         </div>
+                        
+//                         <!-- Footer -->
+//                         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0; text-align: center;">
+//                             <p style="color: #94a3b8; font-size: 12px; margin: 0 0 4px 0;">
+//                                 This email was sent automatically. Please do not reply.
+//                             </p>
+//                             <p style="color: #cbd5e1; font-size: 11px; margin: 0;">
+//                                 &copy; ${new Date().getFullYear()} GENFITY. All rights reserved.
+//                             </p>
+//                         </div>
+//                     </div>
+//                 </div>
+//             </div>
+//             </div>
+//         </body>
+//         </html>
+//     `;
+// };
 
 // Compact OTP email template with modern design
 const getOTPEmailContent = (otp: string, userName: string | null, purpose: string, validityMinutes: number = 10) => {
@@ -139,13 +194,13 @@ const getOTPEmailContent = (otp: string, userName: string | null, purpose: strin
             </div>
         </div>
         
-        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 16px; margin: 20px 0;">
+        <div style="background: #fecaca; border: 1px solid #dc2626; border-radius: 6px; padding: 16px; margin: 20px 0;">
             <div style="display: flex; align-items: center; margin-bottom: 8px;">
                 <span style="font-size: 14px; margin-right: 6px;">🔐</span>
-                <strong style="color: #92400e; font-size: 13px;">Security Notice</strong>
+                <strong style="color: #991b1b; font-size: 13px;">Security Notice</strong>
             </div>
-            <p style="color: #78350f; font-size: 12px; margin: 0; line-height: 1.4;">
-                Never share this code. GENFITY will never ask for your verification code.
+            <p style="color: #7f1d1d; font-size: 12px; margin: 0; line-height: 1.4;">
+                Never share this code. Genfity will never ask for your verification code.
             </p>
         </div>
         
