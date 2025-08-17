@@ -279,7 +279,7 @@ const transporter = nodemailer.createTransport({
  * @param name User name (optional)
  */
 export async function sendVerificationEmail(email: string, token: string, name?: string | null): Promise<MailerResponse> {
-    const verificationLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email/${token}`;
+    const verificationLink = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email/${token}`;
     const userName = name || 'User';
 
     const mailOptions: MailOptions = {
@@ -293,7 +293,7 @@ export async function sendVerificationEmail(email: string, token: string, name?:
         if (process.env.NODE_ENV === 'development' || (process.env.EMAIL_SERVER_USER && process.env.EMAIL_SERVER_PASSWORD)) {
             console.log(`Mailer: Sending verification email to ${email}...`);
             const result = await transporter.sendMail(mailOptions);
-            console.log(`Mailer: Email sent successfully to ${email}. MessageId: ${result.messageId}`);
+            // console.log(`Mailer: Email sent successfully to ${email}. MessageId: ${result.messageId}`);
             return { success: true, message: 'Verification email sent successfully.' };
         } else {
             console.log(`Mailer: DEVELOPMENT MODE: Email verification NOT SENT.`);

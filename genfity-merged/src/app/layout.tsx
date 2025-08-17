@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "GENFITY - Merged Platform",
-  description: "GENFITY Digital Solutions - User and Admin Platform",
+  title: "GENFITY - Digital Solutions",
+  description: "GENFITY Digital Solutions adalah software house dan digital agency yang menyediakan layanan pengembangan aplikasi, integrasi WhatsApp API, serta solusi customer service AI berbasis WhatsApp untuk bisnis Anda.",
   icons: {
     icon: "/web-icon.svg",
     shortcut: "/web-icon.svg",
