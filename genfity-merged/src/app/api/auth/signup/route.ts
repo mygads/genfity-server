@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { sendWhatsAppMessageDetailed } from '@/lib/whatsapp'; // Import enhanced function
-import { sendVerificationEmail } from '@/lib/mailer';
+import { sendVerificationEmail } from '@/services/mailer';
 import { normalizePhoneNumber } from '@/lib/auth';
 import { generateApiKey } from '@/lib/api-key';
 import { withCORS, corsOptionsResponse } from "@/lib/cors";

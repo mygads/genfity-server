@@ -123,10 +123,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar()
   const pathname = usePathname()
   const getLogoSrc = () => {
-    // if (state === "collapsed") {
-    //   return theme === 'dark' ? "/icon-dark.svg" : "/icon-light.svg";
-    // }
-    return theme === 'dark' ? "/logo.svg" : "/logo-dark-mode.svg"
+    return theme === 'dark' ? "/logo-dark-mode.svg" : "/logo.svg"
   }  // Determine logo size based on sidebar state
   const getLogoSize = () => {
     if (state === "collapsed") {

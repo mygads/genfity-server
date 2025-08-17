@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { prisma } from "@/lib/prisma";
 import { getCustomerAuth } from "@/lib/auth-helpers";
-import { sendVerificationEmail } from "@/lib/mailer";
+import { sendVerificationEmail } from "@/services/mailer";
 import { randomBytes } from 'crypto';
 
 export async function OPTIONS() {

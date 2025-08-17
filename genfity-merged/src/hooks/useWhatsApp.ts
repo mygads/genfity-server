@@ -23,7 +23,7 @@ import {
   getTransactions,
   sendMessage,
   sendMessageUrl
-} from '@/services/whatsapp-api'
+} from '@/services/whatsapp-webjs-api'
 
 interface UseWhatsAppReturn {
   // State

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsAppMessageDetailed } from '@/lib/whatsapp';
-import { sendVerificationEmail } from '@/lib/mailer';
+import { sendVerificationEmail } from '@/services/mailer';
 import { normalizePhoneNumber } from '@/lib/auth';
 import { withCORS, corsOptionsResponse } from '@/lib/cors';
 
@@ -306,7 +306,7 @@ Please do not share this code with anyone. The code is valid for 60 minutes.`;
       
       if (isEmail && user.email) {
         // Send via email - import the email function
-        const { sendPasswordResetOtpEmail } = await import('@/lib/mailer');
+        const { sendPasswordResetOtpEmail } = await import('@/services/mailer');
         
         const emailResult = await sendPasswordResetOtpEmail(user.email, newResetOtp, user.name);
         

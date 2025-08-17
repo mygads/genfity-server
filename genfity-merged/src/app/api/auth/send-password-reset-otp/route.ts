@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendPasswordResetOtpEmail } from '@/lib/mailer';
+import { sendPasswordResetOtpEmail } from '@/services/mailer';
 import { sendWhatsAppMessageDetailed } from '@/lib/whatsapp';
 import { normalizePhoneNumber } from '@/lib/auth';
 import { withCORS, corsOptionsResponse } from '@/lib/cors';

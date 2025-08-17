@@ -144,7 +144,7 @@ export async function verifyUserSession(token: string): Promise<{
 }
 
 /**
- * Extract token from request headers
+ * Extract token from Authorization header (Bearer token)
  */
 export function extractTokenFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization');

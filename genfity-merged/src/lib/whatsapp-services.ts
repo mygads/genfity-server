@@ -1,24 +1,7 @@
-/**
- * WhatsApp Services - Updated for WhatsApp Go Server
- * This file contains utilities for WhatsApp session management and validation
- * 
- * NOTE: WhatsApp message sending is now handled by whatsapp-go.ts
- * The old WhatsApp Web JS integration has been removed.
- */
-
 import { prisma } from '@/lib/prisma';
-import { whatsappGoService } from './whatsapp-go';
+import { whatsappGoService } from '../services/whatsapp-go';
 
-/**
- * @deprecated Legacy function - use whatsappGoService.getUsers() for admin operations
- * This function is kept for backward compatibility but may be removed in future versions
- */
 export async function waFetch(path: string, method: string = 'GET', body?: any) {
-    console.warn('[DEPRECATED] waFetch is deprecated. Use whatsappGoService methods instead.');
-    
-    if (!whatsappGoService.isAdminConfigured()) {
-        throw new Error('WhatsApp admin configuration is not available.');
-    }
 
     // Redirect to new service for admin operations
     if (path.includes('/admin/users') && method === 'GET') {

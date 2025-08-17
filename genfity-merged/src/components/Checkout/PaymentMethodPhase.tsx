@@ -25,6 +25,9 @@ export function PaymentMethodPhase({
   const [isProcessing, setIsProcessing] = useState(false)
   const router = useRouter()
 
+  // Debug: Log checkout response structure
+  console.log("[PaymentMethodPhase] Checkout Response:", JSON.stringify(checkoutResponse, null, 2))
+
   const handlePayment = async (paymentMethod: string) => {
     if (!checkoutResponse?.data.transactionId) {
       onError("Transaction ID tidak ditemukan. Silakan coba checkout lagi.")
@@ -88,62 +91,70 @@ export function PaymentMethodPhase({
 
       <div>
         <h3 className="text-lg font-semibold mb-3">Pilih Metode Pembayaran</h3>
-        <div className="space-y-3">
-          {checkoutResponse.data.availablePaymentMethods.map((method) => {
-            const serviceFee = checkoutResponse.data.serviceFeePreview.find(
-              fee => fee.paymentMethod === method.paymentMethod
-            )
-            
-            return (
-              <div
-                key={method.paymentMethod}
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                  selectedPaymentMethod === method.paymentMethod
-                    ? 'border-primary bg-primary/5'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary/5'
-                }`}
-                onClick={() => setSelectedPaymentMethod(method.paymentMethod)}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="payment"
-                        checked={selectedPaymentMethod === method.paymentMethod}
-                        onChange={() => setSelectedPaymentMethod(method.paymentMethod)}
-                        className="h-4 w-4 text-primary focus:ring-primary"
-                      />
-                      <div>
-                        <p className="font-medium">{method.name}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {method.description}
-                        </p>
+        {checkoutResponse.data.availablePaymentMethods && checkoutResponse.data.availablePaymentMethods.length > 0 ? (
+          <div className="space-y-3">
+            {checkoutResponse.data.availablePaymentMethods.map((method) => {
+              const serviceFee = checkoutResponse.data.serviceFeePreview?.find(
+                fee => fee.paymentMethod === method.paymentMethod
+              )
+              
+              return (
+                <div
+                  key={method.paymentMethod}
+                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                    selectedPaymentMethod === method.paymentMethod
+                      ? 'border-primary bg-primary/5'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary/5'
+                  }`}
+                  onClick={() => setSelectedPaymentMethod(method.paymentMethod)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="payment"
+                          checked={selectedPaymentMethod === method.paymentMethod}
+                          onChange={() => setSelectedPaymentMethod(method.paymentMethod)}
+                          className="h-4 w-4 text-primary focus:ring-primary"
+                        />
+                        <div>
+                          <p className="font-medium">{method.name}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {method.description}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    {serviceFee && (
+                      <div className="text-right">
+                        <p className="text-sm font-medium">
+                          Total: Rp {serviceFee.totalWithFee.toLocaleString('id-ID')}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Biaya: Rp {serviceFee.feeAmount.toLocaleString('id-ID')}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  {serviceFee && (
-                    <div className="text-right">
-                      <p className="text-sm font-medium">
-                        Total: Rp {serviceFee.totalWithFee.toLocaleString('id-ID')}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Biaya: Rp {serviceFee.feeAmount.toLocaleString('id-ID')}
-                      </p>
-                    </div>
-                  )}
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <p className="text-yellow-800 dark:text-yellow-300 text-sm">
+              Tidak ada metode pembayaran yang tersedia saat ini. Silakan hubungi customer service.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Summary showing total with selected service fee */}
       {selectedPaymentMethod && (
         <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-lg p-4">
           {(() => {
-            const serviceFee = checkoutResponse.data.serviceFeePreview.find(
+            const serviceFee = checkoutResponse.data.serviceFeePreview?.find(
               fee => fee.paymentMethod === selectedPaymentMethod
             )
             return (

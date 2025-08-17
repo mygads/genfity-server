@@ -1,5 +1,5 @@
 // Import WhatsApp Go service untuk menggantikan WhatsApp Web JS
-import { sendWhatsAppMessage as sendWAMessage, sendWhatsAppMessageDetailed as sendWAMessageDetailed } from './whatsapp-go';
+import { sendWhatsAppMessage as sendWAMessage, sendWhatsAppMessageDetailed as sendWAMessageDetailed } from '../services/whatsapp-go';
 
 interface WhatsAppResult {
     success: boolean;

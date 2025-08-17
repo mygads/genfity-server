@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { prisma } from "@/lib/prisma";
 import { sendWhatsAppMessageDetailed } from "@/lib/whatsapp";
-import { sendSSOLoginOtpEmail } from "@/lib/mailer";
+import { sendSSOLoginOtpEmail } from "@/services/mailer";
 import { normalizePhoneNumber } from "@/lib/auth";
 
 // Generate 4-digit OTP for SSO login

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
-import { getCustomerAuth } from "@/lib/auth-helpers";
+import { authenticateCustomerRequest, getAuthErrorResponse } from "@/lib/request-auth";
 import { PaymentExpirationService } from "@/lib/payment-expiration";
 import { z } from "zod";
 import { Decimal } from "@prisma/client/runtime/library";
@@ -91,10 +91,10 @@ function calculateServiceFeePreview(amount: number, serviceFees: any[]): any[] {
 // POST /api/customer/checkout - Unified checkout for all product types
 export async function POST(request: NextRequest) {
   try {
-    const userAuth = await getCustomerAuth(request);
+    const userAuth = await authenticateCustomerRequest(request);
     if (!userAuth?.id) {
       return withCORS(NextResponse.json(
-        { success: false, error: "Authentication required. Please login first." },
+        getAuthErrorResponse(),
         { status: 401 }
       ));
     }

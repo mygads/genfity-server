@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { ArrowRight, Loader2 } from "lucide-react"
 import { useState } from "react"
+import { apiClient } from "@/lib/api-client"
 import type { 
   CheckoutRequest, 
   CheckoutPackage,
@@ -48,7 +49,7 @@ export function CheckoutPhase({
     setIsProcessing(true)
     onError("") // Clear any previous errors
 
-    try {      
+    try {
       // Prepare checkout data according to new API structure
       const packages: CheckoutPackage[] = regularItems.map(item => ({
         id: item.id,
@@ -85,15 +86,9 @@ export function CheckoutPhase({
         ...(voucherApplied && formData.voucher && { voucherCode: formData.voucher })
       }
 
-      // Process checkout
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(checkoutData),
-      })
-      const result = await response.json()
+      // Process checkout using global API client
+      const result = await apiClient.post('/api/customer/checkout', checkoutData)
+      
       onCheckoutSuccess(result)
 
     } catch (error: any) {

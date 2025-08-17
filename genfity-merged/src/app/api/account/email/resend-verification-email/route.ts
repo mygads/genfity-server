@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getUserFromToken } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/prisma';
-import { sendVerificationEmail } from '@/lib/mailer';
+import { sendVerificationEmail } from '@/services/mailer';
 import { randomBytes } from 'crypto';
 import { withCORS, corsOptionsResponse } from '@/lib/cors';
 
