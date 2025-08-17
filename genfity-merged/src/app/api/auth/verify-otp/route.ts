@@ -221,7 +221,7 @@ Your account has been successfully verified.
 📱 Phone: ${updatedUser.phone}
 🔑 Auto-Generated Password: *${newPassword}*
 
-🌐 Login at: ${process.env.WEBSITE_URL}/signin
+🌐 Login at: ${process.env.NEXT_PUBLIC_APP_URL}/signin
 
 ⚠️ Please change your password immediately for security.
 💡 Keep this password safe and do not share it with anyone.
@@ -240,10 +240,10 @@ Welcome to GENFITY! Your account has been successfully verified.
 💼 Helping you grow and build stronger customer trust
 🎯 Innovative solutions tailored for your success
 
-🌐 Login at: ${process.env.WEBSITE_URL}/signin
+🌐 Login at: ${process.env.NEXT_PUBLIC_APP_URL}/signin
 
 Explore our products and exclusive offers:
-${process.env.WEBSITE_URL}/product
+${process.env.NEXT_PUBLIC_APP_URL}/product
 
 Let's build the future together! 💪`;
 

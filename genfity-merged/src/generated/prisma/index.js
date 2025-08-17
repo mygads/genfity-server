@@ -517,7 +517,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Yoga\\Genfity\\Server\\genfity-backend\\src\\generated\\prisma",
+      "value": "C:\\Yoga\\Genfity\\Server\\genfity-merged\\src\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -543,7 +543,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Yoga\\Genfity\\Server\\genfity-backend\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Yoga\\Genfity\\Server\\genfity-merged\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -557,6 +557,7 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {

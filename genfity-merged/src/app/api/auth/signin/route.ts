@@ -59,6 +59,23 @@ export async function POST(request: Request) {
         }
 
         // Find user
+        console.log('Debug signin - Search criteria:', JSON.stringify(searchCriteria, null, 2));
+        
+        // Let's also try to find all users with similar phone numbers for debugging
+        const allUsersWithPhone = await prisma.user.findMany({
+            where: {
+                phone: {
+                    contains: "81233784490"
+                }
+            },
+            select: {
+                id: true,
+                phone: true,
+                email: true
+            }
+        });
+        console.log('Debug signin - All users with similar phone:', allUsersWithPhone);
+        
         const user = await prisma.user.findFirst({
         where: searchCriteria,
         select: {
@@ -75,6 +92,11 @@ export async function POST(request: Request) {
             createdAt: true,
         }
         });
+
+        console.log('Debug signin - User found:', user ? 'YES' : 'NO');
+        if (user) {
+            console.log('Debug signin - User phone in DB:', user.phone);
+        }
 
         if (!user) {
         const message = role === 'admin' 
