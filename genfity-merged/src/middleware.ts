@@ -433,7 +433,7 @@ export async function middleware(req: NextRequest) {
                     const payload = await verifyJWT(jwtToken, JWT_SECRET);
                     isValidCustomer = payload && (payload.role === 'customer' || payload.role === 'admin' || payload.role === 'super_admin');
                 } catch (error) {
-                    console.error('Customer JWT verification failed:', error);
+                    // JWT verification failed
                 }
             }
             

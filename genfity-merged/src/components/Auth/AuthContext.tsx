@@ -174,6 +174,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           // Save to localStorage
           SessionManager.saveSession(cleanUserData, token)
+          
+          // Also set cookie for middleware (expires in 7 days) - verifyOtp
+          if (typeof document !== 'undefined') {
+            const isProduction = window.location.protocol === 'https:';
+            const cookieOptions = isProduction 
+              ? `auth-token=${token}; path=/; secure; samesite=strict; max-age=${7 * 24 * 60 * 60}`
+              : `auth-token=${token}; path=/; samesite=strict; max-age=${7 * 24 * 60 * 60}`;
+            document.cookie = cookieOptions;
+          }
+          
           setUser(cleanUserData)
           return { error: null, success: true, user: cleanUserData }
         } else {
@@ -240,6 +250,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (userData && token) {
           // Save to localStorage
           SessionManager.saveSession(userData, token)
+          
+          // Also set cookie for middleware (expires in 7 days)
+          if (typeof document !== 'undefined') {
+            const isProduction = window.location.protocol === 'https:';
+            const cookieOptions = isProduction 
+              ? `auth-token=${token}; path=/; secure; samesite=strict; max-age=${7 * 24 * 60 * 60}`
+              : `auth-token=${token}; path=/; samesite=strict; max-age=${7 * 24 * 60 * 60}`;
+            document.cookie = cookieOptions;
+          }
+          
           setUser(userData)
           return { error: null, success: true }
         } else {
@@ -320,6 +340,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           // Save to localStorage
           SessionManager.saveSession(cleanUserData, token)
+          
+          // Also set cookie for middleware (expires in 7 days) - verifySSO
+          if (typeof document !== 'undefined') {
+            const isProduction = process.env.NODE_ENV === 'production'
+            const secureFlag = isProduction ? 'secure; ' : ''
+            document.cookie = `auth-token=${token}; path=/; ${secureFlag}samesite=strict; max-age=${7 * 24 * 60 * 60}`
+          }
+          
           setUser(cleanUserData)
           return { error: null, success: true, user: cleanUserData }
         } else {
@@ -466,6 +494,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (result.user && result.token) {
         // Save session to localStorage
         SessionManager.saveSession(result.user, result.token)
+        
+        // Also set cookie for middleware (expires in 7 days) - verifyCheckoutOtp
+        if (typeof document !== 'undefined') {
+          const isProduction = process.env.NODE_ENV === 'production'
+          const secureFlag = isProduction ? 'secure; ' : ''
+          document.cookie = `auth-token=${result.token}; path=/; ${secureFlag}samesite=strict; max-age=${7 * 24 * 60 * 60}`
+        }
+        
         setUser(result.user)
       }
     } else if (result.error) {
@@ -531,6 +567,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Clear local session first
       SessionManager.clearSession()
+      
+      // Clear auth cookie
+      if (typeof document !== 'undefined') {
+        document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+      }
+      
       setUser(null)
       
       // Try to logout from backend (optional)

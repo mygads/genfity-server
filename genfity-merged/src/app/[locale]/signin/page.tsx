@@ -50,7 +50,8 @@ export default function SigninPage() {
       const { error: signInError, success } = await signInWithPassword(identifier, password)
       
       if (success) {
-        // Redirect after successful signin        router.push(redirectTo)
+        // Redirect after successful signin
+        router.push(redirectTo)
       } else if (signInError) {
         setError(signInError.message || t('errors.invalidCredentials'))
         setIsLoading(false)
