@@ -38,6 +38,13 @@ export class SessionManager {
 
       localStorage.setItem(STORAGE_KEYS.USER_SESSION, JSON.stringify(session))
       localStorage.setItem(STORAGE_KEYS.TOKEN, token)
+      
+      // Also save token in cookies for middleware access
+      if (typeof document !== 'undefined') {
+        // Set cookie with 7 days expiry
+        const expiryDate = new Date(Date.now() + SESSION_DURATION);
+        document.cookie = `auth-token=${token}; expires=${expiryDate.toUTCString()}; path=/; secure; samesite=lax`;
+      }
     } catch (error) {
       console.error('Error saving session:', error)
     }
@@ -77,6 +84,26 @@ export class SessionManager {
     }
   }
 
+  static getTokenFromCookie(): string | null {
+    try {
+      if (typeof document === 'undefined') {
+        return null;
+      }
+      
+      const cookies = document.cookie.split(';');
+      for (const cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'auth-token') {
+          return value;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting token from cookie:', error);
+      return null;
+    }
+  }
+
   static isAuthenticated(): boolean {
     const session = this.getSession()
     return session !== null && !!session.token && !!session.id
@@ -86,6 +113,11 @@ export class SessionManager {
     try {
       localStorage.removeItem(STORAGE_KEYS.USER_SESSION)
       localStorage.removeItem(STORAGE_KEYS.TOKEN)
+      
+      // Also clear auth token cookie
+      if (typeof document !== 'undefined') {
+        document.cookie = 'auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      }
     } catch (error) {
       console.error('Error clearing session:', error)
     }

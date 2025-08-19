@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/components/Auth/AuthContext";
+import { useRouter } from "next/navigation";
 
 // Simple loading skeleton component
 function LoadingSkeleton({ className }: { className?: string }) {
@@ -157,16 +159,42 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('today');
-  const [currency, setCurrency] = useState('idr');  const fetchDashboardData = useCallback(async () => {
+  const [currency, setCurrency] = useState('idr');
+  
+  const { user, token, isLoading: isAuthLoading } = useAuth();
+  const router = useRouter();
+
+  // Check authentication and admin role
+  useEffect(() => {
+    if (!isAuthLoading) {
+      if (!user || !token) {
+        router.push('/admin/signin');
+        return;
+      }
+      
+      // Check if user has admin role
+      if ((user as any).role !== 'admin' && (user as any).role !== 'super_admin') {
+        router.push('/admin/signin');
+        return;
+      }
+    }
+  }, [user, token, isAuthLoading, router]);  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       console.log('Fetching dashboard data:', { period, currency });
       
+      // Use token from AuthContext
+      if (!token) {
+        console.error('No auth token found');
+        router.push('/admin/signin');
+        return;
+      }
+      
       const response = await fetch(`/api/admin/dashboard/analytics?period=${period}&currency=${currency}`, {
         method: 'GET',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
       });
       
@@ -184,16 +212,25 @@ export default function DashboardPage() {
       } else {
         const errorText = await response.text();
         console.error('API request failed:', response.status, errorText);
+        
+        // If 401/403, redirect to admin signin
+        if (response.status === 401 || response.status === 403) {
+          router.push('/admin/signin');
+        }
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
-  }, [period, currency]);
+  }, [period, currency, token, router]);
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    // Only fetch data if user is authenticated and has admin role
+    if (!isAuthLoading && user && token && 
+        ((user as any).role === 'admin' || (user as any).role === 'super_admin')) {
+      fetchDashboardData();
+    }
+  }, [fetchDashboardData, isAuthLoading, user, token]);
   const getPeriodLabel = (period: string) => {
     switch (period) {
       case 'today': return 'Today';
@@ -211,6 +248,26 @@ export default function DashboardPage() {
       default: return 'bg-gray-500/10 text-gray-500';
     }
   };
+  if (isAuthLoading) {
+    return (
+      <div className="p-6 space-y-8">
+        <div className="flex flex-col gap-2">
+          <LoadingSkeleton className="h-8 w-64" />
+          <LoadingSkeleton className="h-4 w-96" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <LoadingSkeleton key={i} className="h-32" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !token) {
+    return null; // Will redirect in useEffect
+  }
+
   if (loading && !data) {
     return (
       <div className="p-6 space-y-8">

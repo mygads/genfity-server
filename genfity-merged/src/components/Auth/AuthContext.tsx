@@ -10,6 +10,7 @@ import { SessionManager, UserSession } from "@/lib/storage"
 
 interface AuthContextType {
   user: User | null
+  token: string | null
   isLoading: boolean
   signInWithPhone: (identifier: string, password: string) => Promise<{ error: any; success: boolean }>
   verifyOtp: (identifier: string, otp: string) => Promise<{ error: any; success: boolean; user?: User | null }>
@@ -37,6 +38,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  token: null,
   isLoading: true,
   signInWithPhone: async () => ({ error: null, success: false }),
   verifyOtp: async () => ({ error: null, success: false, user: null }),
@@ -89,7 +91,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (response.ok) {
               const result = await response.json()
               if (result.authenticated && result.session) {
-                setUser(localSession)
+                // Use data from server, not localStorage, to ensure role is up-to-date
+                setUser(result.session.user)
                 setIsLoading(false)
                 return
               }
@@ -604,6 +607,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
+        token: SessionManager.getToken(),
         isLoading,
         signInWithPhone,
         verifyOtp,
