@@ -258,7 +258,6 @@ CRON_SECRET=your-secure-random-string
 DATABASE_URL=your-database-url
 
 # NextAuth configuration
-NEXTAUTH_SECRET=your-nextauth-secret
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
