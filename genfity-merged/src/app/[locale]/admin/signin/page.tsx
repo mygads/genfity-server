@@ -1,54 +1,183 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Loader2, Eye, EyeOff, Shield, Lock, Mail } from "lucide-react"
-import { useAdminAuth } from "@/components/Auth/AdminAuthContext"
+import { Loader2, Eye, EyeOff, Shield, Lock, Mail, Phone, ArrowLeft } from "lucide-react"
+import { useAuth } from "@/components/Auth/AuthContext"
 import { ShineBorder } from "@/components/ui/shine-border"
+import { OtpInput } from "@/components/Auth/OtpInput"
 
 export default function AdminSignInPage() {
-  const [email, setEmail] = useState("")
+  const [loginMode, setLoginMode] = useState<"password" | "sso" | "otp">("password")
+  const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const { signIn, error } = useAdminAuth()
+  const [isResending, setIsResending] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [ssoIdentifier, setSsoIdentifier] = useState("")
+  const [error, setError] = useState("")
+  const [isRateLimited, setIsRateLimited] = useState(false)
+  
+  // Use the same auth hooks as customer signin
+  const { signInWithPassword, signInWithSSO, verifySSO, isLoading: isAuthLoading } = useAuth()
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
     setIsLoading(true)
 
     try {
-      const result = await signIn(email, password)
-      if (result.success) {
-        router.push("/dashboard")
+      const { error: signInError, success } = await signInWithPassword(identifier, password)
+      
+      if (success) {
+        // Additional check: verify user has admin role after successful login
+        // The auth system will handle session storage
+        router.push("/admin/dashboard")
+      } else if (signInError) {
+        // Check if user exists but doesn't have admin role
+        if (signInError.message?.includes("Admin privileges required") || 
+            signInError.error === "INSUFFICIENT_PRIVILEGES") {
+          setError("Access denied. Admin privileges required.")
+        } else {
+          setError(signInError.message || "Invalid credentials")
+        }
+        setIsLoading(false)
+      } else {
+        setError("Authentication failed")
+        setIsLoading(false)
       }
     } catch (err) {
       console.error("Admin sign in error:", err)
-    } finally {
+      setError("Sign in failed")
       setIsLoading(false)
     }
   }
 
-  // Quick login function for development
-  const quickLogin = async () => {
-    setEmail("genfity@gmail.com")
-    setPassword("1234abcd")
-    
-    setTimeout(async () => {
-      setIsLoading(true)
-      try {
-        const result = await signIn("genfity@gmail.com", "1234abcd")
-        if (result.success) {
-          router.push("/dashboard")
+  const handleSSOSignIn = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setIsLoading(true)
+
+    try {
+      const { error: ssoError, success } = await signInWithSSO(identifier)
+      
+      if (success) {
+        setSsoIdentifier(identifier)
+        setLoginMode("otp")
+        setIsLoading(false)
+      } else if (ssoError) {
+        // Check if it's a rate limit error and handle it specially
+        if (ssoError.error === 'RATE_LIMITED') {
+          const cooldownSeconds = extractCooldownFromError(ssoError.message || '')
+          startCooldownTimer(cooldownSeconds)
+          setError(formatRateLimitedMessage(cooldownSeconds))
+        } else {
+          setError(ssoError.message || "Failed to send verification code")
         }
-      } catch (err) {
-        console.error("Quick login error:", err)
-      } finally {
+        
+        setIsLoading(false)
+      } else {
+        setError("Failed to send verification code")
         setIsLoading(false)
       }
-    }, 100)
+    } catch (err) {
+      console.error("SSO sign in error:", err)
+      setError("Failed to send verification code")
+      setIsLoading(false)
+    }
+  }
+
+  const handleOTPVerification = async (otp: string) => {
+    setError("")
+    setIsLoading(true)
+
+    try {
+      const { error: verifyError, success, user } = await verifySSO(ssoIdentifier, otp)
+      
+      if (success && user) {
+        // Check if user has admin role
+        if ((user as any).role === 'admin' || (user as any).role === 'super_admin') {
+          router.push("/admin/dashboard")
+        } else {
+          setError("Access denied. Admin privileges required.")
+          setLoginMode("sso")
+          setIsLoading(false)
+        }
+      } else if (verifyError) {
+        setError(verifyError.message || "Invalid verification code")
+        setIsLoading(false)
+      } else {
+        setError("Verification failed")
+        setIsLoading(false)
+      }
+    } catch (err) {
+      console.error("OTP verification error:", err)
+      setError("Verification failed")
+      setIsLoading(false)
+    }
+  }
+
+  const handleResendOTP = async () => {
+    if (resendCooldown > 0) return
+    
+    setError("")
+    setIsResending(true)
+
+    try {
+      const { error: ssoError, success } = await signInWithSSO(ssoIdentifier)
+      
+      if (success) {
+        // Show success message or toast
+        setError("")
+      } else if (ssoError) {
+        // Check if it's a rate limit error and handle it specially
+        if (ssoError.error === 'RATE_LIMITED') {
+          const cooldownSeconds = extractCooldownFromError(ssoError.message || '')
+          startCooldownTimer(cooldownSeconds)
+          setError(formatRateLimitedMessage(cooldownSeconds))
+        } else {
+          setError(ssoError.message || "Failed to resend code")
+        }
+      }
+    } catch (err) {
+      console.error("Resend OTP error:", err)
+      setError("Failed to resend code")
+    } finally {
+      setIsResending(false)
+    }
+  }
+
+  // Extract cooldown duration from error message
+  const extractCooldownFromError = (errorMessage: string) => {
+    const match = errorMessage.match(/wait (\d+) seconds?/)
+    const seconds = match ? parseInt(match[1]) : 60 // Default to 60 seconds if not found
+    return seconds
+  }
+
+  // Format rate limited error message
+  const formatRateLimitedMessage = (seconds: number) => {
+    return `Too many requests. Please wait ${seconds} seconds before trying again.`
+  }
+
+  // Start countdown timer
+  const startCooldownTimer = (seconds: number) => {
+    setIsRateLimited(true)
+    setResendCooldown(seconds)
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          setIsRateLimited(false)
+        }
+        // Update error message with countdown
+        const newSeconds = prev - 1
+        setError(formatRateLimitedMessage(newSeconds))
+        return newSeconds
+      })
+    }, 1000)
   }
 
   return (
@@ -84,76 +213,162 @@ export default function AdminSignInPage() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="mb-8">
-                  <label htmlFor="email" className="mb-3 block text-sm text-dark dark:text-white">
-                    <Mail className="inline h-4 w-4 mr-2" />
-                    Admin Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@genfity.com"
-                    className="border-stroke w-full rounded-sm border bg-[#f8f8f8] px-6 py-3 text-base text-black outline-hidden transition-all duration-300 focus:border-primary dark:border-transparent dark:bg-[#2C303B] dark:text-white dark:shadow-two dark:focus:border-primary dark:focus:shadow-none"
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-
-                <div className="mb-8">
-                  <label htmlFor="password" className="mb-3 block text-sm text-dark dark:text-white">
-                    <Lock className="inline h-4 w-4 mr-2" />
-                    Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      id="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="border-stroke w-full rounded-sm border bg-[#f8f8f8] px-6 py-3 pr-12 text-base text-black outline-hidden transition-all duration-300 focus:border-primary dark:border-transparent dark:bg-[#2C303B] dark:text-white dark:shadow-two dark:focus:border-primary dark:focus:shadow-none"
-                      required
-                      disabled={isLoading}
-                    />
+              {loginMode === "otp" ? (
+                // OTP Verification Step
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 mb-6">                      
                     <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
-                      disabled={isLoading}
+                      onClick={() => {
+                        setLoginMode("sso")
+                        setError("")
+                      }}
+                      className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 dark:text-blue-500 dark:hover:text-blue-400 transition-colors"
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
+                      <ArrowLeft className="h-4 w-4" />
+                      Back to Login
                     </button>
                   </div>
+                  
+                  <OtpInput
+                    onComplete={handleOTPVerification}
+                    onResend={handleResendOTP}
+                    isLoading={isLoading}
+                    isResending={isResending}
+                    resendCooldown={resendCooldown}
+                    error={error}
+                    identifier={ssoIdentifier}
+                  />
                 </div>
+              ) : (
+                // Login Form
+                <div>
+                  {/* Login Mode Toggle */}
+                  <div className="mb-6 flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
+                    <button
+                      onClick={() => {
+                        setLoginMode("password")
+                        setError("")
+                      }}                        
+                      className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
+                        loginMode === "password"
+                          ? "bg-white text-primary dark:text-white shadow-sm dark:bg-gray-900"
+                          : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                      }`}
+                    >
+                      Password Login
+                    </button>
+                    <button
+                      onClick={() => {
+                        setLoginMode("sso")
+                        setError("")
+                      }}
+                      className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
+                        loginMode === "sso"
+                          ? "bg-white text-primary dark:text-white shadow-sm dark:bg-gray-900"
+                          : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                      }`}
+                    >
+                      Quick Access
+                    </button>
+                  </div>
 
-                <div className="mb-6 space-y-3">
-                  <button
-                    type="submit"
-                    disabled={isLoading || !email || !password}
-                    className="flex w-full items-center justify-center rounded-md bg-primary dark:bg-primary px-9 py-3 text-base font-medium text-white shadow-submit duration-300 hover:bg-primary/80 dark:shadow-submit-dark disabled:opacity-50 disabled:hover:bg-primary"
-                  >
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shield className="mr-2 h-4 w-4" />}
-                    {isLoading ? "Signing in..." : "Sign In as Admin"}
-                  </button>
+                  {loginMode === "password" ? (
+                    <form onSubmit={handleSignIn}>                        
+                      <div className="mb-8">
+                        <label htmlFor="identifier" className="mb-3 block text-sm text-dark dark:text-white">
+                          <Mail className="inline h-4 w-4 mr-2" />
+                          Email or Phone
+                        </label>
+                        <input
+                          type="text"
+                          id="identifier"
+                          value={identifier}
+                          onChange={(e) => setIdentifier(e.target.value)}
+                          placeholder="admin@genfity.com or +628123456789"
+                          className="border-stroke w-full rounded-sm border bg-[#f8f8f8] px-6 py-3 text-base text-black outline-hidden transition-all duration-300 focus:border-primary dark:border-transparent dark:bg-[#2C303B] dark:text-white dark:shadow-two dark:focus:border-primary dark:focus:shadow-none"
+                          required
+                          disabled={isLoading}
+                        />
+                      </div>
 
-                  {/* Quick Login Button for Development */}
-                  <button
-                    type="button"
-                    onClick={quickLogin}
-                    disabled={isLoading}
-                    className="flex w-full items-center justify-center rounded-md bg-gradient-to-r from-green-500 to-emerald-600 px-9 py-2 text-sm font-medium text-white shadow-submit duration-300 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50"
-                  >
-                    ⚡ Quick Login (Dev)
-                  </button>
+                      <div className="mb-8">
+                        <label htmlFor="password" className="mb-3 block text-sm text-dark dark:text-white">
+                          <Lock className="inline h-4 w-4 mr-2" />
+                          Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            id="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className="border-stroke w-full rounded-sm border bg-[#f8f8f8] px-6 py-3 pr-12 text-base text-black outline-hidden transition-all duration-300 focus:border-primary dark:border-transparent dark:bg-[#2C303B] dark:text-white dark:shadow-two dark:focus:border-primary dark:focus:shadow-none"
+                            required
+                            disabled={isLoading}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
+                            disabled={isLoading}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-5 w-5" />
+                            ) : (
+                              <Eye className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mb-6 space-y-3">
+                        <button
+                          type="submit"
+                          disabled={isLoading || !identifier || !password}
+                          className="flex w-full items-center justify-center rounded-md bg-primary dark:bg-primary px-9 py-3 text-base font-medium text-white shadow-submit duration-300 hover:bg-primary/80 dark:shadow-submit-dark disabled:opacity-50 disabled:hover:bg-primary"
+                        >
+                          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shield className="mr-2 h-4 w-4" />}
+                          {isLoading ? "Signing in..." : "Sign In as Admin"}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleSSOSignIn}>
+                      <div className="mb-8">
+                        <label htmlFor="sso-identifier" className="mb-3 block text-sm text-dark dark:text-white">
+                          <Phone className="inline h-4 w-4 mr-2" />
+                          Phone Number or Email
+                        </label>
+                        <input
+                          type="text"
+                          id="sso-identifier"
+                          value={ssoIdentifier}
+                          onChange={(e) => setSsoIdentifier(e.target.value)}
+                          placeholder="+628123456789 or admin@genfity.com"
+                          className="border-stroke w-full rounded-sm border bg-[#f8f8f8] px-6 py-3 text-base text-black outline-hidden transition-all duration-300 focus:border-primary dark:border-transparent dark:bg-[#2C303B] dark:text-white dark:shadow-two dark:focus:border-primary dark:focus:shadow-none"
+                          required
+                          disabled={isLoading}
+                        />
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                          We&apos;ll send you a verification code to access admin panel
+                        </p>
+                      </div>
+
+                      <div className="mb-6">
+                        <button
+                          type="submit"
+                          disabled={isLoading || !ssoIdentifier}
+                          className="flex w-full items-center justify-center rounded-md bg-primary dark:bg-primary px-9 py-3 text-base font-medium text-white shadow-submit duration-300 hover:bg-primary/80 dark:shadow-submit-dark disabled:opacity-50 disabled:hover:bg-primary"
+                        >
+                          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Phone className="mr-2 h-4 w-4" />}
+                          {isLoading ? "Sending Code..." : "Send Verification Code"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
-              </form>
+              )}
               
               <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                 <p className="text-center text-sm font-medium text-gray-600 dark:text-gray-400">

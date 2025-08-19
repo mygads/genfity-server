@@ -13,15 +13,19 @@ export default function ConditionalLayoutWrapper({ children }: { children: React
   const basePath = segments.length > 2 ? segments[2] : "" 
 
   const isDashboard = basePath === "dashboard"
+  const isAdminDashboard = pathname.includes("/admin/dashboard")
   const isAdminSignin = pathname.includes("/admin/signin")
+
+  // Don't show header/footer for any dashboard or admin pages
+  const hideHeaderFooter = isDashboard || isAdminDashboard || isAdminSignin
 
   return (
     <>
-      {!isDashboard && <Header />}
+      {!hideHeaderFooter && <Header />}
       {/* main tag removed as it's present in dashboard layout */}
       {children} 
-      {!isDashboard && <Footer />}
-      {!isDashboard && <ScrollToTop />}
+      {!hideHeaderFooter && <Footer />}
+      {!hideHeaderFooter && <ScrollToTop />}
     </>
   )
 }

@@ -1,3 +1,4 @@
+import { AuthProvider } from '@/components/Auth/AuthContext';
 import type { ReactNode } from 'react';
 
 export default function AdminSignInLayout({
@@ -9,8 +10,8 @@ export default function AdminSignInLayout({
   // Renders children in full screen without sidebar or admin layout wrapper
   // Header and Footer will be handled by ConditionalLayoutWrapper
   return (
-    <>
+    <AuthProvider>
       {children}
-    </>
+    </AuthProvider>
   );
 }

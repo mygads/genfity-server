@@ -565,6 +565,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Logout
   const logout = async () => {
     try {
+      // Get current token for logout API call
+      const token = SessionManager.getToken()
+      
       // Clear local session first
       SessionManager.clearSession()
       
@@ -575,12 +578,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       setUser(null)
       
-      // Try to logout from backend (optional)
-      try {
-        await fetch("/api/account/logout", { method: "POST" })
-      } catch (backendError) {
-        // Don't block logout if backend call fails
-        console.warn("Backend logout failed:", backendError)
+      // Try to logout from backend with proper Authorization header
+      if (token) {
+        try {
+          await fetch("/api/account/logout", { 
+            method: "POST",
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+        } catch (backendError) {
+          // Don't block logout if backend call fails
+          console.warn("Backend logout failed:", backendError)
+        }
       }
       
       router.push("/signin")

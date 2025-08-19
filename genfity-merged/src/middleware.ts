@@ -431,7 +431,13 @@ export async function middleware(req: NextRequest) {
             if (jwtToken) {
                 try {
                     const payload = await verifyJWT(jwtToken, JWT_SECRET);
-                    isValidCustomer = payload && (payload.role === 'customer' || payload.role === 'admin' || payload.role === 'super_admin');
+                    // Only allow customers to access customer dashboard, redirect admin to admin panel
+                    if (payload && payload.role === 'customer') {
+                        isValidCustomer = true;
+                    } else if (payload && (payload.role === 'admin' || payload.role === 'super_admin')) {
+                        // Redirect admin to admin dashboard
+                        return NextResponse.redirect(new URL(`/${locale}/admin/dashboard`, req.url));
+                    }
                 } catch (error) {
                     // JWT verification failed
                 }
@@ -451,8 +457,8 @@ export async function middleware(req: NextRequest) {
                 return NextResponse.next();
             }
             
-            // Check for JWT token in cookies for admin UI
-            const jwtToken = req.cookies.get('admin-token')?.value;
+            // Check for JWT token in cookies for admin UI (same cookie as customer but check admin role)
+            const jwtToken = req.cookies.get('auth-token')?.value;
             
             let isValidAdmin = false;
             if (jwtToken) {
