@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { prisma } from "@/lib/prisma";
-import { normalizePhoneNumber, generateToken } from "@/lib/auth";
-import jwt from 'jsonwebtoken';
+import { normalizePhoneNumber } from "@/lib/auth";
+import { generateUserSession, getDeviceInfoFromRequest } from "@/lib/jwt-session-manager";
 
 export async function OPTIONS() {
   return corsOptionsResponse();
@@ -88,9 +88,13 @@ export async function POST(request: Request) {
         ssoOtpExpires: null,
         ssoLastRequestAt: null
       }
-    });// Create NextAuth-compatible session
-    const sessionToken = await createUserSession(user);
-    const response = NextResponse.json({
+    });
+
+    // Create JWT session using proper session manager
+    const deviceInfo = getDeviceInfoFromRequest(request as any);
+    const sessionResult = await generateUserSession(user.id, deviceInfo);
+    
+    return withCORS(NextResponse.json({
       success: true,
       message: "SSO login successful",
       data: {
@@ -100,17 +104,12 @@ export async function POST(request: Request) {
           name: user.name,
           phone: user.phone,
           role: user.role,
-          image: user.image, // Include image URL
+          image: user.image,
         },
-        token: sessionToken // Add JWT token to response
+        token: sessionResult.token,
+        expiresAt: sessionResult.expiresAt.toISOString()
       }
-    });
-
-    // Set session cookie
-    setSessionCookie(response, sessionToken);
-    
-    console.log(`SSO login successful for user ${user.id} via ${isEmail ? 'email' : 'phone'}`);
-    return withCORS(response);
+    }));
 
   } catch (error) {
     console.error("SSO verify error:", error);
@@ -120,35 +119,4 @@ export async function POST(request: Request) {
       error: 'INTERNAL_ERROR'
     }, { status: 500 }));
   }
-}
-
-// Helper function to create user session
-async function createUserSession(user: any): Promise<string> {
-  const token = generateToken({
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    phone: user.phone,
-    role: user.role || 'customer'
-  });
-  
-  return token;
-}
-
-// Helper function to set session cookie
-function setSessionCookie(response: NextResponse, sessionToken: string) {
-  const sessionMaxAge = 30 * 24 * 60 * 60; // 30 days
-  const cookieName = process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://") 
-                     ? "__Secure-genfity-session-token" 
-                     : "genfity-session-token";
-  
-  response.cookies.set({
-    name: cookieName,
-    value: sessionToken,
-    httpOnly: true,
-    secure: process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://") || false,
-    path: '/',
-    sameSite: 'lax',
-    maxAge: sessionMaxAge,
-  });
 }

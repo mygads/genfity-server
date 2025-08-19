@@ -348,7 +348,7 @@ export async function middleware(req: NextRequest) {
             return response;
         }
 
-        // Customer API routes - require JWT
+        // Customer API routes - require JWT with customer role (or admin/super_admin)
         if (pathname.startsWith('/api/customer')) {
             if (!jwtToken) {
                 return NextResponse.json(
@@ -358,6 +358,18 @@ export async function middleware(req: NextRequest) {
                         message: 'Please provide a valid JWT token in Authorization header' 
                     }, 
                     { status: 401 }
+                );
+            }
+            
+            // Customer routes allow customer, admin, and super_admin roles
+            if (jwtToken.role !== 'customer' && jwtToken.role !== 'admin' && jwtToken.role !== 'super_admin') {
+                return NextResponse.json(
+                    { 
+                        success: false, 
+                        error: 'Insufficient permissions',
+                        message: 'Customer access required' 
+                    }, 
+                    { status: 403 }
                 );
             }
             
@@ -405,6 +417,33 @@ export async function middleware(req: NextRequest) {
         const locale = pathname.split('/')[1];
         const pathWithoutLocale = pathname.replace(`/${locale}`, '') || '/';
         
+        // Customer Dashboard Routes Protection
+        if (pathWithoutLocale.startsWith('/dashboard')) {
+            // Skip authentication check for signin and signup pages
+            if (pathWithoutLocale === '/signin' || pathWithoutLocale === '/signup') {
+                return NextResponse.next();
+            }
+            
+            // Check for JWT token in localStorage via cookies for customer UI
+            const jwtToken = req.cookies.get('auth-token')?.value;
+            
+            let isValidCustomer = false;
+            if (jwtToken) {
+                try {
+                    const payload = await verifyJWT(jwtToken, JWT_SECRET);
+                    isValidCustomer = payload && (payload.role === 'customer' || payload.role === 'admin' || payload.role === 'super_admin');
+                } catch (error) {
+                    console.error('Customer JWT verification failed:', error);
+                }
+            }
+            
+            if (!isValidCustomer) {
+                const signInUrl = new URL(`/${locale}/signin`, req.url);
+                signInUrl.searchParams.set('callbackUrl', req.url);
+                return NextResponse.redirect(signInUrl);
+            }
+        }
+
         // Admin UI Routes Protection
         if (pathWithoutLocale.startsWith('/admin')) {
             // Skip authentication check for signin page

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyUserToken } from "@/lib/admin-auth";
+import { verifyUserToken } from '@/lib/auth-helpers';
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { z } from "zod";
 

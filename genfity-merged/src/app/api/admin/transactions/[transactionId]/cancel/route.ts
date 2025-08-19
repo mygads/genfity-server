@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentExpirationService } from '@/lib/payment-expiration';
-import { verifyUserToken } from '@/lib/admin-auth';
+import { verifyUserToken } from '@/lib/auth-helpers';
 
 export async function POST(
   req: NextRequest,

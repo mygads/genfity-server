@@ -37,7 +37,6 @@ model User {
   isActive                      Boolean                     @default(true)
   createdAt                     DateTime                    @default(now())
   accounts                      Account[]
-  sessions                      Session[]
   transactions                  Transaction[]
   userSessions                  UserSession[]
   voucherUsage                  VoucherUsage[]
@@ -65,24 +64,6 @@ model Account {
 
   @@unique([provider, providerAccountId])
   @@index([userId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Session_user_fkey")
-
-  @@index([userId])
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
 }
 
 model Feature {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
-import { verifyAdminToken } from '@/lib/admin-auth'
+import { verifyAdminToken } from '@/lib/auth-helpers'
 import { randomUUID } from 'crypto'
 
 export async function POST(request: NextRequest) {

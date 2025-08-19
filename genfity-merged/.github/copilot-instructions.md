@@ -194,3 +194,20 @@ docker-compose --profile prod up   # Production mode
   - Keep `/services` for external/3rd party integrations
   - Keep `/lib` for reusable business logic functions
   - Keep `/types` for TypeScript type definitions
+
+  ### Language & Localization System
+- **Default Language**: English (en) - all server responses and API data default to English
+- **Supported Languages**: 
+    - English (`en`) - Default server language
+    - Indonesian (`id`) - Secondary language support
+- **API Language Support**: All API endpoints can serve content in both English and Indonesian
+- **Page Localization**: Frontend pages support both `/en` and `/id` routes with full content translation
+- **Language Detection Priority**:
+    1. URL path prefix (`/en` or `/id`)
+    2. User preference stored in localStorage
+    3. Browser Accept-Language header
+    4. IP-based geolocation (Indonesia → `id`, Others → `en`)
+    5. Default fallback → English (`en`)
+- **API Response Format**: All API responses include `locale` field indicating content language
+- **Database Content**: Multilingual content stored with language-specific fields (e.g., `title_en`, `title_id`)
+- **Translation Keys**: Use next-intl for frontend translations with JSON files in `/messages` directory

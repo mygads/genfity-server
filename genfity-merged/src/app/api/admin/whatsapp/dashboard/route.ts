@@ -1,35 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@/generated/prisma';
+import { getAdminAuth } from '@/lib/auth-helpers';
+import { prisma } from '@/lib/prisma';
 import WhatsAppMessageTracker from '@/lib/whatsapp-message-tracker';
-
-// Helper function to verify admin JWT token
-async function verifyAdminToken(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.split(" ")[1];
-  
-  if (!token) {
-    return null;
-  }
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
-    if (decoded.role !== 'admin') {
-      return null;
-    }
-    return decoded;
-  } catch (error) {
-    return null;
-  }
-}
-
-const prisma = new PrismaClient();
 
 // GET /api/admin/whatsapp/dashboard - Get comprehensive WhatsApp dashboard statistics
 export async function GET(request: NextRequest) {
   try {
-    const adminUser = await verifyAdminToken(request);
-    if (!adminUser) {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

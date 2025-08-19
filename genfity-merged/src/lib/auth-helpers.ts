@@ -1,5 +1,6 @@
 import { verifyUserSession, extractTokenFromRequest } from "./jwt-session-manager";
 import { NextRequest } from "next/server";
+import jwt from 'jsonwebtoken';
 
 export interface UserAuthInfo {
   id: string;
@@ -173,11 +174,11 @@ export async function getDetailedUserAuth(request: Request | NextRequest): Promi
 
     return {
       id: user.id,
-      name: user.name,
+      name: user.name || undefined,
       email: user.email || '',
-      phone: user.phone || '',
+      phone: user.phone || undefined,
       role: user.role,
-      image: user.image,
+      image: user.image || undefined,
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
       sessionId: sessionData.session.id
@@ -210,6 +211,74 @@ async function getUserFullData(userId: string) {
     });
   } catch (error) {
     console.error('[AUTH_HELPERS] Error getting user full data:', error);
+    return null;
+  }
+}
+
+/**
+ * Admin-specific authentication for admin-only routes
+ * Returns user info only if the user has admin role
+ */
+export async function getAdminAuth(request: Request | NextRequest): Promise<UserAuthInfo | null> {
+  try {
+    // Get user authentication
+    const userAuth = await getUserFromToken(request);
+    
+    if (!userAuth) {
+      return null;
+    }
+
+    // Check if user has admin role
+    if (userAuth.role !== 'admin' && userAuth.role !== 'super_admin') {
+      return null;
+    }
+
+    return userAuth;
+  } catch (error) {
+    console.error('[AUTH_HELPERS] Error getting admin auth:', error);
+    return null;
+  }
+}
+
+/**
+ * Helper function to verify admin JWT token
+ * Migrated from admin-auth.ts for consistency
+ */
+export async function verifyAdminToken(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.split(" ")[1];
+  
+  if (!token) {
+    return null;
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+    if (decoded.role !== 'admin') {
+      return null;
+    }
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Helper function to verify user JWT token (admin or customer)
+ * Migrated from admin-auth.ts for consistency
+ */
+export async function verifyUserToken(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.split(" ")[1];
+  
+  if (!token) {
+    return null;
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+    return decoded;
+  } catch (error) {
     return null;
   }
 }

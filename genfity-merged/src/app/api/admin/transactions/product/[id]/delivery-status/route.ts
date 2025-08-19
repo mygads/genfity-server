@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
-import { verifyAdminToken } from "@/lib/admin-auth";
+import { verifyAdminToken } from "@/lib/auth-helpers";
 
 // PUT /api/transactions/product/[id]/delivery-status - Update product delivery status
 export async function PUT(

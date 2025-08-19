@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCustomerAuth } from '@/lib/auth-helpers';
 import { hasActiveWhatsAppSubscription } from '@/lib/whatsapp-subscription';
 import { generateApiKey } from '@/lib/api-key';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,31 +30,36 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user already has an API key
-    let existingApiKey = await prisma.apiKey.findFirst({
-      where: { userId }
+    let user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { apiKey: true, createdAt: true }
     });
 
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
     // If no API key exists, create one
-    if (!existingApiKey) {
+    if (!user.apiKey) {
       const newApiKey = generateApiKey();
       
-      existingApiKey = await prisma.apiKey.create({
-        data: {
-          id: newApiKey,
-          userId,
-          name: 'WhatsApp Service API Key',
-          isActive: true,
-        }
+      user = await prisma.user.update({
+        where: { id: userId },
+        data: { apiKey: newApiKey },
+        select: { apiKey: true, createdAt: true }
       });
     }
 
     return NextResponse.json({
       success: true,
       data: {
-        apiKey: existingApiKey.id,
-        name: existingApiKey.name,
-        isActive: existingApiKey.isActive,
-        createdAt: existingApiKey.createdAt
+        apiKey: user.apiKey,
+        name: 'WhatsApp Service API Key',
+        isActive: true,
+        createdAt: user.createdAt
       },
       message: 'API key retrieved successfully'
     });
@@ -98,32 +101,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name } = body;
 
-    // Generate new API key
+    // Generate new API key and update user
     const newApiKey = generateApiKey();
 
-    // Deactivate existing API keys
-    await prisma.apiKey.updateMany({
-      where: { userId },
-      data: { isActive: false }
-    });
-
-    // Create new API key
-    const apiKey = await prisma.apiKey.create({
-      data: {
-        id: newApiKey,
-        userId,
-        name: name || 'WhatsApp Service API Key',
-        isActive: true,
-      }
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { apiKey: newApiKey },
+      select: { apiKey: true, createdAt: true }
     });
 
     return NextResponse.json({
       success: true,
       data: {
-        apiKey: apiKey.id,
-        name: apiKey.name,
-        isActive: apiKey.isActive,
-        createdAt: apiKey.createdAt
+        apiKey: updatedUser.apiKey,
+        name: name || 'WhatsApp Service API Key',
+        isActive: true,
+        createdAt: updatedUser.createdAt
       },
       message: 'New API key generated successfully'
     });

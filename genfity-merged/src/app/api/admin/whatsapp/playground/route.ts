@@ -2,26 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsAppMessageDetailed } from '@/lib/whatsapp';
 import { WhatsAppMessageTracker } from '@/lib/whatsapp-message-tracker';
-
-// Normalize Indonesian phone numbers (08xxx, +62xxx, 62xxx, 8xxx)
-function normalizePhoneNumber(phone: string): string {
-  // Remove all non-digit characters
-  let cleaned = phone.replace(/\D/g, '');
-  
-  // Handle different Indonesian phone number formats
-  if (cleaned.startsWith('0')) {
-    // 08xxxxxxxxx -> 628xxxxxxxxx
-    cleaned = '62' + cleaned.substring(1);
-  } else if (cleaned.startsWith('62')) {
-    // Already in 62xxxxxxxxx format
-    // Do nothing
-  } else if (cleaned.startsWith('8')) {
-    // 8xxxxxxxxx -> 628xxxxxxxxx
-    cleaned = '62' + cleaned;
-  }
-  
-  return cleaned;
-}
+import { normalizePhoneNumber } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {

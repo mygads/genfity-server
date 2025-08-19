@@ -164,19 +164,6 @@ exports.Prisma.AccountScalarFieldEnum = {
   session_state: 'session_state'
 };
 
-exports.Prisma.SessionScalarFieldEnum = {
-  id: 'id',
-  sessionToken: 'sessionToken',
-  userId: 'userId',
-  expires: 'expires'
-};
-
-exports.Prisma.VerificationTokenScalarFieldEnum = {
-  identifier: 'identifier',
-  token: 'token',
-  expires: 'expires'
-};
-
 exports.Prisma.FeatureScalarFieldEnum = {
   id: 'id',
   name_en: 'name_en',
@@ -508,8 +495,6 @@ exports.Prisma.JsonNullValueFilter = {
 exports.Prisma.ModelName = {
   User: 'User',
   Account: 'Account',
-  Session: 'Session',
-  VerificationToken: 'VerificationToken',
   Feature: 'Feature',
   Subcategory: 'Subcategory',
   Category: 'Category',

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyUserToken } from '@/lib/admin-auth';
+import { verifyUserToken } from '@/lib/auth-helpers';
 import WhatsAppMessageTracker from '@/lib/whatsapp-message-tracker';
 
 // GET /api/whatsapp/message-stats - Get user's message statistics

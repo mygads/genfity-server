@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyAdminToken } from "@/lib/admin-auth";
+import { verifyAdminToken } from "@/lib/auth-helpers";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
