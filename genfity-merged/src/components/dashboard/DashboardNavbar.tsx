@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { LogOut, User, ShoppingCart, Moon, Sun, Settings } from "lucide-react"
+import { LogOut, User, ShoppingCart, Moon, Sun, Settings, ChevronDown } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useParams, useRouter, usePathname } from "next/navigation"
 
@@ -119,7 +119,8 @@ export function DashboardNavbar() {
           <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
-        </Button>        {/* Language Switcher */}
+        </Button>        
+        {/* Language Switcher */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -145,7 +146,8 @@ export function DashboardNavbar() {
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
-        </DropdownMenu>        {/* Shopping Cart */}
+        </DropdownMenu>        
+        {/* Shopping Cart */}
         <Button 
           variant="ghost" 
           size="icon" 
@@ -175,6 +177,7 @@ export function DashboardNavbar() {
                 <p className="text-xs font-medium text-foreground">{userDisplayData.name}</p>
                 <p className="text-xs text-muted-foreground">{userDisplayData.email}</p>
               </div>
+              <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 rounded-lg border border-border/50 bg-popover/95 backdrop-blur supports-[backdrop-filter]:bg-popover/90">

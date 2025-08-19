@@ -317,7 +317,6 @@ export async function middleware(req: NextRequest) {
             '/api/public/',
             '/api/health',
             '/api/cron/',
-            '/api/webhook',
         ];
 
         if (publicRoutes.some(route => pathname.startsWith(route))) {

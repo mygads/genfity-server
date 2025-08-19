@@ -13,7 +13,6 @@ import {
   Users, 
   Box, 
   ShoppingCart, 
-  Webhook, 
   X, 
   Layers, 
   FileText, 
@@ -30,8 +29,6 @@ import {
   Home,
   Server,
   Building2,
-  Zap,
-  FileArchive
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -71,12 +68,6 @@ export default function AdminSidebar({ open, setOpen, collapsed = false, setColl
       href: "/admin/dashboard",
       icon: Home,
       description: "Analytics & overview"
-    },
-    {
-      title: "Webhook",
-      href: "/admin/dashboard/webhook",
-      icon: Webhook,
-      description: "Manage webhook endpoints"
     },
     {
       title: "Voucher",
