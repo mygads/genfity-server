@@ -16,11 +16,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/components/Auth/AuthContext"
 
-interface NavbarProps {
+interface AdminNavbarProps {
     onMenuButtonClick: () => void
 }
 
-export default function Navbar({ onMenuButtonClick }: NavbarProps) {
+export default function AdminNavbar({ onMenuButtonClick }: AdminNavbarProps) {
     const [showNotifications, setShowNotifications] = useState(false)
     const router = useRouter()
     const { user, logout } = useAuth()
@@ -51,6 +51,7 @@ export default function Navbar({ onMenuButtonClick }: NavbarProps) {
             </Button>
 
             <div className="flex-1" /> {/* Spacer */}
+            
             <div className="flex items-center gap-3">
                 <ThemeToggle />
                 <Button
@@ -70,21 +71,21 @@ export default function Navbar({ onMenuButtonClick }: NavbarProps) {
                             variant="ghost"
                             className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100/80 dark:hover:bg-gray-800/50 transition-all duration-200"
                         >
-                            <Avatar className="h-8 w-8 ring-2 ring-blue-500/30 dark:ring-blue-400/30">
-                                <AvatarImage src="/placeholder.svg" alt={user?.name || "User"} />
-                                <AvatarFallback className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold">
-                                    {user?.name ? getInitials(user.name) : 'U'}
+                            <Avatar className="h-8 w-8 ring-2 ring-purple-500/30 dark:ring-purple-400/30">
+                                <AvatarImage src="/placeholder.svg" alt={user?.name || "Admin"} />
+                                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-600 text-white text-sm font-semibold">
+                                    {user?.name ? getInitials(user.name) : 'A'}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="hidden flex-col items-start md:flex">
-                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{user?.name || 'User'}</span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">{user?.email || 'user@example.com'}</span>
+                                <span className="text-xs font-medium text-gray-900 dark:text-gray-100">{user?.name || 'Admin'}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">{user?.email || 'admin@example.com'}</span>
                             </div>
                             <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border-gray-200/50 dark:border-gray-700/50 shadow-lg">
-                        <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">My Account</DropdownMenuLabel>
+                        <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">Admin Account</DropdownMenuLabel>
                         <DropdownMenuSeparator className="bg-gray-200/50 dark:bg-gray-700/50" />
                             <DropdownMenuItem className="hover:bg-gray-100/80 dark:hover:bg-gray-700/50 focus:bg-gray-100/80 dark:focus:bg-gray-700/50 text-gray-700 dark:text-gray-300">
                                 <User className="mr-2 h-4 w-4" />

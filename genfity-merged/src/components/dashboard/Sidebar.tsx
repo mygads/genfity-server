@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image" // Import next/image
 import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes" // Added useTheme import
+import { getFullVersionString } from "@/lib/version"
 import { 
   ChevronDown, 
   Users, 
@@ -432,10 +433,12 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-blue-600/10 via-indigo-500/5 to-transparent dark:from-blue-400/20 dark:via-indigo-400/10 dark:to-transparent pointer-events-none"></div>
         
         {/* Version info */}
-        <div className="my-4 mx-auto text-center">
-          <p className="text-xs text-gray-700 dark:text-white">
-            Genfity Dashboard v1.0
-          </p>
+        <div className="flex-shrink-0 py-4 px-6 border-t border-gray-200/50 dark:border-gray-700/50">
+          <div className="text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+              {getFullVersionString()}
+            </p>
+          </div>
         </div>
       </div>
     </>

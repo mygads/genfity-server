@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { LogOut, User, ShoppingCart, Globe, Moon, Sun } from "lucide-react"
+import { LogOut, User, ShoppingCart, Moon, Sun, Settings } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useParams, useRouter, usePathname } from "next/navigation"
 
@@ -18,7 +18,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useCart } from "@/components/Cart/CartContext"
 import { useAuth } from "@/components/Auth/AuthContext"
 import CartSidebar from "@/components/Cart/CartSidebar"
-import { link } from "fs"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export function DashboardNavbar() {
   const { theme, setTheme } = useTheme()
@@ -34,10 +34,14 @@ export function DashboardNavbar() {
   // Calculate total cart items
   const totalCartItems = items.reduce((total, item) => total + item.qty, 0)
 
-  // Mock user data fallback if auth is not available
-  const userDisplayData = user || {
-    name: "John Doe",
-    email: "john@example.com",
+  // Use real user data from auth context - ensure name is always displayed
+  const userDisplayData = user ? {
+    name: user.name || user.email?.split('@')[0] || 'User',
+    email: user.email || 'user@example.com',
+    avatar: "/placeholder.svg?height=32&width=32",
+  } : {
+    name: "Loading...",
+    email: "loading@example.com",
     avatar: "/placeholder.svg?height=32&width=32",
   }
   const handleLogout = () => {
@@ -87,6 +91,16 @@ export function DashboardNavbar() {
   }
   const handleProfileClick = () => {
     router.push(`/dashboard/profile`)
+  }
+
+  // Generate initials from user name
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   return (
@@ -151,10 +165,14 @@ export function DashboardNavbar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 gap-2 px-2 rounded-md hover:bg-accent transition-colors">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary dark:text-white">
-                <User className="h-3.5 w-3.5" />
-              </div>              <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-foreground">{userDisplayData.name}</p>
+              <Avatar className="h-6 w-6 ring-2 ring-primary/30 dark:ring-primary/30">
+                <AvatarImage src="/placeholder.svg" alt={userDisplayData.name || "User"} />
+                <AvatarFallback className="bg-gradient-to-r from-primary to-primary/80 text-white text-xs font-semibold">
+                  {userDisplayData.name ? getInitials(userDisplayData.name) : 'U'}
+                </AvatarFallback>
+              </Avatar>              
+              <div className="hidden md:block text-left">
+                <p className="text-xs font-medium text-foreground">{userDisplayData.name}</p>
                 <p className="text-xs text-muted-foreground">{userDisplayData.email}</p>
               </div>
             </Button>
@@ -167,6 +185,7 @@ export function DashboardNavbar() {
               <span>Profile</span>
             </DropdownMenuItem>
             <DropdownMenuItem className="rounded-md cursor-pointer hover:bg-accent focus:bg-accent">
+              <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-border/50" />

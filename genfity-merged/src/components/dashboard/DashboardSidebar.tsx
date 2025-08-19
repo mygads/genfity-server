@@ -39,6 +39,7 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { getFullVersionString } from "@/lib/version"
 
 // Menu data
 const data = {
@@ -147,13 +148,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </Link>
         </div>
       </SidebarHeader>
-      <SidebarContent className={`bg-sidebar-background ${state === "collapsed" ? "px-1" : "px-2"}`}>          {/* Main Navigation */}
+      <SidebarContent className={`bg-sidebar-background ${state === "collapsed" ? "px-1" : "px-2"}`}>          
+        {/* Main Navigation */}
         <SidebarGroup>
           <SidebarGroupLabel className={`text-xs font-semibold text-sidebar-foreground/70 mb-2 px-2 ${state === "collapsed" ? "sr-only" : ""}`}>
             Main Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1">              
+            <SidebarMenu className="gap-2">              
               {data.mainNavigation.map((item) => {
                 const isActive = isActivePath(pathname, item.url)
                 return (
@@ -294,48 +296,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
 
       <SidebarSeparator className={`my-4 bg-sidebar-border/30 ${state === "collapsed" ? "mx-1" : "mx-2"}`} />
-      </SidebarContent>          <SidebarFooter className={`bg-sidebar-background border-none ${state === "collapsed" ? "p-1" : "p-2"}`}>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <Link href="/dashboard/settings" className="block w-full">              <button
-                className={`h-10 rounded-lg transition-all duration-200 group relative overflow-hidden flex items-center gap-3 w-full ${
-                  state === "collapsed" ? "px-3 justify-center" : "px-3"
-                } ${
-                  isActivePath(pathname, "/dashboard/settings")
-                    ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/20 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity' 
-                    : state === "collapsed"
-                      ? 'hover:bg-sidebar-accent hover:shadow-md'
-                      : 'hover:bg-sidebar-accent hover:shadow-md hover:scale-105 hover:border-l-2 hover:border-primary dark:hover:border-white'
-                }`}
-              >
-                <Settings className={`${state === "collapsed" ? "h-5 w-5 flex-shrink-0" : "h-4 w-4"} transition-all duration-200 ${
-                  isActivePath(pathname, "/dashboard/settings") 
-                    ? 'text-white drop-shadow-sm' 
-                    : theme === 'dark' 
-                      ? 'text-white/80 group-hover:text-white' 
-                      : 'text-gray-700 group-hover:text-gray-900'
-                }`} />
-                {state !== "collapsed" && (
-                  <span className={`font-medium transition-all duration-200 ${
-                    isActivePath(pathname, "/dashboard/settings") 
-                      ? 'text-white drop-shadow-sm' 
-                      : theme === 'dark' 
-                        ? 'text-white/90 group-hover:text-white' 
-                        : 'text-gray-800 group-hover:text-gray-900'
-                  }`}>
-                    Account Settings
-                  </span>
-                )}
-                {isActivePath(pathname, "/dashboard/settings") && state !== "collapsed" && (
-                  <>
-                    <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-foreground rounded-full opacity-80" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent pointer-events-none animate-pulse" />
-                  </>
-                )}
-              </button>
-            </Link>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      </SidebarContent>          
+      <SidebarFooter className={`bg-sidebar-background border-none ${state === "collapsed" ? "p-1" : "p-2"}`}>
+        {/* Version Display */}
+        {state !== "collapsed" && (
+          <div className="px-3 py-2">
+            <p className="text-xs text-sidebar-foreground/50 text-center">
+              {getFullVersionString()}
+            </p>
+          </div>
+        )}
       </SidebarFooter>
 
       <SidebarRail />

@@ -251,8 +251,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const token = result.data?.token || result.token
         
         if (userData && token) {
+          // Create clean user object with all required fields
+          const cleanUserData: User & { role?: string } = {
+            id: userData.id,
+            name: userData.name || 'Unknown User',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            role: userData.role || 'customer'
+          }
+          
           // Save to localStorage
-          SessionManager.saveSession(userData, token)
+          SessionManager.saveSession(cleanUserData, token)
           
           // Also set cookie for middleware (expires in 7 days)
           if (typeof document !== 'undefined') {
@@ -263,7 +272,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             document.cookie = cookieOptions;
           }
           
-          setUser(userData)
+          setUser(cleanUserData)
           return { error: null, success: true }
         } else {
           console.warn("[AuthContext] Missing user or token in successful response:", result)
