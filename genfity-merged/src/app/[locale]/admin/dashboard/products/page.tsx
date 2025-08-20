@@ -2,17 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Package, 
   FolderTree, 
   Puzzle, 
   ShoppingCart,
-  Plus,
-  BarChart3,
-  TrendingUp,
-  Archive
 } from 'lucide-react';
 import CategoriesSection from './components/CategoriesSection';
 import SubcategoriesSection from './components/SubcategoriesSection';

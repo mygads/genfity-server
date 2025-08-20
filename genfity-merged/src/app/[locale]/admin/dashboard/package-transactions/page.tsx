@@ -1,5 +1,7 @@
 "use client";
 import React, { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { SessionManager } from "@/lib/storage";
 import Image from "next/image";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +11,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import { 
   PackageCheck, 
   Search,
@@ -20,9 +23,9 @@ import {
   User,
   Package,
   Eye,
-  Play
+  Play,
+  Loader2
 } from "lucide-react";
-import { toast } from "sonner";
 
 interface ProductTransaction {
   id: string; // TransactionProduct ID
@@ -101,6 +104,7 @@ interface TransactionDetail {
 }
 
 export default function ProductTransactionsPage() {
+  const router = useRouter();
   const [transactions, setTransactions] = useState<ProductTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -137,16 +141,27 @@ export default function ProductTransactionsPage() {
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/transactions/product");
-      const data = await res.json();
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
+      const response = await fetch("/api/admin/products/package-transactions", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
       
       if (data.success) {
         setTransactions(data.data || []);
         calculateStats(data.data || []);
       } else {
+        toast.error(data.error || 'Failed to fetch transactions');
         console.error("Error fetching transactions:", data.error);
       }
     } catch (error) {
+      toast.error('Failed to fetch transactions');
       console.error("Error fetching transactions:", error);
     } finally {
       setLoading(false);
@@ -187,9 +202,10 @@ export default function ProductTransactionsPage() {
         return;
       }
 
-      const res = await fetch(`/api/transactions/product/${transactionId}/status`, {
+      const res = await fetch(`/api/admin/products/package-transactions/${transactionId}`, {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : ''}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ action }),
@@ -216,10 +232,13 @@ export default function ProductTransactionsPage() {
     
     setActionLoading(true);
     try {
+      const token = SessionManager.getToken();
+      
       // Update delivery record with form data and set status to delivered
-      const res = await fetch(`/api/transactions/product/${selectedTransaction.transaction.id}/delivery-status`, {
+      const response = await fetch(`/api/admin/products/package-transactions/${selectedTransaction.transaction.id}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
@@ -233,7 +252,7 @@ export default function ProductTransactionsPage() {
         }),
       });
 
-      const data = await res.json();
+      const data = await response.json();
       
       if (data.success) {
         toast.success('Product delivery completed successfully');
@@ -262,19 +281,34 @@ export default function ProductTransactionsPage() {
 
   const viewTransactionDetail = async (transaction: ProductTransaction) => {
     try {
-      const res = await fetch(`/api/transactions/product/${transaction.id}/detail`);
-      const data = await res.json();
+      const token = SessionManager.getToken();
+      
+      const response = await fetch(`/api/admin/products/package-transactions/${transaction.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
       
       if (data.success) {
         console.log('[FRONTEND] Transaction detail received:', {
-          id: data.data.transaction.id,
-          hasPackage: !!data.data.transaction.productInfo?.package,
-          hasFeatures: !!data.data.transaction.productInfo?.package?.features,
-          featuresLength: data.data.transaction.productInfo?.package?.features?.length || 0,
-          features: data.data.transaction.productInfo?.package?.features,
-          categoryIcon: data.data.transaction.productInfo?.package?.category?.icon
+          id: data.data.id,
+          hasPackage: !!data.data.package,
+          hasFeatures: !!data.data.package?.features,
+          featuresLength: data.data.package?.features?.length || 0,
+          features: data.data.package?.features,
+          categoryIcon: data.data.package?.category?.icon
         });
-        setSelectedTransaction(data.data);
+        
+        // Transform the API response to match expected frontend structure
+        const detailData: TransactionDetail = {
+          transaction: transaction,
+          canStartProgress: data.data.status === 'pending',
+          canComplete: data.data.status === 'in_progress'
+        };
+        
+        setSelectedTransaction(detailData);
         setIsDetailOpen(true);
       }
     } catch (error) {
@@ -286,9 +320,12 @@ export default function ProductTransactionsPage() {
   const handleDeliveryAction = async (transactionId: string, status: string) => {
     setDeliveryActionLoading(transactionId);
     try {
-      const response = await fetch(`/api/transactions/product/${transactionId}/delivery-status`, {
+      const token = SessionManager.getToken();
+      
+      const response = await fetch(`/api/admin/products/package-transactions/${transactionId}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status })
@@ -303,6 +340,7 @@ export default function ProductTransactionsPage() {
         toast.error(data.error || 'Failed to update delivery status');
       }
     } catch (error) {
+      toast.error('Failed to update delivery status');
       console.error('Error updating delivery status:', error);
       toast.error('Failed to update delivery status');
     } finally {
@@ -429,9 +467,9 @@ export default function ProductTransactionsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Product Transactions</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Package Transactions</h1>
           <p className="text-muted-foreground">
-            Manage and track product transaction status
+            Manage and track package transaction status
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -441,7 +479,11 @@ export default function ProductTransactionsPage() {
             onClick={fetchTransactions}
             disabled={loading}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
             Refresh
           </Button>
         </div>
@@ -626,7 +668,7 @@ export default function ProductTransactionsPage() {
                   <tr>
                     <td colSpan={10} className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center">
-                        <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
                         Loading transactions...
                       </div>
                     </td>
@@ -1078,7 +1120,7 @@ export default function ProductTransactionsPage() {
                 className="flex items-center gap-2"
               >
                 {actionLoading ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <CheckCircle className="h-4 w-4" />
                 )}

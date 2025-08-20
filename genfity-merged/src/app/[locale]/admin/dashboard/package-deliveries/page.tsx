@@ -1,5 +1,7 @@
 "use client";
 import React, { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { SessionManager } from "@/lib/storage";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +10,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { toast } from 'sonner';
 import { 
   Truck, 
   Search,
@@ -31,7 +34,8 @@ import {
   FileText,
   Calendar as CalendarIcon,
   Plus,
-  Play
+  Play,
+  Loader2
 } from "lucide-react";
 
 interface PackageCustomer {
@@ -96,6 +100,7 @@ interface EditFormData {
 }
 
 export default function PackageCustomersPage() {
+    const router = useRouter();
     const [customers, setCustomers] = useState<PackageCustomer[]>([]);
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState("");
@@ -122,9 +127,12 @@ export default function PackageCustomersPage() {
     const handleMarkInProgress = async (customer: PackageCustomer) => {
         setDeliveryActionLoading(customer.id);
         try {
-            const response = await fetch(`/api/package-customers/${customer.id}`, {
-                method: 'PUT',
+            const token = SessionManager.getToken();
+            
+            const response = await fetch(`/api/admin/products/package-deliveries/${customer.id}`, {
+                method: 'PATCH',
                 headers: {
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ status: 'in_progress' })
@@ -133,11 +141,14 @@ export default function PackageCustomersPage() {
             const data = await response.json();
 
             if (data.success) {
+                toast.success("Status updated to in progress");
                 await fetchCustomers();
             } else {
+                toast.error(data.error || "Failed to update status");
                 console.error("Error updating delivery status:", data.error);
             }
         } catch (error) {
+            toast.error("Failed to update status");
             console.error("Error updating delivery status:", error);
         } finally {
             setDeliveryActionLoading(null);
@@ -147,9 +158,12 @@ export default function PackageCustomersPage() {
     const handleMarkDelivered = async (customer: PackageCustomer) => {
         setDeliveryActionLoading(customer.id);
         try {
-            const response = await fetch(`/api/package-customers/${customer.id}`, {
-                method: 'PUT',
+            const token = SessionManager.getToken();
+            
+            const response = await fetch(`/api/admin/products/package-deliveries/${customer.id}`, {
+                method: 'PATCH',
                 headers: {
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ status: 'delivered' })
@@ -158,11 +172,14 @@ export default function PackageCustomersPage() {
             const data = await response.json();
 
             if (data.success) {
+                toast.success("Package marked as delivered");
                 await fetchCustomers();
             } else {
+                toast.error(data.error || "Failed to mark as delivered");
                 console.error("Error updating delivery status:", data.error);
             }
         } catch (error) {
+            toast.error("Failed to mark as delivered");
             console.error("Error updating delivery status:", error);
         } finally {
             setDeliveryActionLoading(null);
@@ -181,19 +198,30 @@ export default function PackageCustomersPage() {
     const fetchCustomers = useCallback(async () => {
         setLoading(true);
         try {
-        const res = await fetch("/api/package-customers");
-        const data = await res.json();
+            // Get token for authentication
+            const token = SessionManager.getToken();
+            
+            const response = await fetch("/api/admin/products/package-deliveries", {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
         
-        if (data.success) {
-            setCustomers(data.data || []);
-            calculateStats(data.data || []);
-        } else {
-            console.error("Error fetching customers:", data.error);
-        }
+            if (data.success) {
+                setCustomers(data.data || []);
+                calculateStats(data.data || []);
+            } else {
+                toast.error(data.error || "Failed to fetch package deliveries");
+                console.error("Error fetching customers:", data.error);
+            }
         } catch (error) {
-        console.error("Error fetching customers:", error);
+            toast.error("Failed to fetch package deliveries");
+            console.error("Error fetching customers:", error);
         } finally {
-        setLoading(false);
+            setLoading(false);
         }
     }, []);
 
@@ -236,31 +264,37 @@ export default function PackageCustomersPage() {
 
         setSaveLoading(true);
         try {
-        const res = await fetch(`/api/package-customers/${selectedCustomer.id}`, {
-            method: 'PUT',
-            headers: {
-            'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-            ...editForm,
-            domainExpiredAt: editForm.domainExpiredAt ? new Date(editForm.domainExpiredAt).toISOString() : null
-            }),
-        });
+            const token = SessionManager.getToken();
+            
+            const response = await fetch(`/api/admin/products/package-deliveries/${selectedCustomer.id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ...editForm,
+                    domainExpiredAt: editForm.domainExpiredAt ? new Date(editForm.domainExpiredAt).toISOString() : null
+                }),
+            });
 
-        const data = await res.json();
+            const data = await response.json();
         
-        if (data.success) {
-            await fetchCustomers();
-            setIsDetailOpen(false);
-            setIsEditMode(false);
-            setSelectedCustomer(null);
-        } else {
-            console.error("Error updating customer:", data.error);
-        }
+            if (data.success) {
+                toast.success("Package delivery updated successfully");
+                await fetchCustomers();
+                setIsDetailOpen(false);
+                setIsEditMode(false);
+                setSelectedCustomer(null);
+            } else {
+                toast.error(data.error || "Failed to update package delivery");
+                console.error("Error updating customer:", data.error);
+            }
         } catch (error) {
-        console.error("Error updating customer:", error);
+            toast.error("Failed to update package delivery");
+            console.error("Error updating customer:", error);
         } finally {
-        setSaveLoading(false);
+            setSaveLoading(false);
         }
     };
 
@@ -389,13 +423,13 @@ export default function PackageCustomersPage() {
         });
 
     return (
-        <div className="container mx-auto py-6 space-y-6">
+        <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-            <h1 className="text-3xl font-bold tracking-tight">Product Customers</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Package Deliveries</h1>
             <p className="text-muted-foreground">
-                Manage delivered products and customer deliverables
+                Manage delivered packages and customer deliverables
             </p>
             </div>
             <div className="flex items-center gap-2">
@@ -405,7 +439,11 @@ export default function PackageCustomersPage() {
                 onClick={fetchCustomers}
                 disabled={loading}
             >
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                )}
                 Refresh
             </Button>
             </div>
@@ -571,8 +609,8 @@ export default function PackageCustomersPage() {
                     <tr>
                         <td colSpan={9} className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center">
-                            <RefreshCw className="h-6 w-6 animate-spin mr-2" />
-                            Loading customers...
+                            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                            Loading package deliveries...
                         </div>
                         </td>
                     </tr>

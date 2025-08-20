@@ -122,29 +122,29 @@ export default function AdminSidebar({ open, setOpen, collapsed = false, setColl
       color: "text-blue-600 dark:text-blue-400"
     },
     {
-      title: "Product Transactions",
-      href: "/admin/dashboard/product-transactions",
+      title: "Package Transactions",
+      href: "/admin/dashboard/package-transactions",
       icon: PackageCheck,
-      description: "Manage product transactions",
+      description: "Manage package transactions",
       color: "text-purple-600 dark:text-purple-400"
     },
     {
-      title: "Product Delivered",
-      href: "/admin/dashboard/package-customers",
+      title: "Package Deliveries",
+      href: "/admin/dashboard/package-deliveries",
       icon: Truck,
-      description: "Manage delivered packages",
+      description: "Manage package deliveries",
       color: "text-green-600 dark:text-green-400"
     },
     {
       title: "Addon Transactions",
       href: "/admin/dashboard/addon-transactions",
       icon: FileText,
-      description: "View addon transactions",
+      description: "Manage addon transactions",
       color: "text-cyan-600 dark:text-cyan-400"
     },
     {
-      title: "Addon Delivered",
-      href: "/admin/dashboard/addon-delivery",
+      title: "Addon Deliveries",
+      href: "/admin/dashboard/addon-deliveries",
       icon: Layers,
       description: "Manage addon deliveries",
       color: "text-indigo-600 dark:text-indigo-400"
@@ -279,7 +279,7 @@ export default function AdminSidebar({ open, setOpen, collapsed = false, setColl
           scrollbarColor: 'rgb(156 163 175) transparent'
         }}>
           {/* Menu items */}
-          <nav className={cn("space-y-2 pb-32", collapsed ? "px-2" : "px-4")}>
+          <nav className={cn("space-y-2", collapsed ? "px-2" : "px-4")}>
             {menuItems.map((item) => (
               <Link
                 key={item.href}
