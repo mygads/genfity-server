@@ -372,10 +372,10 @@ export default function ProductTransactionsPage() {
   }, [fetchTransactions]);  const filteredTransactions = transactions
     .filter(trx => {
       const matchesSearch = trx.id.toLowerCase().includes(search.toLowerCase()) ||
-                           trx.transactionId.toLowerCase().includes(search.toLowerCase()) ||
-                           trx.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
-                           trx.user?.email?.toLowerCase().includes(search.toLowerCase()) ||
-                           trx.productInfo?.package?.name_en?.toLowerCase().includes(search.toLowerCase());
+                            trx.transactionId.toLowerCase().includes(search.toLowerCase()) ||
+                            trx.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+                            trx.user?.email?.toLowerCase().includes(search.toLowerCase()) ||
+                            trx.productInfo?.package?.name_en?.toLowerCase().includes(search.toLowerCase());
       
       const matchesStatus = statusFilter === "all" || trx.payment?.status === statusFilter;
       const matchesTransactionStatus = transactionStatusFilter === "all" || trx.status === transactionStatusFilter;
@@ -425,7 +425,7 @@ export default function ProductTransactionsPage() {
     });
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
