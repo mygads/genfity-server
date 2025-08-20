@@ -51,10 +51,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SessionManager } from "@/lib/storage";
 
 interface UserStats {
   activeWhatsAppSessions: number;
   whatsappServices: number;
+  productTransactions: number;
+  whatsappTransactions: number;
 }
 
 interface User {
@@ -66,6 +69,7 @@ interface User {
   emailVerified?: Date;
   phoneVerified?: Date;
   image?: string;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
   stats: UserStats;
@@ -81,10 +85,10 @@ interface UserFormData {
 
 interface DashboardStats {
   totalUsers: number;
+  totalCustomers: number;
   totalAdmins: number;
   verifiedUsers: number;
   recentRegistrations: number;
-  activeUsers: number;
 }
 
 export default function UsersPage() {
@@ -103,10 +107,10 @@ export default function UsersPage() {
   // Stats
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
+    totalCustomers: 0,
     totalAdmins: 0,
     verifiedUsers: 0,
     recentRegistrations: 0,
-    activeUsers: 0,
   });
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -130,6 +134,9 @@ export default function UsersPage() {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
       const params = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
@@ -138,7 +145,17 @@ export default function UsersPage() {
       if (search) params.set("search", search);
       if (roleFilter !== "all") params.set("role", roleFilter);
 
-      const res = await fetch(`/api/admin/users?${params.toString()}`);
+      const res = await fetch(`/api/admin/users?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
       const data = await res.json();
       
       if (data.success) {
@@ -147,31 +164,41 @@ export default function UsersPage() {
         setHasMore(data.pagination?.hasMore || false);
         calculateStats(data.data || []);
       } else {
-        toast.error("Failed to fetch users: " + data.error);
+        throw new Error(data.error || "Failed to fetch users");
       }
     } catch (error) {
-      toast.error("Error fetching users");
       console.error("Error fetching users:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to fetch users");
     } finally {
       setLoading(false);
     }
   }, [limit, offset, search, roleFilter]);
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/users/stats');
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
+      const res = await fetch('/api/admin/users/stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
       const data = await res.json();
       
       if (data.success) {
         setStats(data.data);
       } else {
-        console.error("Failed to fetch stats:", data.error);
-        if (data.error === "Admin access required") {
-          toast.error("Please login as admin to view statistics");
-        }
+        throw new Error(data.error || "Failed to fetch stats");
       }
     } catch (error) {
       console.error("Error fetching stats:", error);
-      toast.error("Failed to load statistics");
+      toast.error(error instanceof Error ? error.message : "Failed to load statistics");
     }
   }, []);
 
@@ -179,21 +206,18 @@ export default function UsersPage() {
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // Count users with either email or phone verified
-    const verifiedUsers = users.filter(u => u.emailVerified || u.phoneVerified).length;
+    // Count users with BOTH email AND phone verified
+    const verifiedUsers = users.filter(u => u.emailVerified && u.phoneVerified).length;
     const recentRegistrations = users.filter(u => 
       new Date(u.createdAt) >= oneWeekAgo
     ).length;
-    const activeUsers = users.filter(u => 
-      u.stats.activeWhatsAppSessions > 0
-    ).length;
 
     setStats({
-      totalUsers: users.filter(u => u.role === 'customer').length,
+      totalUsers: users.length,
+      totalCustomers: users.filter(u => u.role === 'customer').length,
       totalAdmins: users.filter(u => u.role === 'admin').length,
       verifiedUsers,
       recentRegistrations,
-      activeUsers,
     });
   }
   useEffect(() => {
@@ -203,45 +227,66 @@ export default function UsersPage() {
 
   const handleCreateUser = async () => {
     try {
-      const res = await fetch('/api/users', {
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
+      const res = await fetch('/api/admin/users', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
       });
 
-      const data = await res.json();      if (data.success) {
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      
+      if (data.success) {
         toast.success("User created successfully");
         setShowCreateModal(false);
         setFormData({ name: "", email: "", phone: "", password: "", role: "customer" });
         fetchUsers();
         fetchStats(); // Refresh stats after creating user
       } else {
-        toast.error("Failed to create user: " + (Array.isArray(data.error) ? data.error.map((e: any) => e.message).join(", ") : data.error));
+        throw new Error(data.error || "Failed to create user");
       }
     } catch (error) {
-      toast.error("Error creating user");
       console.error("Error creating user:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to create user");
     }
   };
 
   const handleUpdateUser = async () => {
-    if (!selectedUser) return;    try {
+    if (!selectedUser) return;
+    
+    try {
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
       const updateData: Partial<UserFormData> = { ...formData };
       if (!updateData.password) {
         delete updateData.password;
       }
 
-      const res = await fetch(`/api/users/${selectedUser.id}`, {
-        method: 'PATCH',
+      const res = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(updateData),
       });
 
-      const data = await res.json();      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      
       if (data.success) {
         toast.success("User updated successfully");
         setShowEditModal(false);
@@ -250,11 +295,11 @@ export default function UsersPage() {
         fetchUsers();
         fetchStats(); // Refresh stats after updating user
       } else {
-        toast.error("Failed to update user: " + (Array.isArray(data.error) ? data.error.map((e: any) => e.message).join(", ") : data.error));
+        throw new Error(data.error || "Failed to update user");
       }
     } catch (error) {
-      toast.error("Error updating user");
       console.error("Error updating user:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update user");
     }
   };
 
@@ -262,22 +307,35 @@ export default function UsersPage() {
     if (!selectedUser) return;
 
     try {
-      const res = await fetch(`/api/users/${selectedUser.id}`, {
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
+      const res = await fetch(`/api/admin/users/${selectedUser.id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
-      const data = await res.json();      if (data.success) {
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      
+      if (data.success) {
         toast.success("User deleted successfully");
         setShowDeleteModal(false);
         setSelectedUser(null);
         fetchUsers();
         fetchStats(); // Refresh stats after deleting user
       } else {
-        toast.error("Failed to delete user: " + data.error);
+        throw new Error(data.error || "Failed to delete user");
       }
     } catch (error) {
-      toast.error("Error deleting user");
       console.error("Error deleting user:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete user");
     }
   };
 
@@ -315,13 +373,23 @@ export default function UsersPage() {
 
     setUploadLoading(true);
     try {
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
       const formData = new FormData();
       formData.append("file", selectedFile);
 
-      const res = await fetch(`/api/users/${selectedUser.id}/upload-profile`, {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}/upload-profile`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formData,
       });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
 
       const data = await res.json();
       
@@ -333,11 +401,11 @@ export default function UsersPage() {
         fetchUsers();
         fetchStats();
       } else {
-        toast.error("Failed to upload photo: " + data.error);
+        throw new Error(data.error || "Failed to upload photo");
       }
     } catch (error) {
-      toast.error("Error uploading photo");
       console.error("Error uploading photo:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to upload photo");
     } finally {
       setUploadLoading(false);
     }
@@ -348,6 +416,38 @@ export default function UsersPage() {
     setSelectedFile(null);
     setPreviewUrl(null);
     setShowUploadModal(true);
+  };
+
+  const handleToggleActive = async (user: User) => {
+    try {
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
+      const res = await fetch(`/api/admin/users/${user.id}/toggle-active`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      
+      if (data.success) {
+        toast.success(`User ${data.data.isActive ? 'activated' : 'deactivated'} successfully`);
+        fetchUsers();
+        fetchStats();
+      } else {
+        throw new Error(data.error || "Failed to toggle user status");
+      }
+    } catch (error) {
+      console.error("Error toggling user status:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to toggle user status");
+    }
   };
 
   const filteredUsers = users.filter(user => {
@@ -468,18 +568,19 @@ export default function UsersPage() {
   };
   const exportUsers = () => {
     const csvContent = [
-      ["ID", "Name", "Email", "Phone", "Role", "Email Verified", "Phone Verified", "Created", "WhatsApp Sessions", "Services"],
+      ["ID", "Name", "Email", "Phone", "Role", "Active", "Email Verified", "Phone Verified", "Created", "Product Transactions", "WhatsApp Transactions"],
       ...sortedUsers.map(u => [
         u.id,
         u.name,
         u.email,
         u.phone || "",
         u.role,
+        u.isActive ? "Yes" : "No",
         u.emailVerified ? "Yes" : "No",
         u.phoneVerified ? "Yes" : "No", 
         formatDate(u.createdAt),
-        u.stats.activeWhatsAppSessions.toString(),
-        u.stats.whatsappServices.toString(),
+        u.stats.productTransactions?.toString() || "0",
+        u.stats.whatsappTransactions?.toString() || "0",
       ])
     ].map(row => row.join(",")).join("\n");
 
@@ -532,63 +633,74 @@ export default function UsersPage() {
         </div>
       </div>      
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Users</p>
-                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{stats.totalUsers}</p>
-              </div>
-              <Users className="w-6 h-6 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-700">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-red-600 dark:text-red-400">Admins</p>
-                <p className="text-2xl font-bold text-red-700 dark:text-red-300">{stats.totalAdmins}</p>
-              </div>
-              <Crown className="w-6 h-6 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-600 dark:text-green-400">Verified</p>
-                <p className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.verifiedUsers}</p>
-              </div>
-              <UserCheck className="w-6 h-6 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-700">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Recent (7d)</p>
-                <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{stats.recentRegistrations}</p>
-              </div>
-              <Calendar className="w-6 h-6 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Active</p>
-                <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">{stats.activeUsers}</p>
-              </div>
-              <Activity className="w-6 h-6 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {!loading && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{stats.totalUsers}</div>
+              <p className="text-xs text-muted-foreground">
+                All registered users
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Customers</CardTitle>
+              <Users className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{stats.totalCustomers}</div>
+              <p className="text-xs text-muted-foreground">
+                Customer accounts
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Admins</CardTitle>
+              <Crown className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{stats.totalAdmins}</div>
+              <p className="text-xs text-muted-foreground">
+                Administrator accounts
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Verified</CardTitle>
+              <UserCheck className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{stats.verifiedUsers}</div>
+              <p className="text-xs text-muted-foreground">
+                Email & phone verified
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Recent (7d)</CardTitle>
+              <Calendar className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">{stats.recentRegistrations}</div>
+              <p className="text-xs text-muted-foreground">
+                New registrations
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       {/* Filters */}
       <Card>
         <CardContent className="p-6">
@@ -716,12 +828,25 @@ export default function UsersPage() {
                         {getRoleBadge(user.role)}
                       </td>
                       <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          {user.isActive ? (
+                            <>
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <span className="text-sm text-green-600 dark:text-green-400">Active</span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="w-4 h-4 text-red-500" />
+                              <span className="text-sm text-red-600 dark:text-red-400">Inactive</span>
+                            </>
+                          )}
+                        </div>
                         {getVerificationBadge(!!user.emailVerified, !!user.phoneVerified)}
                       </td>
                       <td className="p-4">
                         <div className="text-sm space-y-1">
-                          <div>{user.stats.activeWhatsAppSessions} WA sessions</div>
-                          <div>{user.stats.whatsappServices} services</div>
+                          <div>Product: {user.stats.productTransactions || 0}</div>
+                          <div>WhatsApp: {user.stats.whatsappTransactions || 0}</div>
                         </div>
                       </td>
                       <td className="p-4 text-sm">
@@ -746,6 +871,23 @@ export default function UsersPage() {
                             <DropdownMenuItem onClick={() => openUploadModal(user)}>
                               <Upload className="w-4 h-4 mr-2" />
                               Upload Photo
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => handleToggleActive(user)}
+                              className={user.isActive ? "text-orange-600 dark:text-orange-400" : "text-green-600 dark:text-green-400"}
+                            >
+                              {user.isActive ? (
+                                <>
+                                  <UserX className="w-4 h-4 mr-2" />
+                                  Deactivate User
+                                </>
+                              ) : (
+                                <>
+                                  <UserCheck className="w-4 h-4 mr-2" />
+                                  Activate User
+                                </>
+                              )}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 

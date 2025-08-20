@@ -94,7 +94,7 @@ export default function AdminSidebar({ open, setOpen, collapsed = false, setColl
       description: "Manage payment approvals"
     },
     {
-      title: "Transaction",
+      title: "Transactions",
       href: "/admin/dashboard/transaction",
       icon: ShoppingCart,
       description: "View transaction history"
@@ -106,7 +106,7 @@ export default function AdminSidebar({ open, setOpen, collapsed = false, setColl
       description: "Monitor server resources"
     },
     {
-      title: "Pengguna",
+      title: "Users",
       href: "/admin/dashboard/users",
       icon: Users,
       description: "User management"

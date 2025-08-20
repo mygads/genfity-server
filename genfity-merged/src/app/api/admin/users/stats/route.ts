@@ -1,16 +1,16 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyAdminToken } from "@/lib/auth-helpers";
+import { getAdminAuth } from "@/lib/auth-helpers";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 
-// GET /api/users/stats - Get user statistics (admin only)
+// GET /api/admin/users/stats - Get user statistics (admin only)
 export async function GET(request: NextRequest) {
   try {
-    const adminVerification = await verifyAdminToken(request);
-    if (!adminVerification.success) {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
       return withCORS(NextResponse.json(
-        { success: false, error: adminVerification.error },
-        { status: 403 }
+        { success: false, error: "Admin access required" },
+        { status: 401 }
       ));
     }
 
@@ -21,18 +21,17 @@ export async function GET(request: NextRequest) {
     // Get all counts in parallel
     const [
       totalUsers,
+      totalCustomers,
       totalAdmins,
       verifiedUsers,
-      recentUsers,
-      activeUsers
+      recentUsers
     ] = await Promise.all([
-      // Total users (including customers, excluding system users)
+      // Total users (all roles)
+      prisma.user.count(),
+      
+      // Total customers
       prisma.user.count({
-        where: { 
-          role: { 
-            notIn: ['system'] 
-          }
-        }
+        where: { role: 'customer' }
       }),
       
       // Total admins
@@ -40,39 +39,32 @@ export async function GET(request: NextRequest) {
         where: { role: 'admin' }
       }),
       
-      // Verified users (have either emailVerified or phoneVerified)
+      // Verified users (have BOTH emailVerified AND phoneVerified)
       prisma.user.count({
         where: { 
-          role: { notIn: ['system'] },
-          OR: [
+          AND: [
             { emailVerified: { not: null } },
             { phoneVerified: { not: null } }
           ]
         }
       }),
       
-      // Recent registrations (last 7 days) - since we don't have createdAt, use a mock value
+      // Recent registrations (last 7 days)
       prisma.user.count({
         where: { 
-          role: { notIn: ['system'] }
-        }
-      }),
-      
-      // Active users (have WhatsApp sessions)
-      prisma.user.count({
-        where: {
-          role: { notIn: ['system'] },
-          whatsAppSessions: { some: {} }
+          createdAt: {
+            gte: oneWeekAgo
+          }
         }
       })
     ]);
 
     const stats = {
       totalUsers,
+      totalCustomers,
       totalAdmins,
       verifiedUsers,
-      recentRegistrations: Math.floor(totalUsers * 0.1), // Mock recent registrations as 10% of total
-      activeUsers
+      recentRegistrations: recentUsers
     };
 
     return withCORS(NextResponse.json({

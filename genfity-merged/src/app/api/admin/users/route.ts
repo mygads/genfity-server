@@ -57,33 +57,43 @@ export async function GET(request: NextRequest) {
         where: whereCondition,
         include: {
           transactions: {
-            select: { id: true },
-            take: 5,
+            include: {
+              productTransactions: true,
+              whatsappTransaction: true,
+            },
           },
-          whatsAppSessions: {
-            select: { id: true },
-            take: 5,
-          },
-          whatsappCustomers: {
-            select: { id: true },
-            take: 5,
-          },
+          whatsAppSessions: true,
+          whatsappCustomers: true,
         },
         orderBy: { id: 'desc' },
         take: limit,
         skip: offset,
       }),
       prisma.user.count({ where: whereCondition }),
-    ]);const formattedUsers = users.map(user => ({
-      ...user,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
-      stats: {
-        totalTransactions: user.transactions?.length || 0,
-        activeWhatsAppSessions: user.whatsAppSessions?.length || 0,
-        whatsappServices: user.whatsappCustomers?.length || 0,
-      },
-    }));
+    ]);const formattedUsers = users.map(user => {
+      // Calculate successful product transactions
+      const productTransactions = user.transactions?.filter(t => 
+        t.status === 'success' && t.productTransactions.length > 0
+      ).length || 0;
+      
+      // Calculate successful WhatsApp transactions
+      const whatsappTransactions = user.transactions?.filter(t => 
+        t.status === 'success' && t.whatsappTransaction
+      ).length || 0;
+
+      return {
+        ...user,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+        stats: {
+          totalTransactions: user.transactions?.length || 0,
+          activeWhatsAppSessions: user.whatsAppSessions?.length || 0,
+          whatsappServices: user.whatsappCustomers?.length || 0,
+          productTransactions,
+          whatsappTransactions,
+        },
+      };
+    });
 
     return withCORS(NextResponse.json({
       success: true,

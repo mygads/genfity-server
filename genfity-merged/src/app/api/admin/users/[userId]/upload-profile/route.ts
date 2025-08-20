@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminToken } from "@/lib/auth-helpers";
+import { getAdminAuth } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
-import { withCORS } from "@/lib/cors";
+import { withCORS, corsOptionsResponse } from "@/lib/cors";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const adminVerification = await verifyAdminToken(req);
-    if (!adminVerification.success) {
+    const adminAuth = await getAdminAuth(req);
+    if (!adminAuth) {
       return withCORS(NextResponse.json(
-        { success: false, error: adminVerification.error },
-        { status: 403 }
+        { success: false, error: "Admin access required" },
+        { status: 401 }
       ));
     }
 
@@ -101,5 +101,5 @@ export async function POST(
 }
 
 export async function OPTIONS() {
-  return withCORS(NextResponse.json({}));
+  return corsOptionsResponse();
 }
