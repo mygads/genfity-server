@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { SessionManager } from '@/lib/storage';
 import { 
   Server, 
   Cpu, 
@@ -16,7 +18,8 @@ import {
   Monitor,
   MemoryStick,
   Clock,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -104,21 +107,35 @@ export default function ServersPage() {  const [servers, setServers] = useState<
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const fetchServersCallback = useCallback(async () => {
         try {
-        setLoading(true);
-        const response = await fetch('/api/admin/servers');
-        if (response.ok) {
+            setLoading(true);
+            // Get token for authentication
+            const token = SessionManager.getToken();
+            
+            const response = await fetch('/api/admin/servers', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const data = await response.json();
             if (data.success) {
                 setServers(data.data || []);
                 if ((data.data || []).length > 0 && !selectedServer) {
                     setSelectedServer((data.data || [])[0]);
                 }
+            } else {
+                throw new Error(data.error || 'Failed to fetch servers');
             }
-        }
         } catch (error) {
-        console.error('Error fetching servers:', error);
+            console.error('Error fetching servers:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to fetch servers');
         } finally {
-        setLoading(false);
+            setLoading(false);
         }
     }, [selectedServer]);
 
@@ -130,22 +147,34 @@ export default function ServersPage() {  const [servers, setServers] = useState<
     };
     const updateServers = async () => {
         try {
-        setUpdating(true);
-        const response = await fetch('/api/admin/servers', {
-            method: 'POST'
-        });
-        if (response.ok) {
+            setUpdating(true);
+            // Get token for authentication
+            const token = SessionManager.getToken();
+            
+            const response = await fetch('/api/admin/servers', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const data = await response.json();
             if (data.success) {
                 setServers(data.data || []);
-                alert(`Successfully updated ${data.count} servers`);
+                toast.success(`Successfully updated ${data.count} servers`);
+            } else {
+                throw new Error(data.error || 'Failed to update servers');
             }
-        }
         } catch (error) {
-        console.error('Error updating servers:', error);
-        alert('Failed to update servers');
+            console.error('Error updating servers:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to update servers');
         } finally {
-        setUpdating(false);
+            setUpdating(false);
         }
     };
     const toggleAutoRefresh = () => {
@@ -207,34 +236,51 @@ export default function ServersPage() {  const [servers, setServers] = useState<
 
     const fetchMetrics = useCallback(async (serverId: string, type: 'cpu' | 'memory' | 'disk') => {
         try {
-        setMetricsLoading(true);
-        const now = Math.floor(Date.now() / 1000);
-        let startTime;
-        
-        // Calculate start time based on selected period
-        switch (selectedTimePeriod) {
-            case '1h':
-            startTime = now - (60 * 60); // 1 hour ago
-            break;
-            case '1d':
-            startTime = now - (24 * 60 * 60); // 1 day ago
-            break;
-            case '1w':
-            startTime = now - (7 * 24 * 60 * 60); // 1 week ago
-            break;
-            case '1m':
-            startTime = now - (30 * 24 * 60 * 60); // 1 month ago
-            break;
-            default:
-            startTime = now - (60 * 60); // Default to 1 hour
-        }      if (type === 'memory') {
-            // Get memory_total and memory_available for calculating usage percentage
-            // Get memory_cached for current memory being used
-            const [totalResponse, availableResponse, cachedResponse] = await Promise.all([
-            fetch(`/api/admin/servers/${serverId}/metrics?type=memory&memory_type=total&start=${startTime}&end=${now}`),
-            fetch(`/api/admin/servers/${serverId}/metrics?type=memory&memory_type=available&start=${startTime}&end=${now}`),
-            fetch(`/api/admin/servers/${serverId}/metrics?type=memory&memory_type=cached&start=${startTime}&end=${now}`)
-            ]);
+            setMetricsLoading(true);
+            // Get token for authentication
+            const token = SessionManager.getToken();
+            
+            const now = Math.floor(Date.now() / 1000);
+            let startTime;
+            
+            // Calculate start time based on selected period
+            switch (selectedTimePeriod) {
+                case '1h':
+                startTime = now - (60 * 60); // 1 hour ago
+                break;
+                case '1d':
+                startTime = now - (24 * 60 * 60); // 1 day ago
+                break;
+                case '1w':
+                startTime = now - (7 * 24 * 60 * 60); // 1 week ago
+                break;
+                case '1m':
+                startTime = now - (30 * 24 * 60 * 60); // 1 month ago
+                break;
+                default:
+                startTime = now - (60 * 60); // Default to 1 hour
+            }
+
+            // Authentication headers for all requests
+            const authHeaders = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            };
+
+            if (type === 'memory') {
+                // Get memory_total and memory_available for calculating usage percentage
+                // Get memory_cached for current memory being used
+                const [totalResponse, availableResponse, cachedResponse] = await Promise.all([
+                    fetch(`/api/admin/servers/${serverId}/metrics?type=memory&memory_type=total&start=${startTime}&end=${now}`, {
+                        headers: authHeaders,
+                    }),
+                    fetch(`/api/admin/servers/${serverId}/metrics?type=memory&memory_type=available&start=${startTime}&end=${now}`, {
+                        headers: authHeaders,
+                    }),
+                    fetch(`/api/admin/servers/${serverId}/metrics?type=memory&memory_type=cached&start=${startTime}&end=${now}`, {
+                        headers: authHeaders,
+                    })
+                ]);
 
             if (totalResponse.ok && availableResponse.ok) {
             const totalData = await totalResponse.json();
@@ -345,9 +391,11 @@ export default function ServersPage() {  const [servers, setServers] = useState<
                 total: totalMemoryBytes / (1024 * 1024), // Total memory in MB
                 usagePercent: averageUsagePercent // Average usage percentage
             });
-            }      } else if (type === 'cpu') {
+            }        } else if (type === 'cpu') {
             // For CPU, fetch the CPU metrics endpoint that returns mode-based data
-            const response = await fetch(`/api/admin/servers/${serverId}/metrics?type=${type}&start=${startTime}&end=${now}`);
+            const response = await fetch(`/api/admin/servers/${serverId}/metrics?type=${type}&start=${startTime}&end=${now}`, {
+                headers: authHeaders,
+            });
             
             if (response.ok) {
             const data = await response.json();
@@ -427,8 +475,12 @@ export default function ServersPage() {  const [servers, setServers] = useState<
             }        } else {
             // For disk, fetch both filesystem_free and filesystem_size
             const [freeResponse, sizeResponse] = await Promise.all([
-                fetch(`/api/admin/servers/${serverId}/metrics?type=disk&disk_type=free&start=${startTime}&end=${now}`),
-                fetch(`/api/admin/servers/${serverId}/metrics?type=disk&disk_type=size&start=${startTime}&end=${now}`)
+                fetch(`/api/admin/servers/${serverId}/metrics?type=disk&disk_type=free&start=${startTime}&end=${now}`, {
+                    headers: authHeaders,
+                }),
+                fetch(`/api/admin/servers/${serverId}/metrics?type=disk&disk_type=size&start=${startTime}&end=${now}`, {
+                    headers: authHeaders,
+                })
             ]);
 
             if (freeResponse.ok && sizeResponse.ok) {
@@ -510,9 +562,10 @@ export default function ServersPage() {  const [servers, setServers] = useState<
             }
         }
         } catch (error) {
-        console.error(`Error fetching ${type} metrics:`, error);
+            console.error(`Error fetching ${type} metrics:`, error);
+            toast.error(error instanceof Error ? error.message : `Failed to fetch ${type} metrics`);
         } finally {
-        setMetricsLoading(false);
+            setMetricsLoading(false);
         }
     }, [selectedTimePeriod, selectedServer?.disk]);// Auto-refresh metrics every 1 minute
     useEffect(() => {
@@ -646,7 +699,8 @@ export default function ServersPage() {  const [servers, setServers] = useState<
       disk: { border: '#8b5cf6', background: '#8b5cf615' },
       text: { primary: '#1e293b', secondary: '#64748b' }
     };
-  };  const createChartData = (metrics: MetricData[], colorType: 'cpu' | 'memory' | 'disk', label: string) => {
+  };  
+  const createChartData = (metrics: MetricData[], colorType: 'cpu' | 'memory' | 'disk', label: string) => {
     const colors = getThemeColors();
     const colorConfig = colors[colorType];
     
@@ -666,7 +720,8 @@ export default function ServersPage() {  const [servers, setServers] = useState<
         },
       ],
     };
-  };  const createCombinedChartData = (cpuMetrics: MetricData[], memoryMetrics: MetricData[]) => {
+  };  
+  const createCombinedChartData = (cpuMetrics: MetricData[], memoryMetrics: MetricData[]) => {
     const colors = getThemeColors();
     
     return {
@@ -825,7 +880,8 @@ export default function ServersPage() {  const [servers, setServers] = useState<
                 day: 'MMM dd',
                 week: 'MMM dd',
                 month: 'MMM yyyy',
-            },            },
+            },            
+        },
             grid: {
             color: (() => {
                 const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
@@ -870,7 +926,7 @@ export default function ServersPage() {  const [servers, setServers] = useState<
     };
 
     return (
-        <div className="p-6 space-y-8">      
+        <div className="space-y-6">      
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>

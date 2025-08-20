@@ -56,12 +56,12 @@ export async function GET(
       Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000).toString(); // 24 hours ago
     const endTime = searchParams.get('end') || Math.floor(Date.now() / 1000).toString(); // now
 
-    const digitalOceanToken = process.env.DO_API_TOKEN;
+    const digitalOceanToken = process.env.DIGITALOCEAN_TOKEN;
     if (!digitalOceanToken) {
-      return NextResponse.json(
-        { error: 'DigitalOcean token not configured' },
+      return withCORS(NextResponse.json(
+        { success: false, error: 'DigitalOcean token not configured' },
         { status: 500 }
-      );
+      ));
     }    // Await params in Next.js 15
     const dropletId = id;
     // For DigitalOcean Droplets, we need to use monitoring API

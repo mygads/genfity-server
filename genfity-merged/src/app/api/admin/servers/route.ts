@@ -45,12 +45,12 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    const digitalOceanToken = process.env.DO_API_TOKEN;
+    const digitalOceanToken = process.env.DIGITALOCEAN_TOKEN;
     if (!digitalOceanToken) {
-      return NextResponse.json(
-        { error: 'DigitalOcean token not configured' },
+      return withCORS(NextResponse.json(
+        { success: false, error: 'DigitalOcean token not configured' },
         { status: 500 }
-      );
+      ));
     }
 
     // Fetch droplets from DigitalOcean API
