@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Pencil, Trash2, Plus, Package } from 'lucide-react';
 import Image from 'next/image';
 import AddonModal from '../modals/AddonModal';
+import { SessionManager } from '@/lib/storage';
 import type { Category, Addon, AddonFormData } from '@/types/product-dashboard';
 
 export default function AddonsSection() {
@@ -37,10 +38,22 @@ export default function AddonsSection() {
   const fetchAddons = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/product/addons');
+      const token = SessionManager.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('/api/admin/products/product-management/addons', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (!response.ok) {
         throw new Error('Failed to fetch addons');
       }
+      
       const data = await response.json();
       setAddons(data);
     } catch (err) {
@@ -52,10 +65,22 @@ export default function AddonsSection() {
   };
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/product/categories');
+      const token = SessionManager.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('/api/admin/products/product-management/categories', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
       if (!response.ok) {
         throw new Error('Failed to fetch categories');
       }
+      
       const data = await response.json();
       setCategories(data);
     } catch (err) {
@@ -143,14 +168,24 @@ export default function AddonsSection() {
     let imageUrl = editingAddon?.image || undefined;
     if (selectedImageFile) {
       try {
-        const response = await fetch(`/api/product/addons/upload?filename=${selectedImageFile.name}`, {
+        const token = SessionManager.getToken();
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        const response = await fetch(`/api/admin/products/product-management/addons/upload?filename=${selectedImageFile.name}`, {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
           body: selectedImageFile,
         });
+        
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to upload image');
         }
+        
         const result = await response.json();
         imageUrl = result.url;
       } catch (err: any) {
@@ -161,7 +196,7 @@ export default function AddonsSection() {
     }
 
     const method = editingAddon ? 'PUT' : 'POST';
-    const url = editingAddon ? `/api/product/addons/${editingAddon.id}` : '/api/product/addons';
+    const url = editingAddon ? `/api/admin/products/product-management/addons/${editingAddon.id}` : '/api/admin/products/product-management/addons';
     const payload = {
       ...addonFormData,
       price_idr: parseFloat(addonFormData.price_idr),
@@ -169,10 +204,20 @@ export default function AddonsSection() {
       image: imageUrl,
     };
 
+    const token = SessionManager.getToken();
+    if (!token) {
+      setError('No authentication token found');
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(payload),
       });
       
@@ -196,9 +241,18 @@ export default function AddonsSection() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this addon?')) return;
 
+    const token = SessionManager.getToken();
+    if (!token) {
+      alert('No authentication token found');
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/product/addons/${id}`, {
+      const response = await fetch(`/api/admin/products/product-management/addons/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (!response.ok) {
@@ -281,6 +335,7 @@ export default function AddonsSection() {
                             src={addon.image}
                             alt={addon.name_en}
                             fill
+                            sizes="48px"
                             className="object-cover"
                           />
                         ) : (

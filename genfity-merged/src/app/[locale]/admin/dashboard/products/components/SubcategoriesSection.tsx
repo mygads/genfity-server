@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import type { Subcategory, Category, SubcategoryFormData } from '@/types/product-dashboard';
+import { SessionManager } from '@/lib/storage';
 import SubcategoryModal from '../modals/SubcategoryModal';
 
 const SubcategoriesSection: React.FC = () => {
@@ -32,10 +33,26 @@ const SubcategoriesSection: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
+      const token = SessionManager.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
       const [catRes, subcatRes] = await Promise.all([
-        fetch('/api/product/categories'),
-        fetch('/api/product/subcategories'),
+        fetch('/api/admin/products/product-management/categories', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch('/api/admin/products/product-management/subcategories', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
       ]);
+      
       if (!catRes.ok) {
         const errorData = await catRes.json();
         throw new Error(errorData.message || 'Failed to fetch categories');
@@ -44,6 +61,7 @@ const SubcategoriesSection: React.FC = () => {
         const errorData = await subcatRes.json();
         throw new Error(errorData.message || 'Failed to fetch subcategories');
       }
+      
       const catData: Category[] = await catRes.json();
       const subcatData: Subcategory[] = await subcatRes.json();
       setCategories(catData);
@@ -92,12 +110,24 @@ const SubcategoriesSection: React.FC = () => {
       setIsLoading(false);
       return;
     }
+
+    const token = SessionManager.getToken();
+    if (!token) {
+      setError('No authentication token found');
+      setIsLoading(false);
+      return;
+    }
+
     const method = editingSubcategory ? 'PUT' : 'POST';
-    const url = editingSubcategory ? `/api/product/subcategories/${editingSubcategory.id}` : '/api/product/subcategories';
+    const url = editingSubcategory ? `/api/admin/products/product-management/subcategories/${editingSubcategory.id}` : '/api/admin/products/product-management/subcategories';
+    
     try {
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(subcategoryFormData),
       });
       if (!response.ok) {
@@ -118,8 +148,21 @@ const SubcategoriesSection: React.FC = () => {
     if (!confirm('Are you sure you want to delete this subcategory?')) return;
     setIsLoading(true);
     setError(null);
+    
+    const token = SessionManager.getToken();
+    if (!token) {
+      setError('No authentication token found');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/product/subcategories/${subcategoryId}`, { method: 'DELETE' });
+      const response = await fetch(`/api/admin/products/product-management/subcategories/${subcategoryId}`, { 
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to delete subcategory');

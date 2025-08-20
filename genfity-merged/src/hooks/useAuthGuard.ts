@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { SessionManager, UserSession } from '@/lib/storage'
 
@@ -25,46 +25,59 @@ export function useAuthGuard(options: UseAuthGuardOptions = {}): UseAuthGuardRet
   const router = useRouter()
   const [user, setUser] = useState<UserSession | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const hasCheckedAuth = useRef(false)
 
-  useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const session = SessionManager.getSession()
-        
-        if (!session && requireAuth) {
-          // No session and auth is required
-          const currentPath = window.location.pathname
-          // Avoid redirect loop - don't redirect if already on signin page
-          if (!currentPath.includes('/signin')) {
-            const redirectUrl = `${redirectTo}?redirectedFrom=${encodeURIComponent(currentPath)}`
-            router.push(redirectUrl)
-          }
-          return
+  const checkAuth = useCallback(() => {
+    if (hasCheckedAuth.current) return
+    hasCheckedAuth.current = true
+
+    try {
+      const session = SessionManager.getSession()
+      
+      if (!session && requireAuth) {
+        // No session and auth is required
+        const currentPath = window.location.pathname
+        // Avoid redirect loop - don't redirect if already on signin page
+        if (!currentPath.includes('/signin')) {
+          const redirectUrl = `${redirectTo}?redirectedFrom=${encodeURIComponent(currentPath)}`
+          router.push(redirectUrl)
         }
+        setIsLoading(false)
+        return
+      }
 
-        if (session && allowedRoles.length > 0 && !allowedRoles.includes(session.role)) {
+      if (session && allowedRoles.length > 0) {
+        if (!allowedRoles.includes(session.role)) {
           // User doesn't have required role
           SessionManager.clearSession()
           router.push(redirectTo)
+          setIsLoading(false)
           return
         }
-
-        setUser(session)
-      } catch (error) {
-        console.error('Error checking auth:', error)
-        if (requireAuth) {
-          const currentPath = window.location.pathname
-          // Avoid redirect loop - don't redirect if already on signin page
-          if (!currentPath.includes('/signin')) {
-            router.push(redirectTo)
-          }
-        }
-      } finally {
-        setIsLoading(false)
       }
-    }
 
+      setUser(session)
+    } catch (error) {
+      console.error('Error checking auth:', error)
+      if (requireAuth) {
+        const currentPath = window.location.pathname
+        // Avoid redirect loop - don't redirect if already on signin page
+        if (!currentPath.includes('/signin')) {
+          router.push(redirectTo)
+        }
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [requireAuth, allowedRoles, redirectTo, router])
+
+  useEffect(() => {
     checkAuth()
+  }, [checkAuth])
+
+  // Separate useEffect for session expiry check
+  useEffect(() => {
+    if (!user) return
 
     // Set up interval to check session expiry
     const interval = setInterval(() => {
@@ -85,19 +98,19 @@ export function useAuthGuard(options: UseAuthGuardOptions = {}): UseAuthGuardRet
     }, 60000) // Check every minute
 
     return () => clearInterval(interval)
-  }, [router, redirectTo, requireAuth, allowedRoles, user])
+  }, [user, requireAuth, redirectTo, router])
 
-  const logout = () => {
+  const logout = useCallback(() => {
     SessionManager.clearSession()
     setUser(null)
     router.push(redirectTo)
-  }
+  }, [router, redirectTo])
 
-  const refreshSession = () => {
+  const refreshSession = useCallback(() => {
     SessionManager.refreshSession()
     const updatedSession = SessionManager.getSession()
     setUser(updatedSession)
-  }
+  }, [])
 
   return {
     user,

@@ -9295,7 +9295,6 @@ export namespace Prisma {
     categoryId: string | null
     subcategoryId: string | null
     popular: boolean | null
-    bgColor: string | null
   }
 
   export type PackageMaxAggregateOutputType = {
@@ -9310,7 +9309,6 @@ export namespace Prisma {
     categoryId: string | null
     subcategoryId: string | null
     popular: boolean | null
-    bgColor: string | null
   }
 
   export type PackageCountAggregateOutputType = {
@@ -9325,7 +9323,6 @@ export namespace Prisma {
     categoryId: number
     subcategoryId: number
     popular: number
-    bgColor: number
     _all: number
   }
 
@@ -9352,7 +9349,6 @@ export namespace Prisma {
     categoryId?: true
     subcategoryId?: true
     popular?: true
-    bgColor?: true
   }
 
   export type PackageMaxAggregateInputType = {
@@ -9367,7 +9363,6 @@ export namespace Prisma {
     categoryId?: true
     subcategoryId?: true
     popular?: true
-    bgColor?: true
   }
 
   export type PackageCountAggregateInputType = {
@@ -9382,7 +9377,6 @@ export namespace Prisma {
     categoryId?: true
     subcategoryId?: true
     popular?: true
-    bgColor?: true
     _all?: true
   }
 
@@ -9484,7 +9478,6 @@ export namespace Prisma {
     categoryId: string
     subcategoryId: string
     popular: boolean | null
-    bgColor: string | null
     _count: PackageCountAggregateOutputType | null
     _avg: PackageAvgAggregateOutputType | null
     _sum: PackageSumAggregateOutputType | null
@@ -9518,7 +9511,6 @@ export namespace Prisma {
     categoryId?: boolean
     subcategoryId?: boolean
     popular?: boolean
-    bgColor?: boolean
     features?: boolean | Package$featuresArgs<ExtArgs>
     category?: boolean | CategoryDefaultArgs<ExtArgs>
     subcategory?: boolean | SubcategoryDefaultArgs<ExtArgs>
@@ -9539,7 +9531,6 @@ export namespace Prisma {
     categoryId?: boolean
     subcategoryId?: boolean
     popular?: boolean
-    bgColor?: boolean
     category?: boolean | CategoryDefaultArgs<ExtArgs>
     subcategory?: boolean | SubcategoryDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["package"]>
@@ -9556,7 +9547,6 @@ export namespace Prisma {
     categoryId?: boolean
     subcategoryId?: boolean
     popular?: boolean
-    bgColor?: boolean
     category?: boolean | CategoryDefaultArgs<ExtArgs>
     subcategory?: boolean | SubcategoryDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["package"]>
@@ -9573,10 +9563,9 @@ export namespace Prisma {
     categoryId?: boolean
     subcategoryId?: boolean
     popular?: boolean
-    bgColor?: boolean
   }
 
-  export type PackageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name_en" | "name_id" | "description_en" | "description_id" | "price_idr" | "price_usd" | "image" | "categoryId" | "subcategoryId" | "popular" | "bgColor", ExtArgs["result"]["package"]>
+  export type PackageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name_en" | "name_id" | "description_en" | "description_id" | "price_idr" | "price_usd" | "image" | "categoryId" | "subcategoryId" | "popular", ExtArgs["result"]["package"]>
   export type PackageInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     features?: boolean | Package$featuresArgs<ExtArgs>
     category?: boolean | CategoryDefaultArgs<ExtArgs>
@@ -9615,7 +9604,6 @@ export namespace Prisma {
       categoryId: string
       subcategoryId: string
       popular: boolean | null
-      bgColor: string | null
     }, ExtArgs["result"]["package"]>
     composites: {}
   }
@@ -10055,7 +10043,6 @@ export namespace Prisma {
     readonly categoryId: FieldRef<"Package", 'String'>
     readonly subcategoryId: FieldRef<"Package", 'String'>
     readonly popular: FieldRef<"Package", 'Boolean'>
-    readonly bgColor: FieldRef<"Package", 'String'>
   }
     
 
@@ -30909,8 +30896,7 @@ export namespace Prisma {
     image: 'image',
     categoryId: 'categoryId',
     subcategoryId: 'subcategoryId',
-    popular: 'popular',
-    bgColor: 'bgColor'
+    popular: 'popular'
   };
 
   export type PackageScalarFieldEnum = (typeof PackageScalarFieldEnum)[keyof typeof PackageScalarFieldEnum]
@@ -31803,7 +31789,6 @@ export namespace Prisma {
     categoryId?: StringFilter<"Package"> | string
     subcategoryId?: StringFilter<"Package"> | string
     popular?: BoolNullableFilter<"Package"> | boolean | null
-    bgColor?: StringNullableFilter<"Package"> | string | null
     features?: FeatureListRelationFilter
     category?: XOR<CategoryScalarRelationFilter, CategoryWhereInput>
     subcategory?: XOR<SubcategoryScalarRelationFilter, SubcategoryWhereInput>
@@ -31823,7 +31808,6 @@ export namespace Prisma {
     categoryId?: SortOrder
     subcategoryId?: SortOrder
     popular?: SortOrderInput | SortOrder
-    bgColor?: SortOrderInput | SortOrder
     features?: FeatureOrderByRelationAggregateInput
     category?: CategoryOrderByWithRelationInput
     subcategory?: SubcategoryOrderByWithRelationInput
@@ -31846,7 +31830,6 @@ export namespace Prisma {
     categoryId?: StringFilter<"Package"> | string
     subcategoryId?: StringFilter<"Package"> | string
     popular?: BoolNullableFilter<"Package"> | boolean | null
-    bgColor?: StringNullableFilter<"Package"> | string | null
     features?: FeatureListRelationFilter
     category?: XOR<CategoryScalarRelationFilter, CategoryWhereInput>
     subcategory?: XOR<SubcategoryScalarRelationFilter, SubcategoryWhereInput>
@@ -31866,7 +31849,6 @@ export namespace Prisma {
     categoryId?: SortOrder
     subcategoryId?: SortOrder
     popular?: SortOrderInput | SortOrder
-    bgColor?: SortOrderInput | SortOrder
     _count?: PackageCountOrderByAggregateInput
     _avg?: PackageAvgOrderByAggregateInput
     _max?: PackageMaxOrderByAggregateInput
@@ -31889,7 +31871,6 @@ export namespace Prisma {
     categoryId?: StringWithAggregatesFilter<"Package"> | string
     subcategoryId?: StringWithAggregatesFilter<"Package"> | string
     popular?: BoolNullableWithAggregatesFilter<"Package"> | boolean | null
-    bgColor?: StringNullableWithAggregatesFilter<"Package"> | string | null
   }
 
   export type WhatsAppSessionWhereInput = {
@@ -33992,7 +33973,6 @@ export namespace Prisma {
     price_usd: Decimal | DecimalJsLike | number | string
     image: string
     popular?: boolean | null
-    bgColor?: string | null
     features?: FeatureCreateNestedManyWithoutPackageInput
     category: CategoryCreateNestedOneWithoutPackagesInput
     subcategory: SubcategoryCreateNestedOneWithoutPackagesInput
@@ -34012,7 +33992,6 @@ export namespace Prisma {
     categoryId: string
     subcategoryId: string
     popular?: boolean | null
-    bgColor?: string | null
     features?: FeatureUncheckedCreateNestedManyWithoutPackageInput
     productTransactions?: TransactionProductUncheckedCreateNestedManyWithoutPackageInput
     productCustomers?: ServicesProductCustomersUncheckedCreateNestedManyWithoutPackageInput
@@ -34028,7 +34007,6 @@ export namespace Prisma {
     price_usd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     image?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
     features?: FeatureUpdateManyWithoutPackageNestedInput
     category?: CategoryUpdateOneRequiredWithoutPackagesNestedInput
     subcategory?: SubcategoryUpdateOneRequiredWithoutPackagesNestedInput
@@ -34048,7 +34026,6 @@ export namespace Prisma {
     categoryId?: StringFieldUpdateOperationsInput | string
     subcategoryId?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
     features?: FeatureUncheckedUpdateManyWithoutPackageNestedInput
     productTransactions?: TransactionProductUncheckedUpdateManyWithoutPackageNestedInput
     productCustomers?: ServicesProductCustomersUncheckedUpdateManyWithoutPackageNestedInput
@@ -34066,7 +34043,6 @@ export namespace Prisma {
     categoryId: string
     subcategoryId: string
     popular?: boolean | null
-    bgColor?: string | null
   }
 
   export type PackageUpdateManyMutationInput = {
@@ -34079,7 +34055,6 @@ export namespace Prisma {
     price_usd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     image?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PackageUncheckedUpdateManyInput = {
@@ -34094,7 +34069,6 @@ export namespace Prisma {
     categoryId?: StringFieldUpdateOperationsInput | string
     subcategoryId?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type WhatsAppSessionCreateInput = {
@@ -36441,7 +36415,6 @@ export namespace Prisma {
     categoryId?: SortOrder
     subcategoryId?: SortOrder
     popular?: SortOrder
-    bgColor?: SortOrder
   }
 
   export type PackageAvgOrderByAggregateInput = {
@@ -36461,7 +36434,6 @@ export namespace Prisma {
     categoryId?: SortOrder
     subcategoryId?: SortOrder
     popular?: SortOrder
-    bgColor?: SortOrder
   }
 
   export type PackageMinOrderByAggregateInput = {
@@ -36476,7 +36448,6 @@ export namespace Prisma {
     categoryId?: SortOrder
     subcategoryId?: SortOrder
     popular?: SortOrder
-    bgColor?: SortOrder
   }
 
   export type PackageSumOrderByAggregateInput = {
@@ -40139,7 +40110,6 @@ export namespace Prisma {
     price_usd: Decimal | DecimalJsLike | number | string
     image: string
     popular?: boolean | null
-    bgColor?: string | null
     category: CategoryCreateNestedOneWithoutPackagesInput
     subcategory: SubcategoryCreateNestedOneWithoutPackagesInput
     productTransactions?: TransactionProductCreateNestedManyWithoutPackageInput
@@ -40158,7 +40128,6 @@ export namespace Prisma {
     categoryId: string
     subcategoryId: string
     popular?: boolean | null
-    bgColor?: string | null
     productTransactions?: TransactionProductUncheckedCreateNestedManyWithoutPackageInput
     productCustomers?: ServicesProductCustomersUncheckedCreateNestedManyWithoutPackageInput
   }
@@ -40189,7 +40158,6 @@ export namespace Prisma {
     price_usd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     image?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
     category?: CategoryUpdateOneRequiredWithoutPackagesNestedInput
     subcategory?: SubcategoryUpdateOneRequiredWithoutPackagesNestedInput
     productTransactions?: TransactionProductUpdateManyWithoutPackageNestedInput
@@ -40208,7 +40176,6 @@ export namespace Prisma {
     categoryId?: StringFieldUpdateOperationsInput | string
     subcategoryId?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
     productTransactions?: TransactionProductUncheckedUpdateManyWithoutPackageNestedInput
     productCustomers?: ServicesProductCustomersUncheckedUpdateManyWithoutPackageNestedInput
   }
@@ -40223,7 +40190,6 @@ export namespace Prisma {
     price_usd: Decimal | DecimalJsLike | number | string
     image: string
     popular?: boolean | null
-    bgColor?: string | null
     features?: FeatureCreateNestedManyWithoutPackageInput
     category: CategoryCreateNestedOneWithoutPackagesInput
     productTransactions?: TransactionProductCreateNestedManyWithoutPackageInput
@@ -40241,7 +40207,6 @@ export namespace Prisma {
     image: string
     categoryId: string
     popular?: boolean | null
-    bgColor?: string | null
     features?: FeatureUncheckedCreateNestedManyWithoutPackageInput
     productTransactions?: TransactionProductUncheckedCreateNestedManyWithoutPackageInput
     productCustomers?: ServicesProductCustomersUncheckedCreateNestedManyWithoutPackageInput
@@ -40311,7 +40276,6 @@ export namespace Prisma {
     categoryId?: StringFilter<"Package"> | string
     subcategoryId?: StringFilter<"Package"> | string
     popular?: BoolNullableFilter<"Package"> | boolean | null
-    bgColor?: StringNullableFilter<"Package"> | string | null
   }
 
   export type CategoryUpsertWithoutSubcategoriesInput = {
@@ -40387,7 +40351,6 @@ export namespace Prisma {
     price_usd: Decimal | DecimalJsLike | number | string
     image: string
     popular?: boolean | null
-    bgColor?: string | null
     features?: FeatureCreateNestedManyWithoutPackageInput
     subcategory: SubcategoryCreateNestedOneWithoutPackagesInput
     productTransactions?: TransactionProductCreateNestedManyWithoutPackageInput
@@ -40405,7 +40368,6 @@ export namespace Prisma {
     image: string
     subcategoryId: string
     popular?: boolean | null
-    bgColor?: string | null
     features?: FeatureUncheckedCreateNestedManyWithoutPackageInput
     productTransactions?: TransactionProductUncheckedCreateNestedManyWithoutPackageInput
     productCustomers?: ServicesProductCustomersUncheckedCreateNestedManyWithoutPackageInput
@@ -41814,7 +41776,6 @@ export namespace Prisma {
     price_usd: Decimal | DecimalJsLike | number | string
     image: string
     popular?: boolean | null
-    bgColor?: string | null
     features?: FeatureCreateNestedManyWithoutPackageInput
     category: CategoryCreateNestedOneWithoutPackagesInput
     subcategory: SubcategoryCreateNestedOneWithoutPackagesInput
@@ -41833,7 +41794,6 @@ export namespace Prisma {
     categoryId: string
     subcategoryId: string
     popular?: boolean | null
-    bgColor?: string | null
     features?: FeatureUncheckedCreateNestedManyWithoutPackageInput
     productCustomers?: ServicesProductCustomersUncheckedCreateNestedManyWithoutPackageInput
   }
@@ -41923,7 +41883,6 @@ export namespace Prisma {
     price_usd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     image?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
     features?: FeatureUpdateManyWithoutPackageNestedInput
     category?: CategoryUpdateOneRequiredWithoutPackagesNestedInput
     subcategory?: SubcategoryUpdateOneRequiredWithoutPackagesNestedInput
@@ -41942,7 +41901,6 @@ export namespace Prisma {
     categoryId?: StringFieldUpdateOperationsInput | string
     subcategoryId?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
     features?: FeatureUncheckedUpdateManyWithoutPackageNestedInput
     productCustomers?: ServicesProductCustomersUncheckedUpdateManyWithoutPackageNestedInput
   }
@@ -43783,7 +43741,6 @@ export namespace Prisma {
     price_usd: Decimal | DecimalJsLike | number | string
     image: string
     popular?: boolean | null
-    bgColor?: string | null
     features?: FeatureCreateNestedManyWithoutPackageInput
     category: CategoryCreateNestedOneWithoutPackagesInput
     subcategory: SubcategoryCreateNestedOneWithoutPackagesInput
@@ -43802,7 +43759,6 @@ export namespace Prisma {
     categoryId: string
     subcategoryId: string
     popular?: boolean | null
-    bgColor?: string | null
     features?: FeatureUncheckedCreateNestedManyWithoutPackageInput
     productTransactions?: TransactionProductUncheckedCreateNestedManyWithoutPackageInput
   }
@@ -43981,7 +43937,6 @@ export namespace Prisma {
     price_usd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     image?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
     features?: FeatureUpdateManyWithoutPackageNestedInput
     category?: CategoryUpdateOneRequiredWithoutPackagesNestedInput
     subcategory?: SubcategoryUpdateOneRequiredWithoutPackagesNestedInput
@@ -44000,7 +43955,6 @@ export namespace Prisma {
     categoryId?: StringFieldUpdateOperationsInput | string
     subcategoryId?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
     features?: FeatureUncheckedUpdateManyWithoutPackageNestedInput
     productTransactions?: TransactionProductUncheckedUpdateManyWithoutPackageNestedInput
   }
@@ -44994,7 +44948,6 @@ export namespace Prisma {
     image: string
     categoryId: string
     popular?: boolean | null
-    bgColor?: string | null
   }
 
   export type PackageUpdateWithoutSubcategoryInput = {
@@ -45007,7 +44960,6 @@ export namespace Prisma {
     price_usd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     image?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
     features?: FeatureUpdateManyWithoutPackageNestedInput
     category?: CategoryUpdateOneRequiredWithoutPackagesNestedInput
     productTransactions?: TransactionProductUpdateManyWithoutPackageNestedInput
@@ -45025,7 +44977,6 @@ export namespace Prisma {
     image?: StringFieldUpdateOperationsInput | string
     categoryId?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
     features?: FeatureUncheckedUpdateManyWithoutPackageNestedInput
     productTransactions?: TransactionProductUncheckedUpdateManyWithoutPackageNestedInput
     productCustomers?: ServicesProductCustomersUncheckedUpdateManyWithoutPackageNestedInput
@@ -45042,7 +44993,6 @@ export namespace Prisma {
     image?: StringFieldUpdateOperationsInput | string
     categoryId?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AddonCreateManyCategoryInput = {
@@ -45067,7 +45017,6 @@ export namespace Prisma {
     image: string
     subcategoryId: string
     popular?: boolean | null
-    bgColor?: string | null
   }
 
   export type SubcategoryCreateManyCategoryInput = {
@@ -45121,7 +45070,6 @@ export namespace Prisma {
     price_usd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     image?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
     features?: FeatureUpdateManyWithoutPackageNestedInput
     subcategory?: SubcategoryUpdateOneRequiredWithoutPackagesNestedInput
     productTransactions?: TransactionProductUpdateManyWithoutPackageNestedInput
@@ -45139,7 +45087,6 @@ export namespace Prisma {
     image?: StringFieldUpdateOperationsInput | string
     subcategoryId?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
     features?: FeatureUncheckedUpdateManyWithoutPackageNestedInput
     productTransactions?: TransactionProductUncheckedUpdateManyWithoutPackageNestedInput
     productCustomers?: ServicesProductCustomersUncheckedUpdateManyWithoutPackageNestedInput
@@ -45156,7 +45103,6 @@ export namespace Prisma {
     image?: StringFieldUpdateOperationsInput | string
     subcategoryId?: StringFieldUpdateOperationsInput | string
     popular?: NullableBoolFieldUpdateOperationsInput | boolean | null
-    bgColor?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SubcategoryUpdateWithoutCategoryInput = {

@@ -19,6 +19,7 @@ import SubcategoriesSection from './components/SubcategoriesSection';
 import AddonsSection from './components/AddonsSection';
 import PackagesSection from './components/PackagesSection';
 import type { ProductEntityType } from '@/types/product-dashboard';
+import { SessionManager } from '@/lib/storage';
 
 interface ProductStats {
   totalCategories: number;
@@ -29,43 +30,41 @@ interface ProductStats {
 
 export default function ProductsPage() {
   const [activeTab, setActiveTab] = useState<ProductEntityType>('categories');
-  const [stats, setStats] = useState<ProductStats>({
-    totalCategories: 0,
-    totalSubcategories: 0,
-    totalAddons: 0,
-    totalPackages: 0
-  });
+  const [stats, setStats] = useState<ProductStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
-  useEffect(() => {
-    fetchProductStats();
-  }, []);
-  const fetchProductStats = async () => {
+  // Fetch product stats
+  const fetchStats = async () => {
     try {
-      // Fetch stats from each endpoint
-      const [categoriesRes, subcategoriesRes, addonsRes, packagesRes] = await Promise.all([
-        fetch('/api/product/categories'),
-        fetch('/api/product/subcategories'),
-        fetch('/api/product/addons'),
-        fetch('/api/product/packages')
-      ]);
+      setIsLoadingStats(true);
+      const token = SessionManager.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
 
-      const [categories, subcategories, addons, packages] = await Promise.all([
-        categoriesRes.ok ? categoriesRes.json() : [],
-        subcategoriesRes.ok ? subcategoriesRes.json() : [],
-        addonsRes.ok ? addonsRes.json() : [],
-        packagesRes.ok ? packagesRes.json() : []
-      ]);
-
-      setStats({
-        totalCategories: Array.isArray(categories) ? categories.length : 0,
-        totalSubcategories: Array.isArray(subcategories) ? subcategories.length : 0,
-        totalAddons: Array.isArray(addons) ? addons.length : 0,
-        totalPackages: Array.isArray(packages) ? packages.length : 0
+      const response = await fetch('/api/admin/products/product-management?format=stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-    } catch (error) {
-      console.error('Error fetching product stats:', error);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch stats');
+      }
+
+      const data = await response.json();
+      setStats(data.data.stats);
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    } finally {
+      setIsLoadingStats(false);
     }
   };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   const tabs = [
     {
@@ -93,6 +92,7 @@ export default function ProductsPage() {
       description: 'Manage product packages'
     }
   ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -113,7 +113,9 @@ export default function ProductsPage() {
             <FolderTree className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCategories}</div>
+            <div className="text-2xl font-bold">
+              {isLoadingStats ? "..." : stats?.totalCategories || 0}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -122,7 +124,9 @@ export default function ProductsPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalSubcategories}</div>
+            <div className="text-2xl font-bold">
+              {isLoadingStats ? "..." : stats?.totalSubcategories || 0}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -131,7 +135,9 @@ export default function ProductsPage() {
             <Puzzle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalAddons}</div>
+            <div className="text-2xl font-bold">
+              {isLoadingStats ? "..." : stats?.totalAddons || 0}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -140,7 +146,9 @@ export default function ProductsPage() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalPackages}</div>
+            <div className="text-2xl font-bold">
+              {isLoadingStats ? "..." : stats?.totalPackages || 0}
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -21,6 +21,7 @@ const packageSchema = z.object({
   categoryId: z.string().cuid("Invalid Category ID"),
   subcategoryId: z.string().cuid("Invalid Subcategory ID"),
   popular: z.boolean().optional(),
+  bgColor: z.string().optional(),
   features: z.array(featureSchema).min(1, "At least one feature is required"),
 });
 

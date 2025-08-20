@@ -126,11 +126,6 @@ const PackageModal: React.FC<PackageModalProps> = ({
           <Input type="checkbox" id="pkg-popular" name="popular" checked={formData.popular} onChange={onFormChange} className="h-4 w-4" />
           <Label htmlFor="pkg-popular" className="text-sm">Popular</Label>
         </div>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="pkg-bgColor" className="mr-2">BG Color</Label>
-          <Input id="pkg-bgColor" name="bgColor" type="color" value={formData.bgColor || '#FFFFFF'} onChange={onFormChange} className="h-8 w-14 p-1" />
-          <Input id="pkg-bgColor-text" name="bgColor" type="text" value={formData.bgColor || '#FFFFFF'} onChange={onFormChange} className="w-24" placeholder="#FFFFFF" />
-        </div>
         {/* Features Section */}
         <div className="grid gap-2">
           <Label>Features</Label>

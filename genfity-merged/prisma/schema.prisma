@@ -110,7 +110,6 @@ model Package {
   categoryId          String
   subcategoryId       String
   popular             Boolean?
-  bgColor             String?
   features            Feature[]
   category            Category             @relation("CategoryToPackage", fields: [categoryId], references: [id])
   subcategory         Subcategory          @relation(fields: [subcategoryId], references: [id])

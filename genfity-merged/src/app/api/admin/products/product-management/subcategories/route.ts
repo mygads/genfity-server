@@ -1,6 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { withCORS, corsOptionsResponse } from "@/lib/cors";
+import { getAdminAuth } from "@/lib/auth-helpers";
 
 const subcategorySchema = z.object({
   name_en: z.string().min(1, "English name is required"),
@@ -8,16 +10,24 @@ const subcategorySchema = z.object({
   categoryId: z.string().cuid("Invalid Category ID"),
 });
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const body = await request.json();
     const validation = subcategorySchema.safeParse(body);
 
     if (!validation.success) {
-      return new NextResponse(JSON.stringify(validation.error.errors), {
+      return withCORS(new NextResponse(JSON.stringify(validation.error.errors), {
         status: 400,
         headers: { "Content-Type": "application/json" },
-      });
+      }));
     }
 
     const { name_en, name_id, categoryId } = validation.data;
@@ -27,10 +37,10 @@ export async function POST(request: Request) {
       where: { id: categoryId },
     });
     if (!category) {
-      return new NextResponse(JSON.stringify({ message: "Category not found" }), {
+      return withCORS(new NextResponse(JSON.stringify({ message: "Category not found" }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
-      });
+      }));
     }
 
     // Check if subcategory with the same name already exists in this category
@@ -43,13 +53,13 @@ export async function POST(request: Request) {
       },
     });
     if (existingSubcategory) {
-      return new NextResponse(
+      return withCORS(new NextResponse(
         JSON.stringify({ message: "Subcategory with this name already exists in this category" }),
         {
           status: 409,
           headers: { "Content-Type": "application/json" },
         }
-      );
+      ));
     }
 
     const subcategory = await prisma.subcategory.create({
@@ -59,18 +69,26 @@ export async function POST(request: Request) {
         categoryId,
       },
     });
-    return NextResponse.json(subcategory, { status: 201 });
+    return withCORS(NextResponse.json(subcategory, { status: 201 }));
   } catch (error) {
     console.error("[SUBCATEGORIES_POST]", error);
-    return new NextResponse(JSON.stringify({ message: "Internal server error" }), {
+    return withCORS(new NextResponse(JSON.stringify({ message: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
-    });
+    }));
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("categoryId");
 
@@ -81,12 +99,16 @@ export async function GET(request: Request) {
         packages: true,
       },
     });
-    return NextResponse.json(subcategories);
+    return withCORS(NextResponse.json(subcategories));
   } catch (error) {
     console.error("[SUBCATEGORIES_GET]", error);
-    return new NextResponse(JSON.stringify({ message: "Internal server error" }), {
+    return withCORS(new NextResponse(JSON.stringify({ message: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
-    });
+    }));
   }
+}
+
+export async function OPTIONS() {
+  return corsOptionsResponse();
 }

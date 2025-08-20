@@ -194,8 +194,7 @@ exports.Prisma.PackageScalarFieldEnum = {
   image: 'image',
   categoryId: 'categoryId',
   subcategoryId: 'subcategoryId',
-  popular: 'popular',
-  bgColor: 'bgColor'
+  popular: 'popular'
 };
 
 exports.Prisma.WhatsAppSessionScalarFieldEnum = {

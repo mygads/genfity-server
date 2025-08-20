@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
+import { getAdminAuth } from "@/lib/auth-helpers";
 
 const addonSchema = z.object({
   name_en: z.string().min(1, "English name is required"),
@@ -18,8 +19,16 @@ export async function OPTIONS() {
   return corsOptionsResponse();
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const body = await request.json();
     const validation = addonSchema.safeParse(body);
 
@@ -78,8 +87,16 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("categoryId");
 

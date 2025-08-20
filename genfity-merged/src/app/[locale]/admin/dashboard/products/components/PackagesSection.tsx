@@ -13,6 +13,7 @@ import {
 import { PlusCircle, Pencil, Trash2, Star } from 'lucide-react';
 import Image from 'next/image';
 import PackageModal from '../modals/PackageModal';
+import { SessionManager } from '@/lib/storage';
 import type { Package, Category, Subcategory, PackageFormData, PackageFeatureFormData } from '@/types/product-dashboard';
 
 const PackagesSection: React.FC = () => {
@@ -31,7 +32,6 @@ const PackagesSection: React.FC = () => {
     categoryId: '',
     subcategoryId: '',
     popular: false,
-    bgColor: '#FFFFFF',
     features: [],
     image: undefined,
     addonIds: [],
@@ -46,14 +46,36 @@ const PackagesSection: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
+      const token = SessionManager.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
       const [catRes, subcatRes, pkgRes] = await Promise.all([
-        fetch('/api/product/categories'),
-        fetch('/api/product/subcategories'),
-        fetch('/api/product/packages'),
+        fetch('/api/admin/products/product-management/categories', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch('/api/admin/products/product-management/subcategories', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch('/api/admin/products/product-management/packages', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
       ]);
+      
       if (!catRes.ok) throw new Error((await catRes.json()).message || 'Failed to fetch categories');
       if (!subcatRes.ok) throw new Error((await subcatRes.json()).message || 'Failed to fetch subcategories');
       if (!pkgRes.ok) throw new Error((await pkgRes.json()).message || 'Failed to fetch packages');
+      
       setCategories(await catRes.json());
       setSubcategories(await subcatRes.json());
       setPackages(await pkgRes.json());
@@ -81,7 +103,6 @@ const PackagesSection: React.FC = () => {
       categoryId: categories[0]?.id || '',
       subcategoryId: '',
       popular: false,
-      bgColor: '#FFFFFF',
       features: [],
       image: undefined,
       addonIds: [],
@@ -108,7 +129,6 @@ const PackagesSection: React.FC = () => {
       subcategoryId: pkg.subcategoryId,
       image: pkg.image || undefined,
       popular: pkg.popular || false,
-      bgColor: pkg.bgColor || '#FFFFFF',      
       features: pkg.features.map(f => ({ id: f.id, name_en: f.name_en, name_id: f.name_id, included: f.included })),
       addonIds: pkg.addons ? pkg.addons.map(a => a.id) : [],
     });
@@ -120,7 +140,12 @@ const PackagesSection: React.FC = () => {
     if (pkg.categoryId) {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/product/subcategories?categoryId=${pkg.categoryId}`);
+        const response = await fetch(`/api/admin/products/product-management/subcategories?categoryId=${pkg.categoryId}`, {
+          headers: {
+            'Authorization': `Bearer ${SessionManager.getToken()}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch subcategories for the selected category');
         }
@@ -156,10 +181,22 @@ const PackagesSection: React.FC = () => {
     if (categoryId) {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/product/subcategories?categoryId=${categoryId}`);
+        const token = SessionManager.getToken();
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        const response = await fetch(`/api/admin/products/product-management/subcategories?categoryId=${categoryId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
         if (!response.ok) {
           throw new Error('Failed to fetch subcategories for the selected category');
         }
+        
         const data: Subcategory[] = await response.json();
         setFilteredSubcategoriesForPackageForm(data);
       } catch (err: any) {
@@ -255,14 +292,24 @@ const PackagesSection: React.FC = () => {
     let imageUrl = editingPackage?.image || undefined;
     if (selectedImageFile) {
       try {
-        const response = await fetch(`/api/product/packages/upload?filename=${selectedImageFile.name}`, {
+        const token = SessionManager.getToken();
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        const response = await fetch(`/api/admin/products/product-management/packages/upload?filename=${selectedImageFile.name}`, {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
           body: selectedImageFile,
         });
+        
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to upload image');
         }
+        
         const result = await response.json();
         imageUrl = result.url;
       } catch (err: any) {
@@ -271,8 +318,17 @@ const PackagesSection: React.FC = () => {
         return;
       }
     }
+    
     const method = editingPackage ? 'PUT' : 'POST';
-    const url = editingPackage ? `/api/product/packages/${editingPackage.id}` : '/api/product/packages';
+    const url = editingPackage ? `/api/admin/products/product-management/packages/${editingPackage.id}` : '/api/admin/products/product-management/packages';
+    
+    const token = SessionManager.getToken();
+    if (!token) {
+      setError('No authentication token found');
+      setIsLoading(false);
+      return;
+    }
+    
     const payload = {
       ...packageFormData,
       price_idr: parseFloat(packageFormData.price_idr),
@@ -288,7 +344,10 @@ const PackagesSection: React.FC = () => {
     try {
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(payload),
       });
       if (!response.ok) {
@@ -311,8 +370,21 @@ const PackagesSection: React.FC = () => {
     if (!confirm('Are you sure you want to delete this package?')) return;
     setIsLoading(true);
     setError(null);
+    
+    const token = SessionManager.getToken();
+    if (!token) {
+      setError('No authentication token found');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/product/packages/${packageId}`, { method: 'DELETE' });
+      const response = await fetch(`/api/admin/products/product-management/packages/${packageId}`, { 
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to delete package');
@@ -440,11 +512,7 @@ const PackagesSection: React.FC = () => {
                             <Badge variant="default" className="text-xs">
                               Popular
                             </Badge>
-                          )}                          <div 
-                            className="w-4 h-4 rounded-full border-2 border-gray-300"
-                            style={{ backgroundColor: pkg.bgColor || '#FFFFFF' }}
-                            title={`Background Color: ${pkg.bgColor || '#FFFFFF'}`}
-                          />
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">

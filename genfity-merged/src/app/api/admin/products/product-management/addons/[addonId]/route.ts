@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import fs from 'fs/promises';
 import path from 'path';
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
+import { getAdminAuth } from "@/lib/auth-helpers";
 
 // Base schema for addon, all fields optional for PUT
 const addonSchemaBase = z.object({
@@ -22,15 +23,22 @@ export async function OPTIONS() {
 }
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   context: { params: Promise<{ addonId: string }> }
 ) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const { addonId } = await context.params;
     if (!addonId) {
-      return withCORS(new NextResponse(JSON.stringify({ message: "Addon ID is required" }), {
+      return withCORS(NextResponse.json({ message: "Addon ID is required" }, {
         status: 400,
-        headers: { "Content-Type": "application/json" },
       }));
     }
 
@@ -42,32 +50,37 @@ export async function GET(
     });
 
     if (!addon) {
-      return withCORS(new NextResponse(JSON.stringify({ message: "Addon not found" }), {
+      return withCORS(NextResponse.json({ message: "Addon not found" }, {
         status: 404,
-        headers: { "Content-Type": "application/json" },
       }));
     }
 
     return withCORS(NextResponse.json(addon));
   } catch (error) {
     console.error("[ADDON_GET_BY_ID]", error);
-    return withCORS(new NextResponse(JSON.stringify({ message: "Internal server error" }), {
+    return withCORS(NextResponse.json({ message: "Internal server error" }, {
       status: 500,
-      headers: { "Content-Type": "application/json" },
     }));
   }
 }
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   context: { params: Promise<{ addonId: string }> }
 ) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const { addonId } = await context.params;
     if (!addonId) {
-      return withCORS(new NextResponse(JSON.stringify({ message: "Addon ID is required" }), {
+      return withCORS(NextResponse.json({ message: "Addon ID is required" }, {
         status: 400,
-        headers: { "Content-Type": "application/json" },
       }));
     }
 
@@ -94,9 +107,8 @@ export async function PUT(
     });
 
     if (!currentAddon) {
-        return withCORS(new NextResponse(JSON.stringify({ message: "Addon not found" }), {
+        return withCORS(NextResponse.json({ message: "Addon not found" }, {
             status: 404,
-            headers: { "Content-Type": "application/json" },
         }));
     }
 
@@ -182,10 +194,18 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   context: { params: Promise<{ addonId: string }> }
 ) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const { addonId } = await context.params;
     if (!addonId) {
       return withCORS(new NextResponse(JSON.stringify({ message: "Addon ID is required" }), {

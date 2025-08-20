@@ -1,16 +1,48 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
+import { getAdminAuth } from "@/lib/auth-helpers";
 
 export async function OPTIONS() {
   return corsOptionsResponse();
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const format = searchParams.get("format") || "hierarchical"; // 'hierarchical' or 'flat'
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
 
+    const { searchParams } = new URL(request.url);
+    const format = searchParams.get("format") || "stats"; // 'stats', 'hierarchical' or 'flat'
+
+    if (format === "stats") {
+      // Return only statistics for dashboard
+      const [categoriesCount, subcategoriesCount, addonsCount, packagesCount] = await Promise.all([
+        prisma.category.count(),
+        prisma.subcategory.count(),
+        prisma.addon.count(),
+        prisma.package.count()
+      ]);
+
+      return withCORS(NextResponse.json({
+        success: true,
+        data: {
+          stats: {
+            totalCategories: categoriesCount,
+            totalSubcategories: subcategoriesCount,
+            totalAddons: addonsCount,
+            totalPackages: packagesCount
+          }
+        }
+      }));
+    }
+
+    // For other formats (hierarchical/flat), fetch all data
     // Fetch all categories with their related data
     const categories = await prisma.category.findMany({
       include: {

@@ -46,7 +46,6 @@ export interface Package {
   price_usd: number;
   image?: string | null;
   popular?: boolean | null;
-  bgColor?: string | null;
   categoryId: string;
   subcategoryId: string;
   features: Feature[];  addons?: Addon[];
@@ -94,7 +93,6 @@ export interface PackageFormData {
   subcategoryId: string;
   image?: string;
   popular: boolean;
-  bgColor?: string;
   features: PackageFeatureFormData[];
   addonIds: string[];
 }

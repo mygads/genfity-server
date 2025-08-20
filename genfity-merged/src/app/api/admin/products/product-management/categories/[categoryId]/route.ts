@@ -1,25 +1,38 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { withCORS, corsOptionsResponse } from "@/lib/cors";
+import { getAdminAuth } from "@/lib/auth-helpers";
+
+export async function OPTIONS() {
+  return corsOptionsResponse();
+}
 
 const categorySchema = z.object({
   name_en: z.string().min(1, "English name is required"),
   name_id: z.string().min(1, "Indonesian name is required"),
-  icon: z.string().url("Icon must be a valid URL"),
+  icon: z.string().optional(),
 });
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params: paramsPromise }: { params: Promise<{ categoryId: string }> }
 ) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const params = await paramsPromise;
     const { categoryId } = params;
     if (!categoryId) {
-      return new NextResponse(JSON.stringify({ message: "Category ID is required" }), {
+      return withCORS(NextResponse.json({ message: "Category ID is required" }, {
         status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      }));
     }
 
     const category = await prisma.category.findUnique({
@@ -38,38 +51,43 @@ export async function GET(
       });
     }
 
-    return NextResponse.json(category);
+    return withCORS(NextResponse.json(category));
   } catch (error) {
     console.error("[CATEGORY_GET_BY_ID]", error);
-    return new NextResponse(JSON.stringify({ message: "Internal server error" }), {
+    return withCORS(NextResponse.json({ message: "Internal server error" }, {
       status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    }));
   }
 }
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params: paramsPromise }: { params: Promise<{ categoryId: string }> }
 ) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const params = await paramsPromise;
     const { categoryId } = params;
     if (!categoryId) {
-      return new NextResponse(JSON.stringify({ message: "Category ID is required" }), {
+      return withCORS(NextResponse.json({ message: "Category ID is required" }, {
         status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      }));
     }
 
     const body = await request.json();
     const validation = categorySchema.safeParse(body);
 
     if (!validation.success) {
-      return new NextResponse(JSON.stringify(validation.error.errors), {
+      return withCORS(NextResponse.json(validation.error.errors, {
         status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      }));
     }    const { name_en, name_id, icon } = validation.data;
 
     const existingCategoryWithName = await prisma.category.findFirst({
@@ -80,10 +98,9 @@ export async function PUT(
     });
 
     if (existingCategoryWithName) {
-      return new NextResponse(JSON.stringify({ message: "Category name already exists" }), {
+      return withCORS(NextResponse.json({ message: "Category name already exists" }, {
         status: 409,
-        headers: { "Content-Type": "application/json" },
-      });
+      }));
     }    const updatedCategory = await prisma.category.update({
       where: { id: categoryId },
       data: {
@@ -93,34 +110,39 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(updatedCategory);
+    return withCORS(NextResponse.json(updatedCategory));
   } catch (error) {
     console.error("[CATEGORY_PUT]", error);
     if ((error as any).code === 'P2025') { // Prisma error code for record not found
-        return new NextResponse(JSON.stringify({ message: "Category not found" }), {
+        return withCORS(NextResponse.json({ message: "Category not found" }, {
             status: 404,
-            headers: { "Content-Type": "application/json" },
-        });
+        }));
     }
-    return new NextResponse(JSON.stringify({ message: "Internal server error" }), {
+    return withCORS(NextResponse.json({ message: "Internal server error" }, {
       status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    }));
   }
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params: paramsPromise }: { params: Promise<{ categoryId: string }> }
 ) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const params = await paramsPromise;
     const { categoryId } = params;
     if (!categoryId) {
-      return new NextResponse(JSON.stringify({ message: "Category ID is required" }), {
+      return withCORS(NextResponse.json({ message: "Category ID is required" }, {
         status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      }));
     }
 
     // Check if category is being used by subcategories, packages, or addons
@@ -139,28 +161,25 @@ export async function DELETE(
         if (relatedItems.packages.length) message += (relatedItems.subcategories.length ? "," : "") + " packages";
         if (relatedItems.addons.length) message += (relatedItems.subcategories.length || relatedItems.packages.length ? "," : "") + " addons";
         message += ". Please remove associations before deleting.";
-        return new NextResponse(JSON.stringify({ message }), {
+        return withCORS(NextResponse.json({ message }, {
             status: 409, // Conflict
-            headers: { "Content-Type": "application/json" },
-        });
+        }));
     }
 
     await prisma.category.delete({
       where: { id: categoryId },
     });
 
-    return new NextResponse(null, { status: 204 });
+    return withCORS(new NextResponse(null, { status: 204 }));
   } catch (error) {
     console.error("[CATEGORY_DELETE]", error);
     if ((error as any).code === 'P2025') { // Prisma error code for record not found
-        return new NextResponse(JSON.stringify({ message: "Category not found" }), {
+        return withCORS(NextResponse.json({ message: "Category not found" }, {
             status: 404,
-            headers: { "Content-Type": "application/json" },
-        });
+        }));
     }
-    return new NextResponse(JSON.stringify({ message: "Internal server error" }), {
+    return withCORS(NextResponse.json({ message: "Internal server error" }, {
       status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    }));
   }
 }

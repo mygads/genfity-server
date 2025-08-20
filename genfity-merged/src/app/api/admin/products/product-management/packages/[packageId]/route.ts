@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import fs from 'fs/promises';
 import path from 'path';
+import { withCORS, corsOptionsResponse } from "@/lib/cors";
+import { getAdminAuth } from "@/lib/auth-helpers";
 
 const featureSchema = z.object({
   id: z.string().cuid().optional(),
@@ -22,21 +24,31 @@ const packageUpdateSchema = z.object({
   categoryId: z.string().cuid("Invalid Category ID").optional(),
   subcategoryId: z.string().cuid("Invalid Subcategory ID").optional(),
   popular: z.boolean().optional(),
-  bgColor: z.string().optional().nullable(),
   features: z.array(featureSchema).optional(),
 });
 
+export async function OPTIONS() {
+  return corsOptionsResponse();
+}
+
 export async function GET(
-  request: Request,
+  request: NextRequest,
   context: { params: Promise<{ packageId: string }> }
 ) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const { packageId } = await context.params;
     if (!packageId) {
-      return new NextResponse(JSON.stringify({ message: "Package ID is required" }), {
+      return withCORS(NextResponse.json({ message: "Package ID is required" }, {
         status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      }));
     }
 
     const pkg = await prisma.package.findUnique({
@@ -49,52 +61,55 @@ export async function GET(
     });
 
     if (!pkg) {
-      return new NextResponse(JSON.stringify({ message: "Package not found" }), {
+      return withCORS(NextResponse.json({ message: "Package not found" }, {
         status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      }));
     }
 
-    return NextResponse.json(pkg);
+    return withCORS(NextResponse.json(pkg));
   } catch (error) {
     console.error("[PACKAGE_GET_BY_ID]", error);
-    return new NextResponse(JSON.stringify({ message: "Internal server error" }), {
+    return withCORS(NextResponse.json({ message: "Internal server error" }, {
       status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    }));
   }
 }
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   context: { params: Promise<{ packageId: string }> }
 ) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const { packageId } = await context.params;
     if (!packageId) {
-      return new NextResponse(JSON.stringify({ message: "Package ID is required" }), {
+      return withCORS(NextResponse.json({ message: "Package ID is required" }, {
         status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      }));
     }
 
     const body = await request.json();
     const validation = packageUpdateSchema.safeParse(body);
 
     if (!validation.success) {
-      return new NextResponse(JSON.stringify(validation.error.errors), {
+      return withCORS(NextResponse.json(validation.error.errors, {
         status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      }));
     }
 
     const { features, ...packageUpdateData } = validation.data;
 
     if (Object.keys(packageUpdateData).length === 0 && !features) {
-        return new NextResponse(JSON.stringify({ message: "No fields to update" }), {
+        return withCORS(NextResponse.json({ message: "No fields to update" }, {
             status: 400,
-            headers: { "Content-Type": "application/json" },
-        });
+        }));
     }
 
     const currentPackage = await prisma.package.findUnique({
@@ -102,10 +117,9 @@ export async function PUT(
     });
 
     if (!currentPackage) {
-        return new NextResponse(JSON.stringify({ message: "Package not found" }), {
+        return withCORS(NextResponse.json({ message: "Package not found" }, {
             status: 404,
-            headers: { "Content-Type": "application/json" },
-        });
+        }));
     }
 
     // Validate category and subcategory if they are being changed
@@ -118,13 +132,10 @@ export async function PUT(
         });
 
         if (!subcategory || subcategory.categoryId !== targetCategoryId) {
-            return new NextResponse(
-                JSON.stringify({ message: "Subcategory does not belong to the specified category or does not exist" }),
-                {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-                }
-            );
+            return withCORS(NextResponse.json(
+                { message: "Subcategory does not belong to the specified category or does not exist" },
+                { status: 400 }
+            ));
         }
     }
 
@@ -196,33 +207,38 @@ export async function PUT(
         include: { features: true, category: true, subcategory: true }
     });
 
-    return NextResponse.json(resultWithIncludes);
+    return withCORS(NextResponse.json(resultWithIncludes));
   } catch (error) {
     console.error("[PACKAGE_PUT]", error);
     if ((error as any).code === 'P2025') { 
-        return new NextResponse(JSON.stringify({ message: "Package not found" }), {
+        return withCORS(NextResponse.json({ message: "Package not found" }, {
             status: 404,
-            headers: { "Content-Type": "application/json" },
-        });
+        }));
     }
-    return new NextResponse(JSON.stringify({ message: "Internal server error" }), {
+    return withCORS(NextResponse.json({ message: "Internal server error" }, {
       status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    }));
   }
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   context: { params: Promise<{ packageId: string }> }
 ) {
   try {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 403 }
+      ));
+    }
+
     const { packageId } = await context.params;
     if (!packageId) {
-      return new NextResponse(JSON.stringify({ message: "Package ID is required" }), {
+      return withCORS(NextResponse.json({ message: "Package ID is required" }, {
         status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      }));
     }
 
     // Cari data package sebelum dihapus
@@ -247,18 +263,16 @@ export async function DELETE(
       where: { id: packageId },
     });
 
-    return new NextResponse(null, { status: 204 });
+    return withCORS(new NextResponse(null, { status: 204 }));
   } catch (error) {
     console.error("[PACKAGE_DELETE]", error);
     if ((error as any).code === 'P2025') { 
-        return new NextResponse(JSON.stringify({ message: "Package not found" }), {
+        return withCORS(NextResponse.json({ message: "Package not found" }, {
             status: 404,
-            headers: { "Content-Type": "application/json" },
-        });
+        }));
     }
-    return new NextResponse(JSON.stringify({ message: "Internal server error" }), {
+    return withCORS(NextResponse.json({ message: "Internal server error" }, {
       status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    }));
   }
 }
