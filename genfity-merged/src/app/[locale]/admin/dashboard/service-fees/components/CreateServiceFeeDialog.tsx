@@ -24,6 +24,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Shield } from 'lucide-react'
 import { toast } from 'sonner'
+import { SessionManager } from '@/lib/storage'
 
 interface CreateServiceFeeDialogProps {
   open: boolean
@@ -195,6 +196,9 @@ export default function CreateServiceFeeDialog({
         
         const uploadResponse = await fetch('/api/upload/image', {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SessionManager.getToken()}`,
+          },
           body: uploadFormData,
         })
         
@@ -226,6 +230,7 @@ export default function CreateServiceFeeDialog({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SessionManager.getToken()}`,
         },
         body: JSON.stringify(payload),
       })
@@ -247,6 +252,7 @@ export default function CreateServiceFeeDialog({
       if (result.success) {
         toast.success('Service fee created successfully')
         onSuccess()
+        onOpenChange(false) // Auto close dialog
         setFormData(initialFormData)
         setErrors({})
         setInstructionType('text')

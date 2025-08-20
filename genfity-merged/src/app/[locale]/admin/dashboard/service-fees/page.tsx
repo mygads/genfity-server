@@ -12,10 +12,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Plus, Edit, Trash2, CreditCard, DollarSign, Percent, Shield } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Plus, Edit, Trash2, CreditCard, DollarSign, Percent, Shield, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import CreateServiceFeeDialog from './components/CreateServiceFeeDialog'
 import EditServiceFeeDialog from './components/EditServiceFeeDialog'
+import { SessionManager } from '@/lib/storage'
 
 interface ServiceFee {
   id: string
@@ -38,11 +47,24 @@ export default function ServiceFeesPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingFee, setEditingFee] = useState<ServiceFee | null>(null)
+  
+  // Delete confirmation dialog state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [feeToDelete, setFeeToDelete] = useState<{ id: string; name: string } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Fetch service fees
   const fetchServiceFees = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/service-fees')
+      // Get token for authentication
+      const token = SessionManager.getToken()
+      
+      const response = await fetch('/api/admin/service-fees', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
       if (!response.ok) throw new Error('Failed to fetch service fees')
       
       const data = await response.json()
@@ -67,27 +89,48 @@ export default function ServiceFeesPage() {
     setIsEditOpen(true)
   }, [])
 
-  // Handle delete
-  const handleDelete = useCallback(async (id: string) => {
-    if (!confirm('Are you sure you want to delete this service fee?')) return
+  // Handle delete - show confirmation dialog
+  const handleDeleteClick = useCallback((id: string, name: string) => {
+    setFeeToDelete({ id, name })
+    setDeleteConfirmOpen(true)
+  }, [])
+
+  // Actual delete operation
+  const handleConfirmDelete = useCallback(async () => {
+    if (!feeToDelete) return
 
     try {
-      const response = await fetch(`/api/admin/service-fees/${id}`, {
+      setIsDeleting(true)
+      // Get token for authentication
+      const token = SessionManager.getToken()
+      
+      const response = await fetch(`/api/admin/service-fees/${feeToDelete.id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       })
 
-      if (!response.ok) throw new Error('Failed to delete service fee')
-
       const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete service fee')
+      }
+
       if (result.success) {
-        toast.success('Service fee deleted successfully')
+        toast.success(`Service fee "${feeToDelete.name}" deleted successfully`)
         fetchServiceFees()
+        setDeleteConfirmOpen(false)
+        setFeeToDelete(null)
       }
     } catch (error) {
       console.error('Error deleting service fee:', error)
-      toast.error('Failed to delete service fee')
+      toast.error(error instanceof Error ? error.message : 'Failed to delete service fee')
+    } finally {
+      setIsDeleting(false)
     }
-  }, [fetchServiceFees])
+  }, [feeToDelete, fetchServiceFees])
 
   // Handle successful create/edit
   const handleSuccess = useCallback(() => {
@@ -278,7 +321,7 @@ export default function ServiceFeesPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDelete(fee.id)}
+                          onClick={() => handleDeleteClick(fee.id, fee.name)}
                           className="text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -311,6 +354,68 @@ export default function ServiceFeesPage() {
           existingFees={serviceFees}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the service fee{' '}
+              <span className="font-semibold text-foreground">
+                &ldquo;{feeToDelete?.name}&rdquo;
+              </span>
+              ?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-red-700 dark:text-red-300">
+                <p className="font-medium">This action cannot be undone.</p>
+                <p className="mt-1">
+                  The service fee will be permanently removed from the system.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteConfirmOpen(false)
+                setFeeToDelete(null)
+              }}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="gap-2"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Delete Service Fee
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

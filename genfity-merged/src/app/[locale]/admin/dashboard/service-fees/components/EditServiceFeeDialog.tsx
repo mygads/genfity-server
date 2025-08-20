@@ -24,6 +24,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Shield } from 'lucide-react'
 import { toast } from 'sonner'
+import { SessionManager } from '@/lib/storage'
 
 interface EditServiceFeeDialogProps {
   open: boolean
@@ -228,6 +229,9 @@ export default function EditServiceFeeDialog({
         
         const uploadResponse = await fetch('/api/upload/image', {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SessionManager.getToken()}`,
+          },
           body: uploadFormData,
         })
         
@@ -256,9 +260,10 @@ export default function EditServiceFeeDialog({
       }
 
       const response = await fetch(`/api/admin/service-fees/${serviceFee.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SessionManager.getToken()}`,
         },
         body: JSON.stringify(payload),
       })
@@ -280,6 +285,7 @@ export default function EditServiceFeeDialog({
       if (result.success) {
         toast.success('Service fee updated successfully')
         onSuccess()
+        onOpenChange(false) // Auto close dialog
         setErrors({})
       }
     } catch (error) {
