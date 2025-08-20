@@ -474,8 +474,7 @@ export async function GET(request: NextRequest) {
           include: {
             whatsappPackage: {
               select: {
-                name_en: true,
-                name_id: true
+                name: true
               }
             }
           }
@@ -628,7 +627,7 @@ export async function GET(request: NextRequest) {
       if (transaction.productTransactions && transaction.productTransactions.length > 0) {
         itemName = transaction.productTransactions[0].package?.name_en || 'Product Package';
       } else if (transaction.whatsappTransaction) {
-        itemName = transaction.whatsappTransaction.whatsappPackage?.name_en || 'WhatsApp Package';
+        itemName = transaction.whatsappTransaction.whatsappPackage?.name || 'WhatsApp Package';
       } else if (transaction.addonTransactions && transaction.addonTransactions.length > 0) {
         itemName = transaction.addonTransactions[0].addon?.name_en || 'Addon Service';
       }
