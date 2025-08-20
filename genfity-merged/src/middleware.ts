@@ -451,11 +451,6 @@ export async function middleware(req: NextRequest) {
 
         // Admin UI Routes Protection
         if (pathWithoutLocale.startsWith('/admin')) {
-            // Skip authentication check for signin page
-            if (pathWithoutLocale === '/admin/signin') {
-                return NextResponse.next();
-            }
-            
             // Check for JWT token in cookies for admin UI (same cookie as customer but check admin role)
             const jwtToken = req.cookies.get('auth-token')?.value;
             
@@ -470,7 +465,7 @@ export async function middleware(req: NextRequest) {
             }
             
             if (!isValidAdmin) {
-                const signInUrl = new URL(`/${locale}/admin/signin`, req.url);
+                const signInUrl = new URL(`/${locale}/signin`, req.url);
                 signInUrl.searchParams.set('callbackUrl', req.url);
                 return NextResponse.redirect(signInUrl);
             }

@@ -168,13 +168,13 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!isAuthLoading) {
       if (!user || !token) {
-        router.push('/admin/signin');
+        router.push('/signin');
         return;
       }
       
       // Check if user has admin role
       if ((user as any).role !== 'admin' && (user as any).role !== 'super_admin') {
-        router.push('/admin/signin');
+        router.push('/signin');
         return;
       }
     }
@@ -186,7 +186,7 @@ export default function DashboardPage() {
       // Use token from AuthContext
       if (!token) {
         console.error('No auth token found');
-        router.push('/admin/signin');
+        router.push('/signin');
         return;
       }
       
@@ -215,7 +215,7 @@ export default function DashboardPage() {
         
         // If 401/403, redirect to admin signin
         if (response.status === 401 || response.status === 403) {
-          router.push('/admin/signin');
+          router.push('/signin');
         }
       }
     } catch (error) {

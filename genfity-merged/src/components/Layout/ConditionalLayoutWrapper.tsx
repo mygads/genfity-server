@@ -14,10 +14,9 @@ export default function ConditionalLayoutWrapper({ children }: { children: React
 
   const isDashboard = basePath === "dashboard"
   const isAdminDashboard = pathname.includes("/admin/dashboard")
-  const isAdminSignin = pathname.includes("/admin/signin")
 
-  // Don't show header/footer for any dashboard or admin pages
-  const hideHeaderFooter = isDashboard || isAdminDashboard || isAdminSignin
+  // Don't show header/footer only for dashboard pages (customer and admin)
+  const hideHeaderFooter = isDashboard || isAdminDashboard
 
   return (
     <>

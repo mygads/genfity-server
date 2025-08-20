@@ -8,6 +8,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useAuth } from "@/components/Auth/AuthContext"
+import { SessionManager } from "@/lib/storage"
 import SigninRedirectHandler from "@/components/Auth/SigninRedirectHandler"
 import { OtpInput } from "@/components/Auth/OtpInput"
 import { ShineBorder } from "@/components/ui/shine-border"
@@ -50,8 +51,15 @@ export default function SigninPage() {
       const { error: signInError, success } = await signInWithPassword(identifier, password)
       
       if (success) {
-        // Redirect after successful signin
-        router.push(redirectTo)
+        // Get user role from session to determine redirect
+        const session = SessionManager.getSession()
+        if (session?.role === 'admin' || session?.role === 'super_admin') {
+          // Admin users go to admin dashboard
+          router.push("/admin/dashboard")
+        } else {
+          // Customer users go to customer dashboard or specified redirect
+          router.push(redirectTo)
+        }
       } else if (signInError) {
         setError(signInError.message || t('errors.invalidCredentials'))
         setIsLoading(false)
@@ -108,8 +116,15 @@ export default function SigninPage() {
       const { error: verifyError, success, user } = await verifySSO(ssoIdentifier, otp)
       
       if (success && user) {
-        // Redirect after successful verification
-        router.push(redirectTo)
+        // Get user role from session to determine redirect
+        const session = SessionManager.getSession()
+        if (session?.role === 'admin' || session?.role === 'super_admin') {
+          // Admin users go to admin dashboard
+          router.push("/admin/dashboard")
+        } else {
+          // Customer users go to customer dashboard or specified redirect
+          router.push(redirectTo)
+        }
       } else if (verifyError) {
         setError(verifyError.message || t('errors.verifyFailed'))
         setIsLoading(false)

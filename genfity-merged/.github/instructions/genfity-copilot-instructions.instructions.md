@@ -21,7 +21,7 @@ Genfity is a Next.js 15 full-stack application providing multi-service platform 
 - **Token Lifecycle**: 7-day expiration, stored in localStorage with automatic cleanup on expiry for frontend, and in the database for backend
 - **Role-based Access Control**: JWT carries user credentials (IP, device, role, name, email, phone, etc.) for API route protection
 - **Auto-redirect Logic**: 
-  - Expired tokens → redirect to signin (admin users → `/admin/signin`, customers → `/signin`)
+  - Expired tokens → redirect to signin (all users → `/signin` - system automatically redirects admin to admin dashboard after login)
   - Dashboard access without login → redirect to signin pages
 - **API Routes Security**:
   - `/api/public/*` - No authentication required
@@ -45,7 +45,7 @@ Genfity is a Next.js 15 full-stack application providing multi-service platform 
   - Default fallback → `/en` (when IP/language detection fails)
 - **Protected Routes**:
   - `/dashboard` access without login → redirect to `/signin`
-  - `/admin/dashboard` access without admin role → redirect to `/admin/signin`
+  - `/admin/dashboard` access without admin role → redirect to `/signin`
 ```
 /api/auth/        # Authentication (signin, signup, OTP)
 /api/account/     # Universal user routes (profile, settings)  
