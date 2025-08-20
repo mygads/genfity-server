@@ -1,7 +1,11 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyUserToken } from "@/lib/auth-helpers";
+import { getAdminAuth } from "@/lib/auth-helpers";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
+
+export async function OPTIONS() {
+  return corsOptionsResponse();
+}
 
 function getTransactionStatusText(status: string) {
   switch (status) {
@@ -40,20 +44,17 @@ export async function GET(
       ));
     }
 
-    const userVerification = await verifyUserToken(request);
+    const adminAuth = await getAdminAuth(request);
     
-    if (!userVerification.success) {
+    if (!adminAuth) {
       return withCORS(NextResponse.json(
-        { success: false, error: userVerification.error },
+        { success: false, error: "Admin access required" },
         { status: 401 }
       ));
     }
 
-    const userId = userVerification.userId;
-    let whereCondition: any = { id: transactionId };
-    
-    // Non-admin users can only access their own transactions
-    whereCondition = { ...whereCondition, userId: userId };
+    // Admin can access any transaction
+    const whereCondition: any = { id: transactionId };
 
     const transaction = await prisma.transaction.findFirst({
       where: whereCondition,
@@ -144,8 +145,4 @@ export async function GET(
       { status: 500 }
     ));
   }
-}
-
-export async function OPTIONS() {
-  return corsOptionsResponse();
 }

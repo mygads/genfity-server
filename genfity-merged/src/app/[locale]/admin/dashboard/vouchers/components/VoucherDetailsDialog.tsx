@@ -22,6 +22,7 @@ import {
   Percent,
   DollarSign
 } from "lucide-react"
+import { SessionManager } from "@/lib/storage"
 
 interface Voucher {
   id: string
@@ -76,7 +77,15 @@ export default function VoucherDetailsDialog({
     
     setLoading(true)
     try {
-      const response = await fetch(`/api/admin/vouchers/${voucher.id}/usage`)
+      // Get token for authentication
+      const token = SessionManager.getToken()
+      
+      const response = await fetch(`/api/admin/voucher/${voucher.id}/usage`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setUsageHistory(data.usage || [])

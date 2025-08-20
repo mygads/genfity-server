@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { SessionManager } from "@/lib/storage"
 
 interface CreateVoucherDialogProps {
   open: boolean
@@ -134,10 +135,14 @@ export default function CreateVoucherDialog({
 
     setLoading(true)
     try {
-      const response = await fetch("/api/admin/vouchers", {
+      // Get token for authentication
+      const token = SessionManager.getToken()
+      
+      const response = await fetch("/api/admin/voucher", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
           ...formData,
@@ -348,7 +353,7 @@ export default function CreateVoucherDialog({
             <h3 className="text-lg font-medium">Validity Period</h3>
             
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-2 flex flex-col">
                 <Label>Start Date</Label>
                 <DatePicker
                   selected={formData.startDate}
@@ -359,7 +364,7 @@ export default function CreateVoucherDialog({
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 flex flex-col">
                 <Label>End Date (Optional)</Label>
                 <DatePicker
                   selected={formData.endDate}

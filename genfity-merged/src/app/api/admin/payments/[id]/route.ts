@@ -1,28 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
-import jwt from 'jsonwebtoken';
+import { getAdminAuth } from "@/lib/auth-helpers";
 import { PaymentExpirationService } from "@/lib/payment-expiration";
 import { z } from "zod";
 
-// Helper function to verify admin JWT token
-async function verifyAdminToken(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.split(" ")[1];
-  
-  if (!token) {
-    return null;
-  }
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
-    if (decoded.role !== 'admin') {
-      return null;
-    }
-    return decoded;
-  } catch (error) {
-    return null;
-  }
+export async function OPTIONS() {
+  return corsOptionsResponse();
 }
 
 const approvePaymentSchema = z.object({
@@ -36,8 +20,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const adminUser = await verifyAdminToken(request);
-    if (!adminUser) {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
       return withCORS(NextResponse.json(
         { success: false, error: "Admin access required" },
         { status: 403 }
@@ -114,15 +98,15 @@ export async function PATCH(
       id,
       newStatus,
       adminNotes,
-      adminUser.id
+      adminAuth.id
     );
 
     // Log admin action for audit
-    console.log(`[ADMIN_PAYMENT_${action.toUpperCase()}] Payment ${id} ${action}ed by admin ${adminUser.email}`, {
+    console.log(`[ADMIN_PAYMENT_${action.toUpperCase()}] Payment ${id} ${action}ed by admin ${adminAuth.email}`, {
       paymentId: id,
       transactionId: payment.transaction.id,
-      adminId: adminUser.id,
-      adminEmail: adminUser.email,
+      adminId: adminAuth.id,
+      adminEmail: adminAuth.email,
       action,      
       adminNotes,
       userId: payment.transaction.user?.id || null,
@@ -173,7 +157,7 @@ export async function PATCH(
         adminAction: {
           action,
           adminNotes,
-          processedBy: adminUser.email,
+          processedBy: adminAuth.email,
           processedAt: new Date(),
         }
       },
@@ -195,8 +179,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const adminUser = await verifyAdminToken(request);
-    if (!adminUser) {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
       return withCORS(NextResponse.json(
         { success: false, error: "Admin access required" },
         { status: 403 }
@@ -460,8 +444,4 @@ function getActualTransactionType(transaction: any) {
   } else {
     return transaction.type || 'unknown'; // Fallback to original type
   }
-}
-
-export async function OPTIONS() {
-  return corsOptionsResponse();
 }

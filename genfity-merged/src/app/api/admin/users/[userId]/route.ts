@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyAdminToken } from "@/lib/auth-helpers";
+import { getAdminAuth } from "@/lib/auth-helpers";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -19,10 +19,10 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const adminVerification = await verifyAdminToken(request);
-    if (!adminVerification.success) {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
       return withCORS(NextResponse.json(
-        { success: false, error: adminVerification.error },
+        { success: false, error: "Admin access required" },
         { status: 401 }
       ));
     }
@@ -98,10 +98,10 @@ export async function PUT(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const adminVerification = await verifyAdminToken(request);
-    if (!adminVerification.success) {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
       return withCORS(NextResponse.json(
-        { success: false, error: adminVerification.error },
+        { success: false, error: "Admin access required" },
         { status: 401 }
       ));
     }
@@ -204,10 +204,10 @@ export async function DELETE(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const adminVerification = await verifyAdminToken(request);
-    if (!adminVerification.success) {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
       return withCORS(NextResponse.json(
-        { success: false, error: adminVerification.error },
+        { success: false, error: "Admin access required" },
         { status: 401 }
       ));
     }

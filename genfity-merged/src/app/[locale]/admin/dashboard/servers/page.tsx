@@ -105,12 +105,14 @@ export default function ServersPage() {  const [servers, setServers] = useState<
     const fetchServersCallback = useCallback(async () => {
         try {
         setLoading(true);
-        const response = await fetch('/api/servers');
+        const response = await fetch('/api/admin/servers');
         if (response.ok) {
             const data = await response.json();
-            setServers(data.servers);
-            if (data.servers.length > 0 && !selectedServer) {
-            setSelectedServer(data.servers[0]);
+            if (data.success) {
+                setServers(data.data || []);
+                if ((data.data || []).length > 0 && !selectedServer) {
+                    setSelectedServer((data.data || [])[0]);
+                }
             }
         }
         } catch (error) {
@@ -129,13 +131,15 @@ export default function ServersPage() {  const [servers, setServers] = useState<
     const updateServers = async () => {
         try {
         setUpdating(true);
-        const response = await fetch('/api/servers', {
+        const response = await fetch('/api/admin/servers', {
             method: 'POST'
         });
         if (response.ok) {
             const data = await response.json();
-            setServers(data.servers);
-            alert(`Successfully updated ${data.count} servers`);
+            if (data.success) {
+                setServers(data.data || []);
+                alert(`Successfully updated ${data.count} servers`);
+            }
         }
         } catch (error) {
         console.error('Error updating servers:', error);
@@ -227,9 +231,9 @@ export default function ServersPage() {  const [servers, setServers] = useState<
             // Get memory_total and memory_available for calculating usage percentage
             // Get memory_cached for current memory being used
             const [totalResponse, availableResponse, cachedResponse] = await Promise.all([
-            fetch(`/api/servers/${serverId}/metrics?type=memory&memory_type=total&start=${startTime}&end=${now}`),
-            fetch(`/api/servers/${serverId}/metrics?type=memory&memory_type=available&start=${startTime}&end=${now}`),
-            fetch(`/api/servers/${serverId}/metrics?type=memory&memory_type=cached&start=${startTime}&end=${now}`)
+            fetch(`/api/admin/servers/${serverId}/metrics?type=memory&memory_type=total&start=${startTime}&end=${now}`),
+            fetch(`/api/admin/servers/${serverId}/metrics?type=memory&memory_type=available&start=${startTime}&end=${now}`),
+            fetch(`/api/admin/servers/${serverId}/metrics?type=memory&memory_type=cached&start=${startTime}&end=${now}`)
             ]);
 
             if (totalResponse.ok && availableResponse.ok) {
@@ -343,7 +347,7 @@ export default function ServersPage() {  const [servers, setServers] = useState<
             });
             }      } else if (type === 'cpu') {
             // For CPU, fetch the CPU metrics endpoint that returns mode-based data
-            const response = await fetch(`/api/servers/${serverId}/metrics?type=${type}&start=${startTime}&end=${now}`);
+            const response = await fetch(`/api/admin/servers/${serverId}/metrics?type=${type}&start=${startTime}&end=${now}`);
             
             if (response.ok) {
             const data = await response.json();
@@ -423,8 +427,8 @@ export default function ServersPage() {  const [servers, setServers] = useState<
             }        } else {
             // For disk, fetch both filesystem_free and filesystem_size
             const [freeResponse, sizeResponse] = await Promise.all([
-                fetch(`/api/servers/${serverId}/metrics?type=disk&disk_type=free&start=${startTime}&end=${now}`),
-                fetch(`/api/servers/${serverId}/metrics?type=disk&disk_type=size&start=${startTime}&end=${now}`)
+                fetch(`/api/admin/servers/${serverId}/metrics?type=disk&disk_type=free&start=${startTime}&end=${now}`),
+                fetch(`/api/admin/servers/${serverId}/metrics?type=disk&disk_type=size&start=${startTime}&end=${now}`)
             ]);
 
             if (freeResponse.ok && sizeResponse.ok) {

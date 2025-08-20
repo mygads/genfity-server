@@ -1,61 +1,75 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
-import { getAdminAuth } from "@/lib/auth-helpers";
+import jwt from 'jsonwebtoken';
+
+// Helper function to verify admin JWT token
+async function verifyAdminToken(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.split(" ")[1];
+  
+  if (!token) {
+    return null;
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+    if (decoded.role !== 'admin') {
+      return null;
+    }
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
 
 // Helper function to get date range filters
 function getDateRangeFilter(period: string) {
   const now = new Date();
-  const startDate = new Date();
-  const endDate = new Date();
-
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
   switch (period) {
     case 'today':
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
-      break;
+      return {
+        gte: today,
+        lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+      };
     case 'week':
-      startDate.setDate(now.getDate() - 7);
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
-      break;
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      return {
+        gte: weekAgo,
+        lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+      };
     case 'month':
-      startDate.setMonth(now.getMonth() - 1);
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
-      break;
+      const monthAgo = new Date(today);
+      monthAgo.setMonth(today.getMonth() - 1);
+      return {
+        gte: monthAgo,
+        lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+      };
     default:
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
-      break;
+      return {
+        gte: today,
+        lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+      };
   }
-
-  return {
-    gte: startDate,
-    lt: endDate
-  };
 }
 
 // Helper function to format currency
 function formatCurrency(amount: number, currency: string): string {
   if (currency === 'idr') {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-    }).format(amount);
+    return `Rp ${amount.toLocaleString('id-ID')}`;
   } else {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
   }
 }
 
 // GET /api/admin/dashboard/analytics - Get comprehensive dashboard analytics
 export async function GET(request: NextRequest) {
   try {
-    const adminAuth = await getAdminAuth(request);
-    if (!adminAuth) {
+    const adminUser = await verifyAdminToken(request);
+    if (!adminUser) {
       return withCORS(NextResponse.json(
         { success: false, error: "Admin access required" },
         { status: 403 }
@@ -66,9 +80,7 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') || 'today'; // today, week, month
     const currency = searchParams.get('currency') || 'idr'; // idr, usd
     
-    const dateFilter = getDateRangeFilter(period);
-
-    // 1. Transaction Analytics
+    const dateFilter = getDateRangeFilter(period);    // 1. Transaction Analytics
     const [
       totalTransactionsRaw,
       completedTransactionsRaw,
@@ -125,7 +137,7 @@ export async function GET(request: NextRequest) {
           currency: currency
         }
       }),
-
+      
       // Revenue analytics
       prisma.transaction.aggregate({
         where: {
@@ -143,8 +155,7 @@ export async function GET(request: NextRequest) {
           finalAmount: true
         }
       }),
-
-      // Top performing products
+        // Top performing products
       prisma.transaction.findMany({
         where: {
           status: 'paid',
@@ -161,8 +172,7 @@ export async function GET(request: NextRequest) {
                 select: {
                   id: true,
                   name_en: true,
-                  name_id: true,
-                  price_idr: true,
+                  name_id: true,                  price_idr: true,
                   price_usd: true
                 }
               }
@@ -173,9 +183,7 @@ export async function GET(request: NextRequest) {
         orderBy: {
           finalAmount: 'desc'
         }
-      }),
-
-      // Category performance stats
+      }),      // Category performance stats
       prisma.transaction.groupBy({
         by: ['type'],
         where: {
@@ -208,23 +216,19 @@ export async function GET(request: NextRequest) {
         _sum: {
           amount: true
         }
-      }),
-
-      // Hourly transaction distribution
+      }),      // Hourly transaction distribution
       prisma.$queryRaw<{hour: number, count: number}[]>`
         SELECT 
-          EXTRACT(HOUR FROM "createdAt") as hour,
+          EXTRACT(HOUR FROM createdAt) as hour,
           COUNT(*) as count
-        FROM "Transaction" 
+        FROM Transaction 
         WHERE status = 'paid' 
-          AND "createdAt" >= ${dateFilter.gte}
-          AND "createdAt" < ${dateFilter.lt}
+          AND createdAt >= ${dateFilter.gte}
+          AND createdAt < ${dateFilter.lt}
           AND currency = ${currency}
-        GROUP BY EXTRACT(HOUR FROM "createdAt")
+        GROUP BY EXTRACT(HOUR FROM createdAt)
         ORDER BY hour
-      `,
-
-      // Top performing users by revenue
+      `,// Top performing users by revenue
       prisma.transaction.groupBy({
         by: ['userId'],
         where: {
@@ -289,18 +293,15 @@ export async function GET(request: NextRequest) {
         _count: {
           id: true
         }
-      }),
-
-      // Average processing time for completed transactions
+      }),      // Average processing time for completed transactions
       prisma.$queryRaw<Array<{ avgMinutes: number }>>`
-        SELECT EXTRACT(EPOCH FROM AVG("updatedAt" - "createdAt"))/60 as "avgMinutes"
-        FROM "Transaction" 
+        SELECT AVG(TIMESTAMPDIFF(MINUTE, createdAt, updatedAt)) as avgMinutes
+        FROM Transaction 
         WHERE 
           status = 'paid' 
           AND currency = ${currency}
-          AND "createdAt" >= ${dateFilter.gte}
-          AND "createdAt" < ${dateFilter.lt}
-      `,
+          AND createdAt >= ${dateFilter.gte}
+          AND createdAt < ${dateFilter.lt}      `,
 
       // Addon delivery analytics
       // Total addon deliveries
@@ -323,7 +324,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-
+      
       // In progress
       prisma.servicesAddonsCustomers.count({
         where: {
@@ -344,9 +345,7 @@ export async function GET(request: NextRequest) {
             currency: currency
           }
         }
-      }),
-
-      // Average delivery time for completed deliveries
+      }),      // Average delivery time for completed deliveries
       prisma.servicesAddonsCustomers.findMany({
         where: {
           status: 'delivered',
@@ -360,153 +359,24 @@ export async function GET(request: NextRequest) {
           updatedAt: true
         }
       })
-    ]);
-
-    // Convert BigInt counts to numbers to avoid mathematical operation errors
+    ]);    // Convert BigInt counts to numbers to avoid mathematical operation errors
     const totalTransactions = Number(totalTransactionsRaw);
     const completedTransactions = Number(completedTransactionsRaw);
     const pendingTransactions = Number(pendingTransactionsRaw);
     const failedTransactions = Number(failedTransactionsRaw);
 
-    // Calculate conversion rate
-    const conversionRate = totalTransactions > 0 ? (completedTransactions / totalTransactions) * 100 : 0;
-
-    // Calculate revenue growth rate
-    const currentRevenue = Number(revenueData._sum.finalAmount || 0);
-    const prevMonthRevenue = Number(monthlyGrowth._sum.finalAmount || 0);
-    const revenueGrowthRate = prevMonthRevenue > 0 
-      ? ((currentRevenue - prevMonthRevenue) / prevMonthRevenue) * 100 
-      : 0;
-
-    // Calculate transaction growth rate
-    const currentTransactionCount = completedTransactions;
-    const prevMonthTransactionCount = Number(monthlyGrowth._count.id || 0);
-    const transactionGrowthRate = prevMonthTransactionCount > 0 
-      ? ((currentTransactionCount - prevMonthTransactionCount) / prevMonthTransactionCount) * 100 
-      : 0;
-
-    // 3. Daily/Hourly Revenue Trend (for charts)
-    const revenueTrend = await prisma.$queryRaw`
-      SELECT 
-        DATE("createdAt") as date,
-        COUNT(*) as transactions,
-        SUM(CAST("finalAmount" AS DECIMAL(10,2))) as revenue
-      FROM "Transaction" 
-      WHERE 
-        status = 'paid' 
-        AND currency = ${currency}
-        AND "createdAt" >= ${dateFilter.gte}
-        AND "createdAt" < ${dateFilter.lt}
-      GROUP BY DATE("createdAt")
-      ORDER BY date ASC
-    ` as Array<{
-      date: string;
-      transactions: number;
-      revenue: number;
-    }>;
-
-    // 4. User Growth Analytics
-    const [newUsers, totalActiveUsers] = await Promise.all([
-      prisma.user.count({
-        where: {
-          createdAt: dateFilter,
-          role: 'customer'
-        }
-      }),
-      
-      prisma.user.count({
-        where: {
-          isActive: true,
-          role: 'customer'
-        }
-      })
-    ]);
-
-    // Convert user counts to numbers
-    const newUsersCount = Number(newUsers);
-    const totalActiveUsersCount = Number(totalActiveUsers);
-
-    // 6. Voucher Usage Analytics
-    const voucherStats = await prisma.voucherUsage.aggregate({
-      where: {
-        usedAt: dateFilter,
-        transaction: {
-          currency: currency
-        }
-      },
-      _sum: {
-        discountAmount: true
-      },
-      _count: {
-        _all: true
-      }
-    });
-
-    // 7. Recent Transactions
-    const recentTransactions = await prisma.transaction.findMany({
-      where: {
-        currency: currency
-      },
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true
-          }
-        },
-        payment: {
-          select: {
-            method: true,
-            status: true
-          }
-        },
-        productTransactions: {
-          include: {
-            package: {
-              select: {
-                name_en: true,
-                name_id: true
-              }
-            }
-          }
-        },
-        whatsappTransaction: {
-          include: {
-            whatsappPackage: {
-              select: {
-                name_en: true,
-                name_id: true
-              }
-            }
-          }
-        },
-        addonTransactions: {
-          include: {
-            addon: {
-              select: {
-                name_en: true,
-                name_id: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: 10
-    });
-
-    // Calculate addon delivery statistics
+    // Calculate addon delivery metrics
     const totalAddonDeliveriesCount = Number(totalAddonDeliveries);
     const awaitingAddonDeliveryCount = Number(awaitingAddonDelivery);
     const inProgressAddonDeliveryCount = Number(inProgressAddonDelivery);
     const deliveredAddonDeliveryCount = Number(deliveredAddonDelivery);
     
+    // Calculate delivery rate
     const deliveryRate = totalAddonDeliveriesCount > 0 
-      ? (deliveredAddonDeliveryCount / totalAddonDeliveriesCount) * 100 
+      ? Math.round((deliveredAddonDeliveryCount / totalAddonDeliveriesCount) * 100)
       : 0;
     
+    // Calculate average delivery time in hours
     const avgDeliveryTimeHours = addonDeliveryTimes.length > 0
       ? addonDeliveryTimes.reduce((sum, delivery) => {
           const hours = (delivery.updatedAt.getTime() - delivery.createdAt.getTime()) / (1000 * 60 * 60);
@@ -535,24 +405,112 @@ export async function GET(request: NextRequest) {
           id: 'desc'
         }
       }
-    });
+    });    // 3. Daily/Hourly Revenue Trend (for charts)
+    const revenueTrend = await prisma.$queryRaw`
+      SELECT 
+        DATE(createdAt) as date,
+        COUNT(*) as transactions,
+        SUM(CAST(finalAmount AS DECIMAL(10,2))) as revenue
+      FROM Transaction 
+      WHERE 
+        status = 'paid' 
+        AND currency = ${currency}
+        AND createdAt >= ${dateFilter.gte}
+        AND createdAt < ${dateFilter.lt}
+      GROUP BY DATE(createdAt)
+      ORDER BY date ASC
+    ` as Array<{
+      date: string;
+      transactions: number;
+      revenue: number;
+    }>;
 
-    // Calculate processing time
-    const avgProcessingTimeMinutes = avgProcessingTime.length > 0 && avgProcessingTime[0].avgMinutes 
-      ? Number(avgProcessingTime[0].avgMinutes) 
+    // 4. User Growth Analytics
+    const [newUsers, totalActiveUsers] = await Promise.all([
+      prisma.user.count({
+        where: {
+          createdAt: dateFilter,
+          role: 'customer'
+        }
+      }),
+      
+      prisma.user.count({
+        where: {
+          isActive: true,
+          role: 'customer'
+        }
+      })    ]);
+
+    // Convert user counts to numbers
+    const newUsersCount = Number(newUsers);
+    const totalActiveUsersCount = Number(totalActiveUsers);
+
+    // 6. Voucher Usage Analytics
+    const voucherStats = await prisma.voucherUsage.aggregate({
+      where: {
+        usedAt: dateFilter,
+        transaction: {
+          currency: currency
+        }
+      },
+      _sum: {
+        discountAmount: true
+      },
+      _count: {
+        _all: true
+      }
+    });    // 7. Recent Transactions
+    const recentTransactions = await prisma.transaction.findMany({
+      where: {
+        currency: currency
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true
+          }
+        },
+        payment: {
+          select: {
+            method: true,
+            status: true
+          }
+        },        productTransactions: {
+          include: {
+            package: {
+              select: {
+                name_en: true,
+                name_id: true
+              }
+            }          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 10
+    });    // Calculate conversion rate
+    const conversionRate = totalTransactions > 0 
+      ? ((completedTransactions / totalTransactions) * 100) 
       : 0;
 
-    // Process data for response
-    const totalServiceFeeRevenue = Number(serviceFeeAnalytics._sum.serviceFee || 0);
-    const avgOrderValue = Number(revenueData._avg.finalAmount || 0);
+    // Calculate average order value
+    const avgOrderValue = Number(revenueData._avg.finalAmount || 0);    // Calculate growth rates
+    const prevMonthRevenue = Number(monthlyGrowth._sum.finalAmount || 0);
+    const currentRevenue = Number(revenueData._sum.finalAmount || 0);
+    const revenueGrowthRate = prevMonthRevenue > 0 
+      ? ((currentRevenue - prevMonthRevenue) / prevMonthRevenue) * 100 
+      : 0;    const prevMonthTransactions = Number(monthlyGrowth._count.id || 0);
+    const transactionGrowthRate = prevMonthTransactions > 0 
+      ? ((completedTransactions - prevMonthTransactions) / prevMonthTransactions) * 100 
+      : 0;
 
-    // Find peak transaction hour
-    const peakHour = hourlyDistribution.reduce((max, current) => 
-      Number(current.count) > Number(max.count) ? current : max, 
-      { hour: 0, count: 0 }
-    );
-
-    // Process payment method breakdown
+    // Calculate average processing time
+    const avgProcessingTimeMinutes = avgProcessingTime[0]?.avgMinutes || 0;    // Calculate total service fee revenue from multiple sources
+    const serviceFeeFromTransactions = Number(revenueData._sum.serviceFeeAmount || 0);
+    const serviceFeeFromPayments = Number(serviceFeeAnalytics._sum.serviceFee || 0);
+    const totalServiceFeeRevenue = serviceFeeFromTransactions + serviceFeeFromPayments;    // Process payment method breakdown
     const processedPaymentMethodBreakdown = paymentMethodBreakdown.map(method => ({
       method: method.method,
       count: Number(method._count.id || 0),
@@ -560,9 +518,7 @@ export async function GET(request: NextRequest) {
       percentage: completedTransactions > 0 
         ? Math.round(((Number(method._count.id || 0)) / completedTransactions) * 10000) / 100 
         : 0
-    }));
-
-    // Process hourly distribution for better insights
+    }));// Process hourly distribution for better insights
     const processedHourlyDistribution = Array.from({ length: 24 }, (_, hour) => {
       const hourData = hourlyDistribution.find(h => h.hour === hour);
       return {
@@ -572,71 +528,74 @@ export async function GET(request: NextRequest) {
           ? Math.round(((Number(hourData?.count || 0)) / completedTransactions) * 10000) / 100 
           : 0
       };
-    });
-
-    // Get top users with names
+    });// Get top users with names
     const topUsersWithNames = await Promise.all(
       topUsers.map(async (userStat) => {
+        if (!userStat.userId) return null;
         const user = await prisma.user.findUnique({
           where: { id: userStat.userId },
-          select: {
-            name: true,
-            email: true
-          }
+          select: { name: true, email: true }
         });
         return {
           userId: userStat.userId,
-          name: user?.name || 'Unknown User',
-          email: user?.email || 'No email',
-          transactionCount: Number(userStat._count.id),
-          totalRevenue: Number(userStat._sum.finalAmount || 0),
-          formattedRevenue: formatCurrency(Number(userStat._sum.finalAmount || 0), currency)
+          name: user?.name || user?.email || 'Unknown User',
+          transactionCount: (userStat._count as any)?.id || 0,
+          totalRevenue: Number((userStat._sum as any)?.finalAmount || 0)
         };
       })
-    );
-
-    // Process conversion funnel
+    ).then(results => results.filter(Boolean));    // Process conversion funnel
     const processedConversionFunnel = conversionFunnel.map(status => ({
       status: status.status,
       count: Number(status._count.id),
       percentage: totalTransactions > 0 
-        ? Math.round(((Number(status._count.id)) / totalTransactions) * 10000) / 100 
+        ? Math.round((Number(status._count.id) / totalTransactions) * 10000) / 100 
         : 0
     }));
 
-    // Process top products
-    const processedTopProducts = topProducts.map((transaction: any) => {
-      // Get the first product from the transaction
-      const firstProduct = transaction.productTransactions && transaction.productTransactions[0];
-      const productName = firstProduct?.package?.name_en || 'Unknown Product';
+    // Calculate peak hour
+    const peakHour = processedHourlyDistribution.reduce((max, curr) => 
+      curr.count > max.count ? curr : max, { hour: 0, count: 0 }
+    );    // Process top products data
+    const processedTopProducts = topProducts.map(transaction => {
+      let productName = 'Unknown Product';
+      let productType = 'unknown';
       
-      return {
-        id: transaction.id,
-        productName,
-        amount: Number(transaction.finalAmount || transaction.originalAmount || 0),
-        status: transaction.status,
-        currency: transaction.currency,
-        date: transaction.createdAt
-      };
-    });
-
-    // Process recent transactions
-    const processedRecentTransactions = recentTransactions.map((transaction: any) => {
-      // Determine the main item name
-      let itemName = 'Unknown Item';
-      
+      // Handle multiple products - take the first one for display
       if (transaction.productTransactions && transaction.productTransactions.length > 0) {
-        itemName = transaction.productTransactions[0].package?.name_en || 'Product Package';
-      } else if (transaction.whatsappTransaction) {
-        itemName = transaction.whatsappTransaction.whatsappPackage?.name_en || 'WhatsApp Package';
-      } else if (transaction.addonTransactions && transaction.addonTransactions.length > 0) {
-        itemName = transaction.addonTransactions[0].addon?.name_en || 'Addon Service';
+        const firstProduct = transaction.productTransactions[0];
+        if (firstProduct.package) {
+          productName = currency === 'idr' 
+            ? firstProduct.package.name_id 
+            : firstProduct.package.name_en;
+          productType = 'package';
+        }
       }
 
       return {
         id: transaction.id,
-        userName: transaction.user?.name || 'Unknown User',
-        userEmail: transaction.user?.email || 'No email',
+        productName,
+        productType,
+        amount: Number(transaction.finalAmount || transaction.originalAmount || 0),
+        currency: transaction.currency,
+        date: transaction.createdAt
+      };
+    });    // Process recent transactions for display
+    const processedRecentTransactions = recentTransactions.map(transaction => {
+      let itemName = 'Unknown Item';
+      
+      // Handle multiple products - take the first one for display  
+      if (transaction.productTransactions && transaction.productTransactions.length > 0) {
+        const firstProduct = transaction.productTransactions[0];
+        if (firstProduct.package) {
+          itemName = currency === 'idr' 
+            ? firstProduct.package.name_id 
+            : firstProduct.package.name_en;
+        }
+      }
+
+      return {
+        id: transaction.id,
+        customer: transaction.user?.name || transaction.user?.email || 'Unknown Customer',
         item: itemName,
         amount: Number(transaction.finalAmount || transaction.originalAmount || 0),
         status: transaction.status,
@@ -644,14 +603,11 @@ export async function GET(request: NextRequest) {
         currency: transaction.currency,
         date: transaction.createdAt
       };
-    });
-
-    return withCORS(NextResponse.json({
+    });return withCORS(NextResponse.json({
       success: true,
       data: {
         period,
-        currency,
-        overview: {
+        currency,        overview: {
           totalTransactions,
           completedTransactions,
           pendingTransactions,
@@ -672,8 +628,7 @@ export async function GET(request: NextRequest) {
           delivered: deliveredAddonDeliveryCount,
           deliveryRate: deliveryRate,
           avgDeliveryTime: Math.round(avgDeliveryTimeHours * 10) / 10
-        },
-        revenue: {
+        },revenue: {
           totalRevenue: Number(revenueData._sum.finalAmount || 0),
           grossRevenue: Number(revenueData._sum.originalAmount || 0),
           serviceFeeRevenue: totalServiceFeeRevenue,

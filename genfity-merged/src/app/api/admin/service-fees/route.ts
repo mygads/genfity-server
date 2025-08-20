@@ -1,27 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
-import jwt from 'jsonwebtoken';
+import { getAdminAuth } from "@/lib/auth-helpers";
 import { z } from "zod";
 
-// Helper function to verify admin JWT token
-async function verifyAdminToken(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.split(" ")[1];
-  
-  if (!token) {
-    return null;
-  }
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
-    if (decoded.role !== 'admin') {
-      return null;
-    }
-    return decoded;
-  } catch (error) {
-    return null;
-  }
+export async function OPTIONS() {
+  return corsOptionsResponse();
 }
 
 // Validation schema for service fee
@@ -36,7 +20,8 @@ const serviceFeeSchema = z.object({
     required_error: "Type is required",
     invalid_type_error: "Type must be either 'percentage' or 'fixed_amount'"
   }),
-  value: z.number().positive("Value must be positive"),  minFee: z.number().positive().optional().nullable().transform(val => val === null ? undefined : val),
+  value: z.number().positive("Value must be positive"),
+  minFee: z.number().positive().optional().nullable().transform(val => val === null ? undefined : val),
   maxFee: z.number().positive().optional().nullable().transform(val => val === null ? undefined : val),
   isActive: z.boolean().default(true),
   requiresManualApproval: z.boolean().default(false),
@@ -91,12 +76,12 @@ const serviceFeeSchema = z.object({
 // GET /api/admin/service-fees - Get all service fees
 export async function GET(request: NextRequest) {
   try {
-    const adminUser = await verifyAdminToken(request);
-    if (!adminUser) {
-      return withCORS(NextResponse.json(
-        { success: false, error: "Admin access required" },
-        { status: 403 }
-      ));
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json({ 
+        success: false, 
+        error: "Unauthorized" 
+      }, { status: 401 }));
     }
 
     const serviceFees = await prisma.serviceFee.findMany({
@@ -119,12 +104,12 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/service-fees - Create new service fee
 export async function POST(request: NextRequest) {
   try {
-    const adminUser = await verifyAdminToken(request);
-    if (!adminUser) {
-      return withCORS(NextResponse.json(
-        { success: false, error: "Admin access required" },
-        { status: 403 }
-      ));
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json({ 
+        success: false, 
+        error: "Unauthorized" 
+      }, { status: 401 }));
     }
 
     const body = await request.json();
@@ -135,7 +120,9 @@ export async function POST(request: NextRequest) {
         { success: false, error: validation.error.errors },
         { status: 400 }
       ));
-    }    const { paymentMethod, name, currency, type, value, minFee, maxFee, isActive, requiresManualApproval, paymentInstructions, instructionType, instructionImageUrl } = validation.data;
+    }
+
+    const { paymentMethod, name, currency, type, value, minFee, maxFee, isActive, requiresManualApproval, paymentInstructions, instructionType, instructionImageUrl } = validation.data;
 
     // Check payment method limit: max 2 fees per method (1 IDR + 1 USD)
     const existingFeesForMethod = await prisma.serviceFee.findMany({
@@ -159,7 +146,9 @@ export async function POST(request: NextRequest) {
         { success: false, error: `Service fee for ${paymentMethod} (${currency.toUpperCase()}) already exists` },
         { status: 409 }
       ));
-    }    const serviceFee = await prisma.serviceFee.create({
+    }
+
+    const serviceFee = await prisma.serviceFee.create({
       data: {
         paymentMethod,
         name,
@@ -188,8 +177,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     ));
   }
-}
-
-export async function OPTIONS() {
-  return corsOptionsResponse();
 }

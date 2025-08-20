@@ -138,7 +138,7 @@ export default function UsersPage() {
       if (search) params.set("search", search);
       if (roleFilter !== "all") params.set("role", roleFilter);
 
-      const res = await fetch(`/api/users?${params.toString()}`);
+      const res = await fetch(`/api/admin/users?${params.toString()}`);
       const data = await res.json();
       
       if (data.success) {
@@ -158,9 +158,7 @@ export default function UsersPage() {
   }, [limit, offset, search, roleFilter]);
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch('/api/users/stats', {
-        credentials: 'include',
-      });
+      const res = await fetch('/api/admin/users/stats');
       const data = await res.json();
       
       if (data.success) {

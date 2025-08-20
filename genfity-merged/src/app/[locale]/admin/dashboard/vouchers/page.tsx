@@ -26,16 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import CreateVoucherDialog from "./components/CreateVoucherDialog"
 import EditVoucherDialog from "./components/EditVoucherDialog"
 import VoucherDetailsDialog from "./components/VoucherDetailsDialog"
+import { SessionManager } from "@/lib/storage"
 
 interface Voucher {
   id: string
@@ -96,7 +91,15 @@ export default function VouchersPage() {
         ...(typeFilter !== "all" && { type: typeFilter }),
       })
 
-      const response = await fetch(`/api/admin/vouchers?${params}`)
+      // Get token for authentication
+      const token = SessionManager.getToken()
+      
+      const response = await fetch(`/api/admin/voucher?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
       if (response.ok) {
         const result = await response.json()
         if (result.success && result.data) {
@@ -122,14 +125,27 @@ export default function VouchersPage() {
   
   const fetchStats = async () => {
     try {
-      const response = await fetch("/api/admin/vouchers/stats")
+      // Get token for authentication
+      const token = SessionManager.getToken()
+      
+      const response = await fetch("/api/admin/voucher/stats", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
       if (response.ok) {
         const result = await response.json()
         if (result.success && result.data) {
           const data = result.data
           
           // Also get total voucher counts from main vouchers API
-          const vouchersResponse = await fetch("/api/admin/vouchers?limit=1000")
+          const vouchersResponse = await fetch("/api/admin/voucher?limit=1000", {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
           let totalVouchersCount = 0
           let activeVouchersCount = 0
           
@@ -170,8 +186,15 @@ export default function VouchersPage() {
     if (!confirm("Are you sure you want to delete this voucher?")) return
 
     try {
-      const response = await fetch(`/api/admin/vouchers/${voucherId}`, {
+      // Get token for authentication
+      const token = SessionManager.getToken()
+      
+      const response = await fetch(`/api/admin/voucher/${voucherId}`, {
         method: "DELETE",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       })
 
       if (response.ok) {
@@ -286,7 +309,7 @@ export default function VouchersPage() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
+        <div className="relative flex-1 ">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             placeholder="Search vouchers..."

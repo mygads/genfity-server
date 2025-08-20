@@ -74,6 +74,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const checkSession = async () => {
       setIsLoading(true)
       try {
+        // Check if we're in browser environment
+        if (typeof window === 'undefined') {
+          setIsLoading(false)
+          return
+        }
+
         // First check localStorage
         const localSession = SessionManager.getSession()
         
@@ -342,12 +348,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const token = (userData as any).token || result.data?.token
         
         if (token) {
-          // Create clean user object without token
+          // Create clean user object with all required fields including role
           const cleanUserData: User = {
             id: userData.id,
             name: userData.name,
             email: userData.email,
-            phone: userData.phone
+            phone: userData.phone,
+            role: userData.role || 'customer', // Include role
+            image: userData.image,
+            verification: userData.verification
           }
           
           // Save to localStorage
@@ -616,7 +625,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
-        token: SessionManager.getToken(),
+        token: typeof window !== 'undefined' ? SessionManager.getToken() : null,
         isLoading,
         signInWithPhone,
         verifyOtp,

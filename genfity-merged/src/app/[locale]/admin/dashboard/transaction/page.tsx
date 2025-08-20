@@ -215,13 +215,12 @@ export default function TransactionPage() {
     try {      const params = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
-        admin: 'true', // Add admin parameter for admin dashboard
       });
       
       if (transactionStatusFilter !== "all") params.set("status", transactionStatusFilter);
       if (typeFilter !== "all") params.set("type", typeFilter);
 
-      const res = await fetch(`/api/transactions?${params.toString()}`);
+      const res = await fetch(`/api/admin/transactions?${params.toString()}`);
       const data = await res.json();
       
       if (data.success) {

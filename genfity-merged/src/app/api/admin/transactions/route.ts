@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyUserToken, verifyAdminToken } from '@/lib/auth-helpers';
+import { verifyUserToken, getAdminAuth } from '@/lib/auth-helpers';
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { PaymentExpirationService } from "@/lib/payment-expiration";
 import { z } from "zod";
@@ -66,30 +66,26 @@ const createTransactionSchema = z.object({
   message: "Invalid transaction data for the specified type",
 });
 
-// GET /api/transactions - Get transactions (unified for both customer and admin)
+// GET /api/admin/transactions - Get all transactions for admin (admin only)
 export async function GET(request: NextRequest) {
   try {
-    const userVerification = await verifyUserToken(request);
-    if (!userVerification.success) {
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
       return withCORS(NextResponse.json(
-        { success: false, error: userVerification.error },
+        { success: false, error: "Admin access required" },
         { status: 401 }
       ));
     }
-
-    const userId = userVerification.userId;
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'product' | 'whatsapp_service' | null (all)
     const status = searchParams.get('status');
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 10;
     const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0;
-    const adminView = searchParams.get('admin') === 'true';
 
     const whereCondition: any = {};
 
-    // Regular users can only see their own transactions
-    whereCondition.userId = userId;
+    // Admin can see all transactions (no userId filter)
 
     if (type) {
       whereCondition.type = type;
@@ -117,15 +113,13 @@ export async function GET(request: NextRequest) {
               whatsappPackage: true,
             },
           },
-          ...(adminView && {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
             },
-          }),
+          },
         },
         orderBy: { createdAt: 'desc' },
         take: limit,

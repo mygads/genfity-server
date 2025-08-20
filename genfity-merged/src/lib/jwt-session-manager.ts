@@ -147,10 +147,21 @@ export async function verifyUserSession(token: string): Promise<{
  * Extract token from Authorization header (Bearer token)
  */
 export function extractTokenFromRequest(request: NextRequest): string | null {
+  // Priority 1: Check Authorization header
   const authHeader = request.headers.get('authorization');
-  
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7);
+  }
+  
+  // Priority 2: Check cookie
+  const cookieHeader = request.headers.get('cookie');
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(';').map(c => c.trim());
+    for (const cookie of cookies) {
+      if (cookie.startsWith('auth-token=')) {
+        return cookie.substring('auth-token='.length);
+      }
+    }
   }
   
   return null;

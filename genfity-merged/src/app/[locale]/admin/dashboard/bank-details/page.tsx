@@ -53,12 +53,7 @@ export default function BankDetailsPage() {
 
   const fetchBankDetails = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch('/api/admin/bank-details', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetch('/api/admin/bank-details');
       
       const result = await response.json();
       if (result.success) {
@@ -77,7 +72,6 @@ export default function BankDetailsPage() {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('adminToken');
       const url = editingBank 
         ? `/api/admin/bank-details/${editingBank.id}`
         : '/api/admin/bank-details';
@@ -87,7 +81,6 @@ export default function BankDetailsPage() {
       const response = await fetch(url, {
         method,
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
@@ -112,12 +105,8 @@ export default function BankDetailsPage() {
     if (!confirm('Are you sure you want to delete this bank detail?')) return;
     
     try {
-      const token = localStorage.getItem('adminToken');
       const response = await fetch(`/api/admin/bank-details/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
       
       const result = await response.json();

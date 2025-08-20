@@ -2,27 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { z } from 'zod';
-import jwt from 'jsonwebtoken';
-
-// Helper function to verify admin JWT token
-async function verifyAdminToken(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.split(" ")[1];
-  
-  if (!token) {
-    return null;
-  }
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
-    if (decoded.role !== 'admin') {
-      return null;
-    }
-    return decoded;
-  } catch (error) {
-    return null;
-  }
-}
+import { getAdminAuth } from '@/lib/auth-helpers';
+import { withCORS } from '@/lib/cors';
 
 // Validation schema for voucher creation/update
 const voucherSchema = z.object({
@@ -45,9 +26,12 @@ const voucherSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Check if user is authenticated and is admin
-    const adminUser = await verifyAdminToken(request);
+    const adminUser = await getAdminAuth(request);
     if (!adminUser) {
-      return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+      return withCORS(NextResponse.json({ 
+        success: false, 
+        error: 'Unauthorized access' 
+      }, { status: 401 }));
     }
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -140,9 +124,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check if user is authenticated and is admin
-    const adminUser = await verifyAdminToken(request);
-    if (!adminUser) {
-      return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: 'Admin access required' }, 
+        { status: 401 }
+      ));
     }
 
     const body = await request.json();

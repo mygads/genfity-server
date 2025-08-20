@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminToken } from '@/lib/auth-helpers';
+import { getAdminAuth } from '@/lib/auth-helpers';
+import { withCORS, corsOptionsResponse } from '@/lib/cors';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const adminVerification = await verifyAdminToken(request);
-    if (!adminVerification.success) {
-      return NextResponse.json({ error: adminVerification.error }, { status: 401 });
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 401 }
+      ));
     }
 
     // Get servers from database
@@ -17,22 +21,28 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({ servers });
+    return withCORS(NextResponse.json({ 
+      success: true,
+      data: servers 
+    }));
   } catch (error) {
     console.error('Error fetching servers:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
+    return withCORS(NextResponse.json(
+      { success: false, error: 'Failed to fetch servers' },
       { status: 500 }
-    );
+    ));
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const adminVerification = await verifyAdminToken(request);
-    if (!adminVerification.success) {
-      return NextResponse.json({ error: adminVerification.error }, { status: 401 });
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 401 }
+      ));
     }
 
     const digitalOceanToken = process.env.DO_API_TOKEN;
@@ -96,16 +106,21 @@ export async function POST(request: NextRequest) {
       updatedServers.push(server);
     }
 
-    return NextResponse.json({ 
+    return withCORS(NextResponse.json({ 
+      success: true,
       message: 'Servers updated successfully',
-      servers: updatedServers,
+      data: updatedServers,
       count: updatedServers.length
-    });
+    }));
   } catch (error) {
     console.error('Error updating servers:', error);
-    return NextResponse.json(
-      { error: 'Failed to update servers' },
+    return withCORS(NextResponse.json(
+      { success: false, error: 'Failed to update servers' },
       { status: 500 }
-    );
+    ));
   }
+}
+
+export async function OPTIONS() {
+  return corsOptionsResponse();
 }

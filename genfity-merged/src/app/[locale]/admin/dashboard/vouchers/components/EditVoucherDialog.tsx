@@ -26,6 +26,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
+import { SessionManager } from "@/lib/storage"
 
 interface Voucher {
   id: string
@@ -171,10 +172,14 @@ export default function EditVoucherDialog({
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/admin/vouchers/${voucher.id}`, {
+      // Get token for authentication
+      const token = SessionManager.getToken()
+      
+      const response = await fetch(`/api/admin/voucher/${voucher.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
           ...formData,

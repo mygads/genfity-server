@@ -24,6 +24,11 @@ const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
 export class SessionManager {
   static saveSession(userData: any, token: string): void {
     try {
+      // Check if we're in browser environment
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return
+      }
+
       const session: UserSession = {
         id: userData.id,
         name: userData.name,
@@ -52,6 +57,11 @@ export class SessionManager {
 
   static getSession(): UserSession | null {
     try {
+      // Check if we're in browser environment
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return null
+      }
+
       const sessionData = localStorage.getItem(STORAGE_KEYS.USER_SESSION)
       
       if (!sessionData) {
@@ -111,6 +121,11 @@ export class SessionManager {
 
   static clearSession(): void {
     try {
+      // Check if we're in browser environment
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return
+      }
+
       localStorage.removeItem(STORAGE_KEYS.USER_SESSION)
       localStorage.removeItem(STORAGE_KEYS.TOKEN)
       
@@ -125,6 +140,11 @@ export class SessionManager {
 
   static updateSession(updates: Partial<UserSession>): void {
     try {
+      // Check if we're in browser environment
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return
+      }
+
       const currentSession = this.getSession()
       
       if (!currentSession) {
@@ -146,6 +166,11 @@ export class SessionManager {
 
   static refreshSession(): void {
     try {
+      // Check if we're in browser environment
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return
+      }
+
       const currentSession = this.getSession()
       
       if (!currentSession) {
@@ -198,6 +223,11 @@ export class SessionManager {
   // Auto-refresh session (extend expiry by 7 days)
   static autoRefreshSession(): boolean {
     try {
+      // Check if we're in browser environment
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return false
+      }
+
       const session = this.getSession()
       if (!session) return false
 

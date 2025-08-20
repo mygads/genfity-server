@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminToken } from '@/lib/auth-helpers';
+import { getAdminAuth } from '@/lib/auth-helpers';
+import { withCORS, corsOptionsResponse } from '@/lib/cors';
 
 /**
  * DigitalOcean Monitoring Metrics API
@@ -38,9 +39,12 @@ export async function GET(
 ) {
   try {
     // Check authentication
-    const adminVerification = await verifyAdminToken(request);
-    if (!adminVerification.success) {
-      return NextResponse.json({ error: adminVerification.error }, { status: 401 });
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json(
+        { success: false, error: "Admin access required" },
+        { status: 401 }
+      ));
     }
 
     const { id } = await params;
@@ -113,7 +117,8 @@ export async function GET(
       console.warn(`Failed to fetch ${metricType} metrics for droplet ${dropletId}`);
 
       // Return sample data structure matching DigitalOcean API format
-      return NextResponse.json({
+      return withCORS(NextResponse.json({
+        success: true,
         status: 'success',
         data: {
           resultType: 'matrix',
@@ -126,18 +131,25 @@ export async function GET(
             },
           ],
         },
-      });
+      }));
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return withCORS(NextResponse.json({
+      success: true,
+      data: data
+    }));
   } catch (error) {
     console.error('Error fetching server metrics:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch server metrics' },
+    return withCORS(NextResponse.json(
+      { success: false, error: 'Failed to fetch server metrics' },
       { status: 500 }
-    );
+    ));
   }
+}
+
+export async function OPTIONS() {
+  return corsOptionsResponse();
 }
 
 // Generate sample metrics when real data is not available

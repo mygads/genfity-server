@@ -1,27 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withCORS, corsOptionsResponse } from '@/lib/cors';
+import { getAdminAuth } from '@/lib/auth-helpers';
 import { Decimal } from '@prisma/client/runtime/library';
 import { z } from 'zod';
-import jwt from 'jsonwebtoken';
 
-// Helper function to verify admin JWT token
-async function verifyAdminToken(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.split(" ")[1];
-  
-  if (!token) {
-    return null;
-  }
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
-    if (decoded.role !== 'admin') {
-      return null;
-    }
-    return decoded;
-  } catch (error) {
-    return null;
-  }
+export async function OPTIONS() {
+  return corsOptionsResponse();
 }
 
 // Validation schema for voucher update
@@ -51,9 +36,12 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     // Check if user is authenticated and is admin
-    const adminUser = await verifyAdminToken(request);
-    if (!adminUser) {
-      return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json({ 
+        success: false, 
+        error: 'Unauthorized access' 
+      }, { status: 401 }));
     }
 
     const { id } = await params;
@@ -90,22 +78,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!voucher) {
-      return NextResponse.json(
+      return withCORS(NextResponse.json(
         { success: false, error: 'Voucher not found' },
         { status: 404 }
-      );
+      ));
     }
 
-    return NextResponse.json({
+    return withCORS(NextResponse.json({
       success: true,
       data: voucher,
-    });
+    }));
   } catch (error) {
     console.error('Error fetching voucher:', error);
-    return NextResponse.json(
+    return withCORS(NextResponse.json(
       { success: false, error: 'Failed to fetch voucher' },
       { status: 500 }
-    );
+    ));
   }
 }
 
@@ -113,9 +101,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     // Check if user is authenticated and is admin
-    const adminUser = await verifyAdminToken(request);
-    if (!adminUser) {
-      return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json({ 
+        success: false, 
+        error: 'Unauthorized access' 
+      }, { status: 401 }));
     }
 
     const { id } = await params;
@@ -128,10 +119,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!existingVoucher) {
-      return NextResponse.json(
+      return withCORS(NextResponse.json(
         { success: false, error: 'Voucher not found' },
         { status: 404 }
-      );
+      ));
     }
 
     // Check if code already exists (if updating code)
@@ -141,10 +132,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       });
 
       if (codeExists) {
-        return NextResponse.json(
+        return withCORS(NextResponse.json(
           { success: false, error: 'Voucher code already exists' },
           { status: 400 }
-        );
+        ));
       }
     }
 
@@ -184,23 +175,23 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       },
     });
 
-    return NextResponse.json({
+    return withCORS(NextResponse.json({
       success: true,
       data: voucher,
-    });
+    }));
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
+      return withCORS(NextResponse.json(
         { success: false, error: 'Validation failed', details: error.errors },
         { status: 400 }
-      );
+      ));
     }
 
     console.error('Error updating voucher:', error);
-    return NextResponse.json(
+    return withCORS(NextResponse.json(
       { success: false, error: 'Failed to update voucher' },
       { status: 500 }
-    );
+    ));
   }
 }
 
@@ -208,9 +199,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     // Check if user is authenticated and is admin
-    const adminUser = await verifyAdminToken(request);
-    if (!adminUser) {
-      return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+    const adminAuth = await getAdminAuth(request);
+    if (!adminAuth) {
+      return withCORS(NextResponse.json({ 
+        success: false, 
+        error: 'Unauthorized access' 
+      }, { status: 401 }));
     }
 
     const { id } = await params;
@@ -229,21 +223,21 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!existingVoucher) {
-      return NextResponse.json(
+      return withCORS(NextResponse.json(
         { success: false, error: 'Voucher not found' },
         { status: 404 }
-      );
+      ));
     }
 
     // Check if voucher has been used
     if (existingVoucher._count.voucherUsage > 0 || existingVoucher._count.transactions > 0) {
-      return NextResponse.json(
+      return withCORS(NextResponse.json(
         { 
           success: false, 
           error: 'Cannot delete voucher that has been used. You can deactivate it instead.' 
         },
         { status: 400 }
-      );
+      ));
     }
 
     // Delete voucher
@@ -251,15 +245,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       where: { id },
     });
 
-    return NextResponse.json({
+    return withCORS(NextResponse.json({
       success: true,
       message: 'Voucher deleted successfully',
-    });
+    }));
   } catch (error) {
     console.error('Error deleting voucher:', error);
-    return NextResponse.json(
+    return withCORS(NextResponse.json(
       { success: false, error: 'Failed to delete voucher' },
       { status: 500 }
-    );
+    ));
   }
 }
