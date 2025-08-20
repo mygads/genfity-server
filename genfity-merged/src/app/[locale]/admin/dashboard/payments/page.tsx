@@ -30,7 +30,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { 
+import {
   Search,
   Filter,
   Download,
@@ -45,8 +45,11 @@ import {
   CalendarDays,
   RefreshCw,
   AlertTriangle,
+  Loader2,
 } from "lucide-react"
 import { format } from "date-fns"
+import { toast } from 'sonner'
+import { SessionManager } from '@/lib/storage'
 import { PaymentStatusBadge, TransactionStatusBadge } from "@/components/payments/PaymentStatusBadge"
 import { ExpirationTimer as ExpirationTimerComponent, ExpirationInfo } from "@/components/payments/ExpirationTimer"
 
@@ -137,6 +140,9 @@ export default function PaymentsPage() {
   const fetchPayments = useCallback(async () => {
     setLoading(true)
     try {
+      // Get token for authentication
+      const token = SessionManager.getToken()
+      
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '10',
@@ -148,18 +154,29 @@ export default function PaymentsPage() {
         ...(filters.dateTo && { dateTo: filters.dateTo }),
       })
 
-      const response = await fetch(`/api/admin/payments?${params}`)
+      const response = await fetch(`/api/admin/payments?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
       const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch payments')
+      }
 
       if (data.success) {
         setPayments(data.data.payments)
         setStats(data.data.statistics)
         setTotalPages(data.data.pagination.totalPages)
       } else {
-        console.error('Failed to fetch payments:', data.error)
+        throw new Error(data.error || 'Failed to fetch payments')
       }
     } catch (error) {
       console.error('Error fetching payments:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to load payments')
     } finally {
       setLoading(false)
     }
@@ -169,9 +186,15 @@ export default function PaymentsPage() {
   const handlePaymentAction = async (paymentId: string, action: 'approve' | 'reject') => {
     setActionLoading(paymentId)
     try {
+      // Get token for authentication
+      const token = SessionManager.getToken()
+      
       const response = await fetch(`/api/admin/payments/${paymentId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           action,
           adminNotes,
@@ -180,7 +203,12 @@ export default function PaymentsPage() {
 
       const data = await response.json()
 
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to ${action} payment`)
+      }
+
       if (data.success) {
+        toast.success(`Payment ${action}d successfully`)
         // Refresh payments list
         await fetchPayments()
         setShowApprovalDialog(false)
@@ -188,10 +216,11 @@ export default function PaymentsPage() {
         setSelectedPayment(null)
         setApprovalAction(null)
       } else {
-        console.error(`Failed to ${action} payment:`, data.error)
+        throw new Error(data.error || `Failed to ${action} payment`)
       }
     } catch (error) {
       console.error(`Error ${action}ing payment:`, error)
+      toast.error(error instanceof Error ? error.message : `Failed to ${action} payment`)
     } finally {
       setActionLoading(null)
     }
@@ -563,11 +592,15 @@ export default function PaymentsPage() {
                                   setApprovalAction('approve')
                                   setShowApprovalDialog(true)
                                 }}
-                                disabled={actionLoading === payment.id || payment.expirationInfo?.isPaymentExpired || payment.expirationInfo?.isTransactionExpired}
+                                disabled={loading || actionLoading === payment.id || payment.expirationInfo?.isPaymentExpired || payment.expirationInfo?.isTransactionExpired}
                                 className="text-green-600 border-green-200 hover:bg-green-50 disabled:opacity-50"
                                 title={payment.expirationInfo?.isPaymentExpired || payment.expirationInfo?.isTransactionExpired ? "Payment or transaction expired" : "Approve payment"}
                               >
-                                <CheckCircle className="h-4 w-4" />
+                                {actionLoading === payment.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="h-4 w-4" />
+                                )}
                               </Button>
                               <Button
                                 variant="outline"
@@ -577,10 +610,14 @@ export default function PaymentsPage() {
                                   setApprovalAction('reject')
                                   setShowApprovalDialog(true)
                                 }}
-                                disabled={actionLoading === payment.id}
+                                disabled={loading || actionLoading === payment.id}
                                 className="text-red-600 border-red-200 hover:bg-red-50"
                               >
-                                <XCircle className="h-4 w-4" />
+                                {actionLoading === payment.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <XCircle className="h-4 w-4" />
+                                )}
                               </Button>
                             </div>
                           )}
@@ -826,6 +863,111 @@ export default function PaymentsPage() {
                 >
                   Close                
                   </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Approval Dialog */}
+      <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {approvalAction === 'approve' ? 'Approve Payment' : 'Reject Payment'}
+            </DialogTitle>
+            <DialogDescription>
+              {approvalAction === 'approve' 
+                ? 'Confirm that the payment has been received and approve this transaction.'
+                : 'Reject this payment and mark the transaction as failed.'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedPayment && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div className="font-medium">Amount</div>
+                  <div>{formatCurrency(selectedPayment.amount, selectedPayment.transaction?.currency || 'idr')}</div>
+                </div>
+                <div>
+                  <div className="font-medium">Method</div>
+                  <div>{(() => {
+                    const methodLabels: Record<string, string> = {
+                      'manual_bank_transfer': 'Manual Bank Transfer',
+                      'va_bca': 'Virtual Account - BCA',
+                      'va_mandiri': 'Virtual Account - Mandiri',
+                      'va_bni': 'Virtual Account - BNI',
+                      'va_bri': 'Virtual Account - BRI',
+                      'va_permata': 'Virtual Account - Permata',
+                      'va_cimb': 'Virtual Account - CIMB Niaga',
+                      'qris': 'QRIS',
+                      'card_domestic': 'Card Payment (Domestic)',
+                      'card_international': 'Card Payment (International)',
+                      'virtual_account': 'Virtual Account',
+                      'credit_card': 'Card Payment',
+                      'debit_card': 'Card Payment',
+                      'bank_transfer': 'Manual Bank Transfer',
+                      'e_wallet': 'Virtual Account',
+                      'gopay': 'Virtual Account',
+                      'ovo': 'Virtual Account',
+                      'dana': 'Virtual Account',
+                      'shopeepay': 'Virtual Account',
+                    }
+                    return methodLabels[selectedPayment.method] || selectedPayment.method.replace('_', ' ')
+                  })()}</div>
+                </div>
+                <div>
+                  <div className="font-medium">Customer</div>
+                  <div>{selectedPayment.transaction?.user?.name || 'N/A'}</div>
+                </div>
+                <div>
+                  <div className="font-medium">Transaction ID</div>
+                  <div className="font-mono text-xs">{selectedPayment.transaction?.id}</div>
+                </div>
+              </div>
+              
+              <div>
+                <label htmlFor="adminNotes" className="block text-sm font-medium mb-2">
+                  Admin Notes {approvalAction === 'reject' && <span className="text-red-500">*</span>}
+                </label>
+                <textarea
+                  id="adminNotes"
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  placeholder={
+                    approvalAction === 'approve' 
+                      ? 'Optional notes about payment verification...'
+                      : 'Reason for rejection (required)...'
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => selectedPayment && handlePaymentAction(selectedPayment.id, approvalAction!)}
+                  disabled={actionLoading === selectedPayment.id || (approvalAction === 'reject' && !adminNotes.trim())}
+                  className={approvalAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                >
+                  {actionLoading === selectedPayment.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
+                  {approvalAction === 'approve' ? 'Approve Payment' : 'Reject Payment'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowApprovalDialog(false)
+                    setAdminNotes('')
+                    setApprovalAction(null)
+                  }}
+                  disabled={actionLoading === selectedPayment.id}
+                >
+                  Cancel
+                </Button>
               </div>
             </div>
           )}

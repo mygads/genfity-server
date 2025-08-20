@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { toast } from 'sonner';
+import { SessionManager } from '@/lib/storage';
 import { 
   CreditCard, 
   Search,
@@ -30,7 +32,8 @@ import {
   Check,
   MoreHorizontal,
   Edit,
-  Trash2
+  Trash2,
+  Loader2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -212,7 +215,11 @@ export default function TransactionPage() {
   };
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
-    try {      const params = new URLSearchParams({
+    try {
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
+      const params = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
       });
@@ -220,7 +227,17 @@ export default function TransactionPage() {
       if (transactionStatusFilter !== "all") params.set("status", transactionStatusFilter);
       if (typeFilter !== "all") params.set("type", typeFilter);
 
-      const res = await fetch(`/api/admin/transactions?${params.toString()}`);
+      const res = await fetch(`/api/admin/transactions?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
       const data = await res.json();
       
       if (data.success) {
@@ -229,10 +246,11 @@ export default function TransactionPage() {
         setHasMore(data.pagination?.hasMore || false);
         calculateStats(data.data || []);
       } else {
-        console.error("Error fetching transactions:", data.error);
+        throw new Error(data.error || 'Failed to fetch transactions');
       }
     } catch (error) {
       console.error("Error fetching transactions:", error);
+      toast.error(error instanceof Error ? error.message : 'Failed to fetch transactions');
     } finally {
       setLoading(false);
     }
@@ -386,22 +404,32 @@ export default function TransactionPage() {
 
   const handleConfirmTransaction = async (transactionId: string) => {
     try {
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
       const res = await fetch(`/api/transactions/${transactionId}/confirm`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
       });
 
-      if (res.ok) {
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      
+      if (data.success) {
+        toast.success('Transaction confirmed successfully');
         fetchTransactions();
       } else {
-        const errorData = await res.json();
-        console.error("Error confirming transaction:", errorData.error);
-        // You might want to show a toast notification here
+        throw new Error(data.error || 'Failed to confirm transaction');
       }
     } catch (error) {
       console.error("Error confirming transaction:", error);
+      toast.error(error instanceof Error ? error.message : 'Failed to confirm transaction');
     }
   };
 
@@ -458,107 +486,64 @@ export default function TransactionPage() {
             Refresh
           </Button>
         </div>
-      </div>      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Transactions</p>
-                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{stats.total}</p>
-              </div>
-              <Activity className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-600 dark:text-green-400">Completed</p>
-                <p className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.success}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-orange-600 dark:text-orange-400">In Progress</p>
-                <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">{stats.inProgress}</p>
-              </div>
-              <Clock className="w-8 h-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Total Revenue</p>
-                <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                  {formatCurrency(stats.totalRevenue)}
-                </p>
-              </div>
-              <DollarSign className="w-8 h-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Payment Status Stats */}
-      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border-yellow-200 dark:border-yellow-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Pending Payment</p>
-                <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{stats.pending}</p>
-              </div>              
-              <Clock className="w-8 h-8 text-yellow-500" />
-            </div>
-          </CardContent>
-        </Card>        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-600 dark:text-green-400">Success</p>
-                <p className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.success}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Statistics Cards */}
+      {stats && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total}</div>
+              <p className="text-xs text-muted-foreground">
+                {formatCurrency(stats.totalRevenue)} total value
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">In Progress</p>
-                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{stats.inProgress}</p>
-              </div>
-              <Clock className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+              <Clock className="h-4 w-4 text-yellow-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">{stats.inProgress}</div>
+              <p className="text-xs text-muted-foreground">
+                Pending completion
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Cancelled</p>
-                <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">{stats.cancelled}</p>
-              </div>
-              <X className="w-8 h-8 text-gray-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div> */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Completed</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{stats.success}</div>
+              <p className="text-xs text-muted-foreground">
+                Successfully processed
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+              <TrendingUp className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">{formatCurrency(stats.monthlyRevenue)}</div>
+              <p className="text-xs text-muted-foreground">
+                Current month
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Filters */}
       <Card>
@@ -742,7 +727,7 @@ export default function TransactionPage() {
                             
                             {/* Payment Detail Button - only show if payment exists */}
                             {transaction.payment && (
-                              <DropdownMenuItem onClick={() => router.push(`/dashboard/payments/${transaction.payment!.id}`)}>
+                              <DropdownMenuItem onClick={() => router.push(`/admin/dashboard/payments/${transaction.payment!.id}`)}>
                                 <CreditCard className="w-4 h-4 mr-2" />
                                 Payment Details
                               </DropdownMenuItem>
@@ -1016,7 +1001,7 @@ export default function TransactionPage() {
                     {/* Navigation Button */}
                     <div className="border-t pt-3">
                       <Button
-                        onClick={() => router.push(`/dashboard/payments/${selectedTransaction.payment!.id}`)}
+                        onClick={() => router.push(`/admin/dashboard/payments/${selectedTransaction.payment!.id}`)}
                         className="w-full"
                         size="sm"
                       >
