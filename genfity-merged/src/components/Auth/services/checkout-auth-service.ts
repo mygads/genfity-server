@@ -20,9 +20,9 @@ export class CheckoutAuthService {
         }),
       })
       const res = await response.json()
-      return { error: null, success: true, checkoutData: res.checkoutData, otp: res.otp }
+      return { error: undefined, success: true, checkoutData: res.checkoutData, otp: res.otp }
     } catch (error: any) {
-      return { error, success: false }
+      return { error: error.message || 'Checkout failed', success: false }
     }
   }  // Verify checkout OTP and create/login user
   static async verifyCheckoutOtp(
@@ -59,7 +59,7 @@ export class CheckoutAuthService {
         passwordGenerated: passwordGenerated
       }
     } catch (error: any) {
-      return { error, success: false, isNewUser: false, token: undefined, user: undefined }
+      return { error: error.message || 'Verification failed', success: false, isNewUser: false, token: undefined, user: undefined }
     }
   }
 }

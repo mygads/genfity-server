@@ -2,7 +2,13 @@ export interface User {
     id: string
     name: string
     email: string
-    phone: string
+    phone?: string
+    role?: string
+    image?: string | null
+    verification?: {
+      phoneVerified?: Date | null
+      emailVerified?: Date | null
+    }
   }
   
   export interface AuthError {
@@ -30,6 +36,8 @@ export interface User {
   export interface VerifyCheckoutOtpResponse extends AuthResponse {
     isNewUser: boolean
     user?: User | null
+    token?: string
+    passwordGenerated?: boolean
   }
   
   export interface ProfileUpdateData {
@@ -38,9 +46,15 @@ export interface User {
   }
   
   export interface TempCheckoutData {
+    id?: string
     name: string
     email: string
     phone: string
+    packages?: string[]
+    addons?: string[]
+    totalAmount?: number
+    createdAt?: Date
+    expiresAt?: Date
   }
   
   export interface SignInPayload {

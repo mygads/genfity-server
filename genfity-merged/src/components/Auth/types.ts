@@ -35,23 +35,25 @@ export interface VerifyOtpResponse {
 
 export interface VerifyCheckoutOtpResponse {
   success: boolean;
+  isNewUser: boolean;
   user?: User;
   token?: string;
   message?: string;
-  error?: string;
+  error: any;
+  passwordGenerated?: boolean;
   checkoutData?: TempCheckoutData;
 }
 
 export interface TempCheckoutData {
-  id: string;
+  id?: string;
   phone: string;
   name: string;
   email: string;
-  packages: string[];
-  addons: string[];
-  totalAmount: number;
-  createdAt: Date;
-  expiresAt: Date;
+  packages?: string[];
+  addons?: string[];
+  totalAmount?: number;
+  createdAt?: Date;
+  expiresAt?: Date;
 }
 
 export interface SignupData {

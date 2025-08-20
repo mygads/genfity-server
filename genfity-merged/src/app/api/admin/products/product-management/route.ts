@@ -103,7 +103,6 @@ export async function GET(request: NextRequest) {
               categoryId: cat.id,
               subcategoryId: sub.id,
               popular: pkg.popular,
-              bgColor: pkg.bgColor,
               features: pkg.features.map(feature => ({
                 id: feature.id,
                 name_en: feature.name_en,
@@ -154,7 +153,6 @@ export async function GET(request: NextRequest) {
                   price_usd: Number(pkg.price_usd),
                   image: pkg.image,
                   popular: pkg.popular,
-                  bgColor: pkg.bgColor,
                   features: pkg.features.map(feature => ({
                     id: feature.id,
                     name_en: feature.name_en,

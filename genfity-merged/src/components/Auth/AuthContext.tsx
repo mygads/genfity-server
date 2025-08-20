@@ -108,8 +108,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             SessionManager.clearSession()
           } catch (sessionError) {
             console.log("[AuthContext] Backend session check failed:", sessionError)
-            // Keep local session if backend is unreachable
-            setUser(localSession)
+            // Keep local session if backend is unreachable - convert UserSession to User
+            const userData: User = {
+              id: localSession.id,
+              name: localSession.name,
+              email: localSession.email,
+              phone: localSession.phone,
+              role: localSession.role,
+              image: localSession.image,
+              verification: {
+                phoneVerified: localSession.verification?.phoneVerified ? new Date(localSession.verification.phoneVerified) : null,
+                emailVerified: localSession.verification?.emailVerified ? new Date(localSession.verification.emailVerified) : null
+              }
+            }
+            setUser(userData)
             setIsLoading(false)
             return
           }
@@ -502,7 +514,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setTempCheckoutData(result.checkoutData)
       setTempOtp(result.otp)
     } else if (result.error) {
-      setError(result.error.message)
+      const errorMessage = typeof result.error === 'string' ? result.error : 
+                         (result.error as any)?.message || 'Checkout failed'
+      setError(errorMessage)
     }
     return { error: result.error, success: result.success }
   }
@@ -526,7 +540,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(result.user)
       }
     } else if (result.error) {
-      setError(result.error.message)
+      const errorMessage = typeof result.error === 'string' ? result.error : 
+                         (result.error as any)?.message || 'Verification failed'
+      setError(errorMessage)
     }
     return result
   }
