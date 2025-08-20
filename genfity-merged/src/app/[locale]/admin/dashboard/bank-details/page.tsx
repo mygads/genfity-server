@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, Edit, Plus, Building2 } from 'lucide-react';
+import { Trash2, Edit, Plus, Building2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { SessionManager } from '@/lib/storage';
 
 interface BankDetail {
   id: string;
@@ -47,21 +48,37 @@ export default function BankDetailsPage() {
     isActive: true,
   });
 
+  // Delete confirmation dialog state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [bankToDelete, setBankToDelete] = useState<{ id: string; bankName: string; accountNumber: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     fetchBankDetails();
   }, []);
 
   const fetchBankDetails = async () => {
     try {
-      const response = await fetch('/api/admin/bank-details');
+      setLoading(true);
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
+      const response = await fetch('/api/admin/bank-details', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       const result = await response.json();
       if (result.success) {
         setBankDetails(result.data);
       } else {
-        toast.error('Failed to fetch bank details');
+        toast.error(result.error || 'Failed to fetch bank details');
       }
     } catch (error) {
+      console.error('Error fetching bank details:', error);
       toast.error('Error fetching bank details');
     } finally {
       setLoading(false);
@@ -71,7 +88,13 @@ export default function BankDetailsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (isSubmitting) return;
+    
     try {
+      setIsSubmitting(true);
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
       const url = editingBank 
         ? `/api/admin/bank-details/${editingBank.id}`
         : '/api/admin/bank-details';
@@ -82,43 +105,79 @@ export default function BankDetailsPage() {
         method,
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
       
       const result = await response.json();
       
+      if (!response.ok) {
+        throw new Error(result.error || `Failed to ${editingBank ? 'update' : 'create'} bank detail`);
+      }
+      
       if (result.success) {
-        toast.success(result.message);
+        toast.success(result.message || `Bank detail ${editingBank ? 'updated' : 'created'} successfully`);
         fetchBankDetails();
         setIsDialogOpen(false);
         resetForm();
       } else {
-        toast.error(result.error || 'Failed to save bank detail');
+        toast.error(result.error || `Failed to ${editingBank ? 'update' : 'save'} bank detail`);
       }
     } catch (error) {
-      toast.error('Error saving bank detail');
+      console.error('Error saving bank detail:', error);
+      toast.error(error instanceof Error ? error.message : 'Error saving bank detail');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this bank detail?')) return;
+  // Handle delete - show confirmation dialog
+  const handleDeleteClick = (bank: BankDetail) => {
+    setBankToDelete({ 
+      id: bank.id, 
+      bankName: bank.bankName,
+      accountNumber: bank.accountNumber 
+    });
+    setDeleteConfirmOpen(true);
+  };
+
+  // Actual delete operation
+  const handleConfirmDelete = async () => {
+    if (!bankToDelete) return;
     
     try {
-      const response = await fetch(`/api/admin/bank-details/${id}`, {
+      setIsDeleting(true);
+      // Get token for authentication
+      const token = SessionManager.getToken();
+      
+      const response = await fetch(`/api/admin/bank-details/${bankToDelete.id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
       const result = await response.json();
       
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete bank detail');
+      }
+      
       if (result.success) {
-        toast.success('Bank detail deleted successfully');
+        toast.success(`Bank detail "${bankToDelete.bankName}" deleted successfully`);
         fetchBankDetails();
+        setDeleteConfirmOpen(false);
+        setBankToDelete(null);
       } else {
         toast.error(result.error || 'Failed to delete bank detail');
       }
     } catch (error) {
-      toast.error('Error deleting bank detail');
+      console.error('Error deleting bank detail:', error);
+      toast.error(error instanceof Error ? error.message : 'Error deleting bank detail');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -159,7 +218,7 @@ export default function BankDetailsPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Bank Details</h1>
@@ -255,11 +314,27 @@ export default function BankDetailsPage() {
               </div>
               
               <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {editingBank ? 'Update' : 'Create'}
+                <Button 
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      {editingBank ? 'Updating...' : 'Creating...'}
+                    </>
+                  ) : (
+                    editingBank ? 'Update' : 'Create'
+                  )}
                 </Button>
               </div>
             </form>
@@ -312,7 +387,8 @@ export default function BankDetailsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDelete(bank.id)}
+                    onClick={() => handleDeleteClick(bank)}
+                    className="text-red-600 hover:text-red-700"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -342,6 +418,68 @@ export default function BankDetailsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the bank detail for{' '}
+              <span className="font-semibold text-foreground">
+                {bankToDelete?.bankName}
+              </span>
+              {' '}({bankToDelete?.accountNumber})?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-red-700 dark:text-red-300">
+                <p className="font-medium">This action cannot be undone.</p>
+                <p className="mt-1">
+                  The bank detail will be permanently removed and cannot be used for future payments.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteConfirmOpen(false);
+                setBankToDelete(null);
+              }}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="gap-2"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Delete Bank Detail
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
