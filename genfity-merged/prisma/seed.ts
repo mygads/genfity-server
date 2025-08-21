@@ -26,7 +26,7 @@ async function main() {
     data: {
       name_en: 'Web Development',
       name_id: 'Pengembangan Web',
-      icon: '🌐'
+      icon: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2071&q=80'
     }
   });
 
@@ -34,7 +34,7 @@ async function main() {
     data: {
       name_en: 'SEO Services',
       name_id: 'Layanan SEO',
-      icon: '🔍'
+      icon: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2071&q=80'
     }
   });
 
@@ -42,7 +42,7 @@ async function main() {
     data: {
       name_en: 'Design Services',
       name_id: 'Layanan Desain',
-      icon: '🎨'
+      icon: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2071&q=80'
     }
   });
 
@@ -118,8 +118,7 @@ async function main() {
       price_idr: 2500000,
       price_usd: 165,
       image: 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2069&q=80',
-      popular: true,
-      bgColor: '#E3F2FD'
+      popular: true
     }
   });
 
@@ -134,8 +133,7 @@ async function main() {
       price_idr: 5000000,
       price_usd: 330,
       image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2015&q=80',
-      popular: false,
-      bgColor: '#F3E5F5'
+      popular: false
     }
   });
 
@@ -150,8 +148,7 @@ async function main() {
       price_idr: 15000000,
       price_usd: 990,
       image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80',
-      popular: false,
-      bgColor: '#E8F5E8'
+      popular: false
     }
   });
 
@@ -166,8 +163,7 @@ async function main() {
       price_idr: 3500000,
       price_usd: 230,
       image: 'https://images.unsplash.com/photo-1562577309-4932fdd64cd1?ixlib=rb-4.0.3&auto=format&fit=crop&w=2074&q=80',
-      popular: true,
-      bgColor: '#FFF3E0'
+      popular: true
     }
   });
 
@@ -182,8 +178,7 @@ async function main() {
       price_idr: 1500000,
       price_usd: 99,
       image: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2071&q=80',
-      popular: true,
-      bgColor: '#FFEBEE'
+      popular: true
     }
   });
 
@@ -394,7 +389,7 @@ async function main() {
   
   // Hash password for both users
   const hashedPassword = await bcrypt.hash('1234abcd', 12);
-  
+
   // Create customer user
   const customerUser = await prisma.user.create({
     data: {
@@ -414,7 +409,7 @@ async function main() {
     data: {
       name: 'Genfity Admin',
       email: 'genfity@gmail.com',
-      phone: '081234567890',
+      phone: '089668176764',
       password: hashedPassword,
       role: 'admin',
       isActive: true,
