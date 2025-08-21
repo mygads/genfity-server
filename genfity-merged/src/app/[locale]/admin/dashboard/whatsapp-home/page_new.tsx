@@ -16,6 +16,7 @@ import {
   RefreshCw,
   CheckCircle,
   AlertCircle,
+  Zap,
   Calendar,
   BarChart3,
   Package
@@ -121,16 +122,34 @@ export default function WhatsAppHomePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex items-center space-x-2">
-          <RefreshCw className="h-6 w-6 animate-spin" />
-          <span className="text-lg">Loading WhatsApp Dashboard...</span>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2" />
+            <div className="h-4 w-96 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="h-10 w-20 bg-gray-200 rounded animate-pulse" />
+        </div>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-24 bg-gray-200 rounded animate-pulse mb-2" />
+                <div className="h-3 w-32 bg-gray-200 rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
   }
 
-  if (!data && !loading) {
+  if (!data) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -142,10 +161,6 @@ export default function WhatsAppHomePage() {
         </div>
       </div>
     );
-  }
-
-  if (!data) {
-    return <div className="p-8 text-center">Loading...</div>;
   }
 
   return (
@@ -164,26 +179,10 @@ export default function WhatsAppHomePage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 w-24 bg-gray-200 rounded animate-pulse mb-2" />
-                <div className="h-3 w-32 bg-gray-200 rounded animate-pulse" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : data ? (
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Overall Statistics</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Overall Statistics */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Overall Statistics</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Subscribers</CardTitle>
@@ -242,8 +241,7 @@ export default function WhatsAppHomePage() {
             </CardContent>
           </Card>
         </div>
-        </div>
-      ) : null}
+      </div>
 
       {/* Additional Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -294,7 +292,7 @@ export default function WhatsAppHomePage() {
       <div>
         <h2 className="text-xl font-semibold mb-4 flex items-center">
           <Calendar className="h-5 w-5 mr-2" />
-          Today&apos;s Performance
+          Today's Performance
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
@@ -352,7 +350,7 @@ export default function WhatsAppHomePage() {
                 {data.todaySuccessRate}%
               </div>
               <p className="text-xs text-muted-foreground">
-                Today&apos;s success rate
+                Today's success rate
               </p>
             </CardContent>
           </Card>

@@ -285,7 +285,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div className="flex flex-col gap-2">
@@ -294,12 +294,13 @@ export default function DashboardPage() {
             Complete transaction and revenue analysis for {getPeriodLabel(period).toLowerCase()}
           </p>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-3">
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[180px]">
               <SelectValue />
-            </SelectTrigger>            <SelectContent>
+            </SelectTrigger>            
+            <SelectContent>
               <SelectItem value="today">Today</SelectItem>
               <SelectItem value="week">Last 7 Days</SelectItem>
               <SelectItem value="month">Last 30 Days</SelectItem>

@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     tomorrow.setDate(tomorrow.getDate() + 1);    // 1. Total subscribers (users with active WhatsApp services)
     const totalSubscribers = await prisma.servicesWhatsappCustomers.count({
       where: {
+        status: 'active',
         expiredAt: {
           gte: new Date(), // Not expired
         },
@@ -123,21 +124,89 @@ export async function GET(request: NextRequest) {
       ? ((todayMessagesSent / todayTotalMessages) * 100).toFixed(2)
       : '0.00';
 
-    // Total revenue from WhatsApp packages
-    const totalRevenue = await prisma.transaction.aggregate({
+    // Total revenue from WhatsApp packages (only successful transactions)
+    const revenueResult = await prisma.transaction.aggregate({
       where: {
         whatsappTransaction: {
           isNot: null,
         },
-        status: 'paid',
+        status: 'success', // Only completed transactions
       },
       _sum: {
         finalAmount: true,
       },
     });
 
-    // Average session duration (mock data for now, as we don't track this yet)
-    const avgSessionDuration = 45; // minutes
+    // Calculate growth metrics (comparing with last month)
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    lastMonth.setDate(1);
+    lastMonth.setHours(0, 0, 0, 0);
+    
+    const currentMonth = new Date();
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
+
+    // Subscriber growth (active services this month vs last month)
+    const lastMonthSubscribers = await prisma.servicesWhatsappCustomers.count({
+      where: {
+        status: 'active',
+        createdAt: {
+          gte: lastMonth,
+          lt: currentMonth,
+        },
+      },
+    });
+
+    const subscriberGrowthRate = lastMonthSubscribers > 0 
+      ? (((totalSubscribers - lastMonthSubscribers) / lastMonthSubscribers) * 100).toFixed(1)
+      : totalSubscribers > 0 ? '100.0' : '0.0';
+
+    // Message volume growth (this month vs last month)
+    const lastMonthMessages = await prisma.whatsAppMessageStats.aggregate({
+      where: {
+        updatedAt: {
+          gte: lastMonth,
+          lt: currentMonth,
+        },
+      },
+      _sum: {
+        totalMessagesSent: true,
+      },
+    });
+
+    const lastMonthMessagesSent = lastMonthMessages._sum.totalMessagesSent || 0;
+    const messageVolumeGrowth = lastMonthMessagesSent > 0
+      ? (((totalMessagesSent - lastMonthMessagesSent) / lastMonthMessagesSent) * 100).toFixed(1)
+      : totalMessagesSent > 0 ? '100.0' : '0.0';
+
+    // Revenue growth (this month vs last month)
+    const lastMonthRevenue = await prisma.transaction.aggregate({
+      where: {
+        whatsappTransaction: {
+          isNot: null,
+        },
+        status: 'success',
+        updatedAt: {
+          gte: lastMonth,
+          lt: currentMonth,
+        },
+      },
+      _sum: {
+        finalAmount: true,
+      },
+    });
+
+    const lastMonthRevenueAmount = Number(lastMonthRevenue._sum.finalAmount || 0);
+    const currentRevenue = Number(revenueResult._sum.finalAmount || 0);
+    const revenueGrowth = lastMonthRevenueAmount > 0
+      ? (((currentRevenue - lastMonthRevenueAmount) / lastMonthRevenueAmount) * 100).toFixed(1)
+      : currentRevenue > 0 ? '100.0' : '0.0';
+
+    // Average session duration - not tracked yet in database schema
+    // When we implement session duration tracking, this should be calculated from:
+    // (endTime - startTime) for completed sessions
+    const avgSessionDuration = 0; // minutes - no data available yet
 
     const dashboardData = {
       // Overall Statistics
@@ -149,7 +218,7 @@ export async function GET(request: NextRequest) {
       activeSessions,
       totalWhatsAppUsers,
       totalUsers,
-      totalRevenue: totalRevenue._sum.finalAmount || 0,
+      totalRevenue: Number(revenueResult._sum.finalAmount || 0),
       avgSessionDuration,
 
       // Today's Statistics
@@ -163,9 +232,9 @@ export async function GET(request: NextRequest) {
 
       // Additional metrics
       metrics: {
-        subscriberGrowthRate: '12.5%', // This would need historical data
-        messageVolumeGrowth: '8.3%',   // This would need historical data
-        revenueGrowth: '15.2%',        // This would need historical data
+        subscriberGrowthRate: `${subscriberGrowthRate}%`,
+        messageVolumeGrowth: `${messageVolumeGrowth}%`,
+        revenueGrowth: `${revenueGrowth}%`,
       },
     };
 
