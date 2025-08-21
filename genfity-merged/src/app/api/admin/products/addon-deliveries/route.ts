@@ -120,17 +120,18 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>);
 
     const deliveryStats = {
-      totalDeliveries: stats._count.id,
-      pendingDeliveries: statusStats['pending'] || 0,
-      inProgressDeliveries: statusStats['in_progress'] || 0,
-      completedDeliveries: statusStats['delivered'] || 0,
+      total: stats._count.id,
+      pending: statusStats['pending'] || 0,
+      inProgress: statusStats['in_progress'] || 0,
+      delivered: statusStats['delivered'] || 0,
       completionRate: stats._count.id > 0 
         ? ((statusStats['delivered'] || 0) / stats._count.id) * 100 
         : 0
     };
 
     return withCORS(NextResponse.json({
-      deliveries,
+      success: true,
+      data: deliveries,
       stats: deliveryStats,
       total,
       page,

@@ -1,36 +1,33 @@
 "use client";
-
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { SessionManager } from "@/lib/storage";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { toast } from 'sonner';
+import { cn } from "@/lib/utils";
 import { 
   Package, 
   Search,
   RefreshCw,
-  Truck,
   CheckCircle,
   Clock,
   AlertCircle,
-  TrendingUp,
-  Download,
-  Filter,
-  Calendar,
-  FileSpreadsheet,
-  ArrowUpDown,
   User,
-  Eye,
-  X,
-  XCircle,
-  Check,
-  MoreHorizontal,
   Edit,
-  ExternalLink,
   FileText,
-  Upload
+  Calendar as CalendarIcon,
+  Plus,
+  Play,
+  Loader2,
+  ExternalLink,
+  MoreHorizontal
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -38,159 +35,282 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
-interface AddonDelivery {
+interface AddonCustomer {
   id: string;
   transactionId: string;
   customerId: string;
-  addonDetails: string; // JSON string containing addon details
+  addonDetails?: any;
   driveUrl?: string;
   fileAssets?: string;
-  status: string; // pending, in_progress, delivered
+  status: string; 
   deliveredAt?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;
-  customer: {
+  customer?: {
     id: string;
-    name?: string;
-    email?: string;
+    name: string;
+    email: string;
+    phone?: string;
   };
-  transaction: {
+  transaction?: {
     id: string;
     finalAmount: number;
     currency: string;
+    status: string;
     createdAt: string;
-  };
+    addonTransactions?: Array<{
+      id: string;
+      status: string;
+      addon: {
+        id: string;
+        name_en: string;
+        name_id: string;
+        description_en?: string;
+        description_id?: string;
+        price_idr: number;
+        price_usd: number;
+      };
+    }>;
+  };  
 }
 
-interface AddonDeliveryStats {
-  totalDeliveries: number;
-  pendingDeliveries: number;
-  inProgressDeliveries: number;
-  completedDeliveries: number;
+interface EditFormData {
+  driveUrl: string;
+  fileAssets: string;
+  status: string;
+  notes: string;
 }
 
-export default function AddonDeliveryPage() {
-  const [deliveries, setDeliveries] = useState<AddonDelivery[]>([]);
-  const [stats, setStats] = useState<AddonDeliveryStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [selectedDelivery, setSelectedDelivery] = useState<AddonDelivery | null>(null);
-  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
-  const [deliveryForm, setDeliveryForm] = useState({
-    driveUrl: "",
-    fileAssets: "",
-    notes: "",
-    status: "pending"
-  });
-
-  const fetchDeliveries = useCallback(async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: "10",
-        search: searchQuery,
-        status: statusFilter
-      });
-
-      const response = await fetch(`/api/admin/addon-deliveries?${params}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch addon deliveries');
-      }
-
-      const data = await response.json();
-      setDeliveries(data.deliveries);
-      setStats(data.stats);
-      setTotalPages(Math.ceil(data.total / 10));
-    } catch (error) {
-      console.error('Error fetching addon deliveries:', error);
-      toast.error('Failed to load addon deliveries');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, searchQuery, statusFilter]);
-
-  useEffect(() => {
-    fetchDeliveries();
-  }, [fetchDeliveries]);
-
-  const handleUpdateDelivery = async () => {
-    if (!selectedDelivery) return;
-
-    try {
-      const response = await fetch(`/api/admin/addon-deliveries/${selectedDelivery.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(deliveryForm),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update delivery');
-      }
-
-      toast.success('Delivery updated successfully');
-      setDeliveryModalOpen(false);
-      fetchDeliveries();
-    } catch (error) {
-      console.error('Error updating delivery:', error);
-      toast.error('Failed to update delivery');
-    }
-  };
-
-  const handleCompleteDelivery = async (transactionId: string) => {
-    try {
-      const response = await fetch(`/api/transactions/${transactionId}/complete-addons-delivery`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to complete delivery');
-      }
-
-      toast.success('Delivery completed successfully');
-      fetchDeliveries();
-    } catch (error) {
-      console.error('Error completing delivery:', error);
-      toast.error('Failed to complete delivery');
-    }
-  };
-
-  const openDeliveryModal = (delivery: AddonDelivery) => {
-    setSelectedDelivery(delivery);
-    setDeliveryForm({
-      driveUrl: delivery.driveUrl || "",
-      fileAssets: delivery.fileAssets || "",
-      notes: delivery.notes || "",
-      status: delivery.status
+export default function AddonCustomersPage() {
+    const router = useRouter();
+    const [customers, setCustomers] = useState<AddonCustomer[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [dateFilter, setDateFilter] = useState("all");
+    const [sortBy, setSortBy] = useState<"date" | "customer" | "status">("date");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+    const [selectedCustomer, setSelectedCustomer] = useState<AddonCustomer | null>(null);
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [editForm, setEditForm] = useState<EditFormData>({
+        driveUrl: "",
+        fileAssets: "",
+        status: "pending",
+        notes: ""
     });
-    setDeliveryModalOpen(true);
-  };
+    const [saveLoading, setSaveLoading] = useState(false);
+    const [deliveryActionLoading, setDeliveryActionLoading] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [stats, setStats] = useState<{
+        total: number;
+        pending: number;
+        inProgress: number;
+        delivered: number;
+    } | null>(null);
+
+    // Handle delivery status actions
+    const handleMarkInProgress = async (customer: AddonCustomer) => {
+        setDeliveryActionLoading(customer.id);
+        try {
+            const token = SessionManager.getToken();
+            
+            const response = await fetch(`/api/admin/products/addon-deliveries/${customer.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ status: 'in_progress' })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast.success("Status updated to in progress");
+                await fetchCustomers();
+            } else {
+                toast.error(data.error || "Failed to update status");
+                console.error("Error updating delivery status:", data.error);
+            }
+        } catch (error) {
+            toast.error("Failed to update status");
+            console.error("Error updating delivery status:", error);
+        } finally {
+            setDeliveryActionLoading(null);
+        }
+    };
+
+    const handleMarkDelivered = async (customer: AddonCustomer) => {
+        setDeliveryActionLoading(customer.id);
+        try {
+            const token = SessionManager.getToken();
+            
+            const response = await fetch(`/api/admin/products/addon-deliveries/${customer.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ status: 'delivered' })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast.success("Addon marked as delivered");
+                await fetchCustomers();
+            } else {
+                toast.error(data.error || "Failed to mark as delivered");
+                console.error("Error updating delivery status:", data.error);
+            }
+        } catch (error) {
+            toast.error("Failed to mark as delivered");
+            console.error("Error updating delivery status:", error);
+        } finally {
+            setDeliveryActionLoading(null);
+        }
+    };
+
+    const fetchCustomers = useCallback(async () => {
+        setLoading(true);
+        try {
+            // Get token for authentication
+            const token = SessionManager.getToken();
+            
+            const response = await fetch("/api/admin/products/addon-deliveries", {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+        
+            if (data.success) {
+                setCustomers(data.data || []);
+                setStats(data.stats || { total: 0, pending: 0, inProgress: 0, delivered: 0 });
+            } else {
+                toast.error(data.error || "Failed to fetch addon deliveries");
+                console.error("Error fetching customers:", data.error);
+            }
+        } catch (error) {
+            toast.error("Failed to fetch addon deliveries");
+            console.error("Error fetching customers:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const handleEdit = (customer: AddonCustomer) => {
+        setSelectedCustomer(customer);
+        setEditForm({
+            driveUrl: customer.driveUrl || "",
+            fileAssets: customer.fileAssets || "",
+            status: customer.status,
+            notes: customer.notes || ""
+        });
+        setIsEditMode(true);
+        setIsDetailOpen(true);
+    };
+
+    const handleSave = async () => {
+        if (!selectedCustomer) return;
+
+        setSaveLoading(true);
+        try {
+            const token = SessionManager.getToken();
+            
+            const response = await fetch(`/api/admin/products/addon-deliveries/${selectedCustomer.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(editForm),
+            });
+
+            const data = await response.json();
+        
+            if (data.success) {
+                toast.success("Addon delivery updated successfully");
+                await fetchCustomers();
+                setIsDetailOpen(false);
+                setIsEditMode(false);
+                setSelectedCustomer(null);
+            } else {
+                toast.error(data.error || "Failed to update addon delivery");
+                console.error("Error updating customer:", data.error);
+            }
+        } catch (error) {
+            toast.error("Failed to update addon delivery");
+            console.error("Error updating customer:", error);
+        } finally {
+            setSaveLoading(false);
+        }
+    };
+
+    const viewDetail = (customer: AddonCustomer) => {
+        setSelectedCustomer(customer);
+        setIsEditMode(false);
+        setIsDetailOpen(true);
+    };
+
+    // Filter and sort functions
+    const handleSort = (field: "date" | "customer" | "status") => {
+        if (sortBy === field) {
+            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+        } else {
+            setSortBy(field);
+            setSortOrder("desc");
+        }
+    };
+
+    // Initial load
+    useEffect(() => {
+        fetchCustomers();
+    }, [fetchCustomers]);
+
+    // Filter and sort customers
+    const filteredCustomers = useMemo(() => {
+        const filtered = customers.filter(customer => {
+            const searchLower = search.toLowerCase();
+            const matchesSearch = !search || 
+                customer.customer?.name?.toLowerCase().includes(searchLower) ||
+                customer.customer?.email?.toLowerCase().includes(searchLower) ||
+                customer.transactionId.toLowerCase().includes(searchLower);
+            
+            const matchesStatus = statusFilter === "all" || customer.status === statusFilter;
+            
+            return matchesSearch && matchesStatus;
+        });
+
+        // Sort
+        filtered.sort((a, b) => {
+            let comparison = 0;
+            
+            switch (sortBy) {
+                case "date":
+                    comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                    break;
+                case "customer":
+                    const nameA = a.customer?.name || "";
+                    const nameB = b.customer?.name || "";
+                    comparison = nameA.localeCompare(nameB);
+                    break;
+                case "status":
+                    comparison = a.status.localeCompare(b.status);
+                    break;
+            }
+            
+            return sortOrder === "asc" ? comparison : -comparison;
+        });
+
+        return filtered;
+    }, [customers, search, statusFilter, sortBy, sortOrder]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -227,12 +347,12 @@ export default function AddonDeliveryPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Addon Delivery Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Addon Deliveries</h1>
           <p className="text-muted-foreground">
             Manage addon deliveries and track delivery status
           </p>
         </div>
-        <Button onClick={fetchDeliveries} disabled={loading}>
+        <Button onClick={fetchCustomers} disabled={loading}>
           <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
           Refresh
         </Button>
@@ -247,7 +367,7 @@ export default function AddonDeliveryPage() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalDeliveries}</div>
+              <div className="text-2xl font-bold">{stats.total}</div>
             </CardContent>
           </Card>
           
@@ -257,7 +377,7 @@ export default function AddonDeliveryPage() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.pendingDeliveries}</div>
+              <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
             </CardContent>
           </Card>
 
@@ -267,7 +387,7 @@ export default function AddonDeliveryPage() {
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.inProgressDeliveries}</div>
+              <div className="text-2xl font-bold text-blue-600">{stats.inProgress}</div>
             </CardContent>
           </Card>
 
@@ -277,7 +397,7 @@ export default function AddonDeliveryPage() {
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.completedDeliveries}</div>
+              <div className="text-2xl font-bold text-green-600">{stats.delivered}</div>
             </CardContent>
           </Card>
         </div>
@@ -293,8 +413,8 @@ export default function AddonDeliveryPage() {
             <div className="flex-1">
               <Input
                 placeholder="Search by customer name, email, or transaction ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full"
               />
             </div>
@@ -332,7 +452,7 @@ export default function AddonDeliveryPage() {
                 </div>
               ))}
             </div>
-          ) : deliveries.length === 0 ? (
+          ) : filteredCustomers.length === 0 ? (
             <div className="text-center py-8">
               <Package className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No deliveries found</h3>
@@ -367,8 +487,8 @@ export default function AddonDeliveryPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                  {deliveries.map((delivery) => (
-                    <tr key={delivery.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                  {filteredCustomers.map((customer) => (
+                    <tr key={customer.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
@@ -378,22 +498,22 @@ export default function AddonDeliveryPage() {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {delivery.customer.name || 'Unknown'}
+                              {customer.customer?.name || 'Unknown'}
                             </div>
                             <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {delivery.customer.email}
+                              {customer.customer?.email}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {delivery.transactionId.slice(-8)}
+                        {customer.transactionId.slice(-8)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
                         <div className="max-w-xs">
                           {(() => {
                             try {
-                              const details = JSON.parse(delivery.addonDetails);
+                              const details = JSON.parse(customer.addonDetails);
                               return (
                                 <div className="space-y-1">
                                   {details.map((addon: any, index: number) => (
@@ -412,10 +532,10 @@ export default function AddonDeliveryPage() {
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
                         <div className="space-y-1">
-                          {delivery.driveUrl && (
+                          {customer.driveUrl && (
                             <div>
                               <a
-                                href={delivery.driveUrl}
+                                href={customer.driveUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-blue-600 hover:text-blue-800 text-xs flex items-center"
@@ -425,22 +545,22 @@ export default function AddonDeliveryPage() {
                               </a>
                             </div>
                           )}
-                          {delivery.fileAssets && (
+                          {customer.fileAssets && (
                             <div className="text-xs text-gray-600">
                               <FileText className="w-3 h-3 inline mr-1" />
                               Assets Available
                             </div>
                           )}
-                          {!delivery.driveUrl && !delivery.fileAssets && (
+                          {!customer.driveUrl && !customer.fileAssets && (
                             <span className="text-gray-400 text-xs">No assets</span>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(delivery.status)}
+                        {getStatusBadge(customer.status)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(delivery.createdAt)}
+                        {formatDate(customer.createdAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <DropdownMenu>
@@ -450,19 +570,19 @@ export default function AddonDeliveryPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openDeliveryModal(delivery)}>
+                            <DropdownMenuItem onClick={() => handleEdit(customer)}>
                               <Edit className="w-4 h-4 mr-2" />
                               Update Delivery
                             </DropdownMenuItem>
-                            {delivery.status !== 'delivered' && (
-                              <DropdownMenuItem onClick={() => handleCompleteDelivery(delivery.transactionId)}>
+                            {customer.status !== 'delivered' && (
+                              <DropdownMenuItem onClick={() => handleMarkDelivered(customer)}>
                                 <CheckCircle className="w-4 h-4 mr-2" />
                                 Mark as Delivered
                               </DropdownMenuItem>
                             )}
-                            {delivery.driveUrl && (
+                            {customer.driveUrl && (
                               <DropdownMenuItem asChild>
-                                <a href={delivery.driveUrl} target="_blank" rel="noopener noreferrer">
+                                <a href={customer.driveUrl} target="_blank" rel="noopener noreferrer">
                                   <ExternalLink className="w-4 h-4 mr-2" />
                                   View Drive
                                 </a>
@@ -507,66 +627,172 @@ export default function AddonDeliveryPage() {
         </div>
       )}
 
-      {/* Update Delivery Modal */}
-      <Dialog open={deliveryModalOpen} onOpenChange={setDeliveryModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      {/* Customer Detail/Edit Modal */}
+      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Update Addon Delivery</DialogTitle>
-            <DialogDescription>
-              Update delivery information and status for this addon order.
-            </DialogDescription>
+            <DialogTitle>
+              {isEditMode ? "Edit Addon Delivery" : "Addon Delivery Details"}
+            </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="driveUrl">Drive URL</Label>
-              <Input
-                id="driveUrl"
-                placeholder="Google Drive or file sharing URL"
-                value={deliveryForm.driveUrl}
-                onChange={(e) => setDeliveryForm(prev => ({ ...prev, driveUrl: e.target.value }))}
-              />
+          
+          {selectedCustomer && (
+            <div className="space-y-4">
+              {/* Customer Info */}
+              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Customer</label>
+                  <p className="mt-1">{selectedCustomer.customer?.name || 'Unknown'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Email</label>
+                  <p className="mt-1">{selectedCustomer.customer?.email}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Transaction ID</label>
+                  <p className="mt-1 font-mono text-sm">{selectedCustomer.transactionId}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Status</label>
+                  <p className="mt-1">{getStatusBadge(selectedCustomer.status)}</p>
+                </div>
+              </div>
+
+              {/* Addon Details */}
+              {selectedCustomer.addonDetails && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <label className="text-sm font-medium text-gray-500">Addon Details</label>
+                  <div className="mt-2">
+                    {(() => {
+                      try {
+                        const details = JSON.parse(selectedCustomer.addonDetails);
+                        return (
+                          <div className="space-y-2">
+                            {Array.isArray(details) ? details.map((addon: any, index: number) => (
+                              <div key={index} className="text-sm">
+                                <strong>{addon.name_en || addon.name}</strong>
+                                {addon.description_en && <p className="text-gray-600">{addon.description_en}</p>}
+                              </div>
+                            )) : (
+                              <pre className="text-sm text-gray-600">{JSON.stringify(details, null, 2)}</pre>
+                            )}
+                          </div>
+                        );
+                      } catch {
+                        return <span className="text-gray-500">Invalid addon data</span>;
+                      }
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Editable Fields */}
+              {isEditMode ? (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="driveUrl">Drive URL</Label>
+                    <Input
+                      id="driveUrl"
+                      value={editForm.driveUrl}
+                      onChange={(e) => setEditForm({ ...editForm, driveUrl: e.target.value })}
+                      placeholder="https://drive.google.com/..."
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="fileAssets">File Assets (JSON)</Label>
+                    <Textarea
+                      id="fileAssets"
+                      value={editForm.fileAssets}
+                      onChange={(e) => setEditForm({ ...editForm, fileAssets: e.target.value })}
+                      placeholder='{"files": [{"name": "addon.zip", "size": "1.2MB"}]}'
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={editForm.status} onValueChange={(value) => setEditForm({ ...editForm, status: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="delivered">Delivered</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="notes">Notes</Label>
+                    <Textarea
+                      id="notes"
+                      value={editForm.notes}
+                      onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                      placeholder="Add delivery notes..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Drive URL</label>
+                    <p className="mt-1">
+                      {selectedCustomer.driveUrl ? (
+                        <a 
+                          href={selectedCustomer.driveUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 flex items-center"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          {selectedCustomer.driveUrl}
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">Not provided</span>
+                      )}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">File Assets</label>
+                    <p className="mt-1">
+                      {selectedCustomer.fileAssets ? (
+                        <pre className="text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto">
+                          {selectedCustomer.fileAssets}
+                        </pre>
+                      ) : (
+                        <span className="text-gray-400">No file assets</span>
+                      )}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Notes</label>
+                    <p className="mt-1">
+                      {selectedCustomer.notes || <span className="text-gray-400">No notes</span>}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="fileAssets">File Assets (JSON)</Label>
-              <Textarea
-                id="fileAssets"
-                placeholder='{"files": [{"name": "addon.zip", "size": "1.2MB"}]}'
-                value={deliveryForm.fileAssets}
-                onChange={(e) => setDeliveryForm(prev => ({ ...prev, fileAssets: e.target.value }))}
-                rows={3}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="notes">Delivery Notes</Label>
-              <Textarea
-                id="notes"
-                placeholder="Add any delivery notes or instructions..."
-                value={deliveryForm.notes}
-                onChange={(e) => setDeliveryForm(prev => ({ ...prev, notes: e.target.value }))}
-                rows={3}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={deliveryForm.status} onValueChange={(value) => setDeliveryForm(prev => ({ ...prev, status: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          )}
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDeliveryModalOpen(false)}>
-              Cancel
+            <Button variant="outline" onClick={() => setIsDetailOpen(false)}>
+              Close
             </Button>
-            <Button type="button" onClick={handleUpdateDelivery}>
-              Update Delivery
-            </Button>
+            {isEditMode ? (
+              <Button onClick={handleSave} disabled={saveLoading}>
+                {saveLoading ? "Saving..." : "Save Changes"}
+              </Button>
+            ) : (
+              <Button onClick={() => setIsEditMode(true)}>
+                Edit
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
