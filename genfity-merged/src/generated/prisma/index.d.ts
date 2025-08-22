@@ -10535,100 +10535,224 @@ export namespace Prisma {
 
   export type AggregateWhatsAppSession = {
     _count: WhatsAppSessionCountAggregateOutputType | null
+    _avg: WhatsAppSessionAvgAggregateOutputType | null
+    _sum: WhatsAppSessionSumAggregateOutputType | null
     _min: WhatsAppSessionMinAggregateOutputType | null
     _max: WhatsAppSessionMaxAggregateOutputType | null
+  }
+
+  export type WhatsAppSessionAvgAggregateOutputType = {
+    expiration: number | null
+    s3RetentionDays: number | null
+  }
+
+  export type WhatsAppSessionSumAggregateOutputType = {
+    expiration: number | null
+    s3RetentionDays: number | null
   }
 
   export type WhatsAppSessionMinAggregateOutputType = {
     id: string | null
     sessionId: string | null
+    sessionName: string | null
+    token: string | null
     userId: string | null
+    webhook: string | null
+    events: string | null
+    expiration: number | null
+    connected: boolean | null
+    loggedIn: boolean | null
+    jid: string | null
+    qrcode: string | null
     status: string | null
-    qr: string | null
-    isNotification: boolean | null
+    message: string | null
+    isSystemSession: boolean | null
+    proxyEnabled: boolean | null
+    proxyUrl: string | null
+    s3Enabled: boolean | null
+    s3Endpoint: string | null
+    s3Region: string | null
+    s3Bucket: string | null
+    s3AccessKey: string | null
+    s3SecretKey: string | null
+    s3PathStyle: boolean | null
+    s3PublicUrl: string | null
+    s3MediaDelivery: string | null
+    s3RetentionDays: number | null
     createdAt: Date | null
     updatedAt: Date | null
-    aiConfig: string | null
-    message: string | null
-    sessionName: string | null
-    isTerminated: boolean | null
   }
 
   export type WhatsAppSessionMaxAggregateOutputType = {
     id: string | null
     sessionId: string | null
+    sessionName: string | null
+    token: string | null
     userId: string | null
+    webhook: string | null
+    events: string | null
+    expiration: number | null
+    connected: boolean | null
+    loggedIn: boolean | null
+    jid: string | null
+    qrcode: string | null
     status: string | null
-    qr: string | null
-    isNotification: boolean | null
+    message: string | null
+    isSystemSession: boolean | null
+    proxyEnabled: boolean | null
+    proxyUrl: string | null
+    s3Enabled: boolean | null
+    s3Endpoint: string | null
+    s3Region: string | null
+    s3Bucket: string | null
+    s3AccessKey: string | null
+    s3SecretKey: string | null
+    s3PathStyle: boolean | null
+    s3PublicUrl: string | null
+    s3MediaDelivery: string | null
+    s3RetentionDays: number | null
     createdAt: Date | null
     updatedAt: Date | null
-    aiConfig: string | null
-    message: string | null
-    sessionName: string | null
-    isTerminated: boolean | null
   }
 
   export type WhatsAppSessionCountAggregateOutputType = {
     id: number
     sessionId: number
+    sessionName: number
+    token: number
     userId: number
+    webhook: number
+    events: number
+    expiration: number
+    connected: number
+    loggedIn: number
+    jid: number
+    qrcode: number
     status: number
-    qr: number
-    isNotification: number
+    message: number
+    isSystemSession: number
+    proxyEnabled: number
+    proxyUrl: number
+    s3Enabled: number
+    s3Endpoint: number
+    s3Region: number
+    s3Bucket: number
+    s3AccessKey: number
+    s3SecretKey: number
+    s3PathStyle: number
+    s3PublicUrl: number
+    s3MediaDelivery: number
+    s3RetentionDays: number
     createdAt: number
     updatedAt: number
-    aiConfig: number
-    message: number
-    sessionName: number
-    isTerminated: number
     _all: number
   }
 
 
+  export type WhatsAppSessionAvgAggregateInputType = {
+    expiration?: true
+    s3RetentionDays?: true
+  }
+
+  export type WhatsAppSessionSumAggregateInputType = {
+    expiration?: true
+    s3RetentionDays?: true
+  }
+
   export type WhatsAppSessionMinAggregateInputType = {
     id?: true
     sessionId?: true
+    sessionName?: true
+    token?: true
     userId?: true
+    webhook?: true
+    events?: true
+    expiration?: true
+    connected?: true
+    loggedIn?: true
+    jid?: true
+    qrcode?: true
     status?: true
-    qr?: true
-    isNotification?: true
+    message?: true
+    isSystemSession?: true
+    proxyEnabled?: true
+    proxyUrl?: true
+    s3Enabled?: true
+    s3Endpoint?: true
+    s3Region?: true
+    s3Bucket?: true
+    s3AccessKey?: true
+    s3SecretKey?: true
+    s3PathStyle?: true
+    s3PublicUrl?: true
+    s3MediaDelivery?: true
+    s3RetentionDays?: true
     createdAt?: true
     updatedAt?: true
-    aiConfig?: true
-    message?: true
-    sessionName?: true
-    isTerminated?: true
   }
 
   export type WhatsAppSessionMaxAggregateInputType = {
     id?: true
     sessionId?: true
+    sessionName?: true
+    token?: true
     userId?: true
+    webhook?: true
+    events?: true
+    expiration?: true
+    connected?: true
+    loggedIn?: true
+    jid?: true
+    qrcode?: true
     status?: true
-    qr?: true
-    isNotification?: true
+    message?: true
+    isSystemSession?: true
+    proxyEnabled?: true
+    proxyUrl?: true
+    s3Enabled?: true
+    s3Endpoint?: true
+    s3Region?: true
+    s3Bucket?: true
+    s3AccessKey?: true
+    s3SecretKey?: true
+    s3PathStyle?: true
+    s3PublicUrl?: true
+    s3MediaDelivery?: true
+    s3RetentionDays?: true
     createdAt?: true
     updatedAt?: true
-    aiConfig?: true
-    message?: true
-    sessionName?: true
-    isTerminated?: true
   }
 
   export type WhatsAppSessionCountAggregateInputType = {
     id?: true
     sessionId?: true
+    sessionName?: true
+    token?: true
     userId?: true
+    webhook?: true
+    events?: true
+    expiration?: true
+    connected?: true
+    loggedIn?: true
+    jid?: true
+    qrcode?: true
     status?: true
-    qr?: true
-    isNotification?: true
+    message?: true
+    isSystemSession?: true
+    proxyEnabled?: true
+    proxyUrl?: true
+    s3Enabled?: true
+    s3Endpoint?: true
+    s3Region?: true
+    s3Bucket?: true
+    s3AccessKey?: true
+    s3SecretKey?: true
+    s3PathStyle?: true
+    s3PublicUrl?: true
+    s3MediaDelivery?: true
+    s3RetentionDays?: true
     createdAt?: true
     updatedAt?: true
-    aiConfig?: true
-    message?: true
-    sessionName?: true
-    isTerminated?: true
     _all?: true
   }
 
@@ -10670,6 +10794,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: WhatsAppSessionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: WhatsAppSessionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: WhatsAppSessionMinAggregateInputType
@@ -10700,6 +10836,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: WhatsAppSessionCountAggregateInputType | true
+    _avg?: WhatsAppSessionAvgAggregateInputType
+    _sum?: WhatsAppSessionSumAggregateInputType
     _min?: WhatsAppSessionMinAggregateInputType
     _max?: WhatsAppSessionMaxAggregateInputType
   }
@@ -10707,17 +10845,36 @@ export namespace Prisma {
   export type WhatsAppSessionGroupByOutputType = {
     id: string
     sessionId: string
-    userId: string
+    sessionName: string
+    token: string
+    userId: string | null
+    webhook: string | null
+    events: string | null
+    expiration: number
+    connected: boolean
+    loggedIn: boolean
+    jid: string | null
+    qrcode: string | null
     status: string
-    qr: string | null
-    isNotification: boolean
+    message: string | null
+    isSystemSession: boolean
+    proxyEnabled: boolean
+    proxyUrl: string | null
+    s3Enabled: boolean
+    s3Endpoint: string | null
+    s3Region: string | null
+    s3Bucket: string | null
+    s3AccessKey: string | null
+    s3SecretKey: string | null
+    s3PathStyle: boolean
+    s3PublicUrl: string | null
+    s3MediaDelivery: string | null
+    s3RetentionDays: number
     createdAt: Date
     updatedAt: Date
-    aiConfig: string | null
-    message: string | null
-    sessionName: string | null
-    isTerminated: boolean
     _count: WhatsAppSessionCountAggregateOutputType | null
+    _avg: WhatsAppSessionAvgAggregateOutputType | null
+    _sum: WhatsAppSessionSumAggregateOutputType | null
     _min: WhatsAppSessionMinAggregateOutputType | null
     _max: WhatsAppSessionMaxAggregateOutputType | null
   }
@@ -10739,17 +10896,34 @@ export namespace Prisma {
   export type WhatsAppSessionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     sessionId?: boolean
+    sessionName?: boolean
+    token?: boolean
     userId?: boolean
+    webhook?: boolean
+    events?: boolean
+    expiration?: boolean
+    connected?: boolean
+    loggedIn?: boolean
+    jid?: boolean
+    qrcode?: boolean
     status?: boolean
-    qr?: boolean
-    isNotification?: boolean
+    message?: boolean
+    isSystemSession?: boolean
+    proxyEnabled?: boolean
+    proxyUrl?: boolean
+    s3Enabled?: boolean
+    s3Endpoint?: boolean
+    s3Region?: boolean
+    s3Bucket?: boolean
+    s3AccessKey?: boolean
+    s3SecretKey?: boolean
+    s3PathStyle?: boolean
+    s3PublicUrl?: boolean
+    s3MediaDelivery?: boolean
+    s3RetentionDays?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    aiConfig?: boolean
-    message?: boolean
-    sessionName?: boolean
-    isTerminated?: boolean
-    user?: boolean | UserDefaultArgs<ExtArgs>
+    user?: boolean | WhatsAppSession$userArgs<ExtArgs>
     whatsappMessageStats?: boolean | WhatsAppSession$whatsappMessageStatsArgs<ExtArgs>
     _count?: boolean | WhatsAppSessionCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["whatsAppSession"]>
@@ -10757,82 +10931,150 @@ export namespace Prisma {
   export type WhatsAppSessionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     sessionId?: boolean
+    sessionName?: boolean
+    token?: boolean
     userId?: boolean
+    webhook?: boolean
+    events?: boolean
+    expiration?: boolean
+    connected?: boolean
+    loggedIn?: boolean
+    jid?: boolean
+    qrcode?: boolean
     status?: boolean
-    qr?: boolean
-    isNotification?: boolean
+    message?: boolean
+    isSystemSession?: boolean
+    proxyEnabled?: boolean
+    proxyUrl?: boolean
+    s3Enabled?: boolean
+    s3Endpoint?: boolean
+    s3Region?: boolean
+    s3Bucket?: boolean
+    s3AccessKey?: boolean
+    s3SecretKey?: boolean
+    s3PathStyle?: boolean
+    s3PublicUrl?: boolean
+    s3MediaDelivery?: boolean
+    s3RetentionDays?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    aiConfig?: boolean
-    message?: boolean
-    sessionName?: boolean
-    isTerminated?: boolean
-    user?: boolean | UserDefaultArgs<ExtArgs>
+    user?: boolean | WhatsAppSession$userArgs<ExtArgs>
   }, ExtArgs["result"]["whatsAppSession"]>
 
   export type WhatsAppSessionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     sessionId?: boolean
+    sessionName?: boolean
+    token?: boolean
     userId?: boolean
+    webhook?: boolean
+    events?: boolean
+    expiration?: boolean
+    connected?: boolean
+    loggedIn?: boolean
+    jid?: boolean
+    qrcode?: boolean
     status?: boolean
-    qr?: boolean
-    isNotification?: boolean
+    message?: boolean
+    isSystemSession?: boolean
+    proxyEnabled?: boolean
+    proxyUrl?: boolean
+    s3Enabled?: boolean
+    s3Endpoint?: boolean
+    s3Region?: boolean
+    s3Bucket?: boolean
+    s3AccessKey?: boolean
+    s3SecretKey?: boolean
+    s3PathStyle?: boolean
+    s3PublicUrl?: boolean
+    s3MediaDelivery?: boolean
+    s3RetentionDays?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    aiConfig?: boolean
-    message?: boolean
-    sessionName?: boolean
-    isTerminated?: boolean
-    user?: boolean | UserDefaultArgs<ExtArgs>
+    user?: boolean | WhatsAppSession$userArgs<ExtArgs>
   }, ExtArgs["result"]["whatsAppSession"]>
 
   export type WhatsAppSessionSelectScalar = {
     id?: boolean
     sessionId?: boolean
+    sessionName?: boolean
+    token?: boolean
     userId?: boolean
+    webhook?: boolean
+    events?: boolean
+    expiration?: boolean
+    connected?: boolean
+    loggedIn?: boolean
+    jid?: boolean
+    qrcode?: boolean
     status?: boolean
-    qr?: boolean
-    isNotification?: boolean
+    message?: boolean
+    isSystemSession?: boolean
+    proxyEnabled?: boolean
+    proxyUrl?: boolean
+    s3Enabled?: boolean
+    s3Endpoint?: boolean
+    s3Region?: boolean
+    s3Bucket?: boolean
+    s3AccessKey?: boolean
+    s3SecretKey?: boolean
+    s3PathStyle?: boolean
+    s3PublicUrl?: boolean
+    s3MediaDelivery?: boolean
+    s3RetentionDays?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    aiConfig?: boolean
-    message?: boolean
-    sessionName?: boolean
-    isTerminated?: boolean
   }
 
-  export type WhatsAppSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "sessionId" | "userId" | "status" | "qr" | "isNotification" | "createdAt" | "updatedAt" | "aiConfig" | "message" | "sessionName" | "isTerminated", ExtArgs["result"]["whatsAppSession"]>
+  export type WhatsAppSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "sessionId" | "sessionName" | "token" | "userId" | "webhook" | "events" | "expiration" | "connected" | "loggedIn" | "jid" | "qrcode" | "status" | "message" | "isSystemSession" | "proxyEnabled" | "proxyUrl" | "s3Enabled" | "s3Endpoint" | "s3Region" | "s3Bucket" | "s3AccessKey" | "s3SecretKey" | "s3PathStyle" | "s3PublicUrl" | "s3MediaDelivery" | "s3RetentionDays" | "createdAt" | "updatedAt", ExtArgs["result"]["whatsAppSession"]>
   export type WhatsAppSessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    user?: boolean | UserDefaultArgs<ExtArgs>
+    user?: boolean | WhatsAppSession$userArgs<ExtArgs>
     whatsappMessageStats?: boolean | WhatsAppSession$whatsappMessageStatsArgs<ExtArgs>
     _count?: boolean | WhatsAppSessionCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type WhatsAppSessionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    user?: boolean | UserDefaultArgs<ExtArgs>
+    user?: boolean | WhatsAppSession$userArgs<ExtArgs>
   }
   export type WhatsAppSessionIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    user?: boolean | UserDefaultArgs<ExtArgs>
+    user?: boolean | WhatsAppSession$userArgs<ExtArgs>
   }
 
   export type $WhatsAppSessionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "WhatsAppSession"
     objects: {
-      user: Prisma.$UserPayload<ExtArgs>
+      user: Prisma.$UserPayload<ExtArgs> | null
       whatsappMessageStats: Prisma.$WhatsAppMessageStatsPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       sessionId: string
-      userId: string
+      sessionName: string
+      token: string
+      userId: string | null
+      webhook: string | null
+      events: string | null
+      expiration: number
+      connected: boolean
+      loggedIn: boolean
+      jid: string | null
+      qrcode: string | null
       status: string
-      qr: string | null
-      isNotification: boolean
+      message: string | null
+      isSystemSession: boolean
+      proxyEnabled: boolean
+      proxyUrl: string | null
+      s3Enabled: boolean
+      s3Endpoint: string | null
+      s3Region: string | null
+      s3Bucket: string | null
+      s3AccessKey: string | null
+      s3SecretKey: string | null
+      s3PathStyle: boolean
+      s3PublicUrl: string | null
+      s3MediaDelivery: string | null
+      s3RetentionDays: number
       createdAt: Date
       updatedAt: Date
-      aiConfig: string | null
-      message: string | null
-      sessionName: string | null
-      isTerminated: boolean
     }, ExtArgs["result"]["whatsAppSession"]>
     composites: {}
   }
@@ -11227,7 +11469,7 @@ export namespace Prisma {
    */
   export interface Prisma__WhatsAppSessionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    user<T extends WhatsAppSession$userArgs<ExtArgs> = {}>(args?: Subset<T, WhatsAppSession$userArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     whatsappMessageStats<T extends WhatsAppSession$whatsappMessageStatsArgs<ExtArgs> = {}>(args?: Subset<T, WhatsAppSession$whatsappMessageStatsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WhatsAppMessageStatsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -11260,16 +11502,33 @@ export namespace Prisma {
   interface WhatsAppSessionFieldRefs {
     readonly id: FieldRef<"WhatsAppSession", 'String'>
     readonly sessionId: FieldRef<"WhatsAppSession", 'String'>
+    readonly sessionName: FieldRef<"WhatsAppSession", 'String'>
+    readonly token: FieldRef<"WhatsAppSession", 'String'>
     readonly userId: FieldRef<"WhatsAppSession", 'String'>
+    readonly webhook: FieldRef<"WhatsAppSession", 'String'>
+    readonly events: FieldRef<"WhatsAppSession", 'String'>
+    readonly expiration: FieldRef<"WhatsAppSession", 'Int'>
+    readonly connected: FieldRef<"WhatsAppSession", 'Boolean'>
+    readonly loggedIn: FieldRef<"WhatsAppSession", 'Boolean'>
+    readonly jid: FieldRef<"WhatsAppSession", 'String'>
+    readonly qrcode: FieldRef<"WhatsAppSession", 'String'>
     readonly status: FieldRef<"WhatsAppSession", 'String'>
-    readonly qr: FieldRef<"WhatsAppSession", 'String'>
-    readonly isNotification: FieldRef<"WhatsAppSession", 'Boolean'>
+    readonly message: FieldRef<"WhatsAppSession", 'String'>
+    readonly isSystemSession: FieldRef<"WhatsAppSession", 'Boolean'>
+    readonly proxyEnabled: FieldRef<"WhatsAppSession", 'Boolean'>
+    readonly proxyUrl: FieldRef<"WhatsAppSession", 'String'>
+    readonly s3Enabled: FieldRef<"WhatsAppSession", 'Boolean'>
+    readonly s3Endpoint: FieldRef<"WhatsAppSession", 'String'>
+    readonly s3Region: FieldRef<"WhatsAppSession", 'String'>
+    readonly s3Bucket: FieldRef<"WhatsAppSession", 'String'>
+    readonly s3AccessKey: FieldRef<"WhatsAppSession", 'String'>
+    readonly s3SecretKey: FieldRef<"WhatsAppSession", 'String'>
+    readonly s3PathStyle: FieldRef<"WhatsAppSession", 'Boolean'>
+    readonly s3PublicUrl: FieldRef<"WhatsAppSession", 'String'>
+    readonly s3MediaDelivery: FieldRef<"WhatsAppSession", 'String'>
+    readonly s3RetentionDays: FieldRef<"WhatsAppSession", 'Int'>
     readonly createdAt: FieldRef<"WhatsAppSession", 'DateTime'>
     readonly updatedAt: FieldRef<"WhatsAppSession", 'DateTime'>
-    readonly aiConfig: FieldRef<"WhatsAppSession", 'String'>
-    readonly message: FieldRef<"WhatsAppSession", 'String'>
-    readonly sessionName: FieldRef<"WhatsAppSession", 'String'>
-    readonly isTerminated: FieldRef<"WhatsAppSession", 'Boolean'>
   }
     
 
@@ -11663,6 +11922,25 @@ export namespace Prisma {
      * Limit how many WhatsAppSessions to delete.
      */
     limit?: number
+  }
+
+  /**
+   * WhatsAppSession.user
+   */
+  export type WhatsAppSession$userArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the User
+     */
+    omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
   }
 
   /**
@@ -30905,16 +31183,33 @@ export namespace Prisma {
   export const WhatsAppSessionScalarFieldEnum: {
     id: 'id',
     sessionId: 'sessionId',
-    userId: 'userId',
-    status: 'status',
-    qr: 'qr',
-    isNotification: 'isNotification',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt',
-    aiConfig: 'aiConfig',
-    message: 'message',
     sessionName: 'sessionName',
-    isTerminated: 'isTerminated'
+    token: 'token',
+    userId: 'userId',
+    webhook: 'webhook',
+    events: 'events',
+    expiration: 'expiration',
+    connected: 'connected',
+    loggedIn: 'loggedIn',
+    jid: 'jid',
+    qrcode: 'qrcode',
+    status: 'status',
+    message: 'message',
+    isSystemSession: 'isSystemSession',
+    proxyEnabled: 'proxyEnabled',
+    proxyUrl: 'proxyUrl',
+    s3Enabled: 's3Enabled',
+    s3Endpoint: 's3Endpoint',
+    s3Region: 's3Region',
+    s3Bucket: 's3Bucket',
+    s3AccessKey: 's3AccessKey',
+    s3SecretKey: 's3SecretKey',
+    s3PathStyle: 's3PathStyle',
+    s3PublicUrl: 's3PublicUrl',
+    s3MediaDelivery: 's3MediaDelivery',
+    s3RetentionDays: 's3RetentionDays',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
   };
 
   export type WhatsAppSessionScalarFieldEnum = (typeof WhatsAppSessionScalarFieldEnum)[keyof typeof WhatsAppSessionScalarFieldEnum]
@@ -31879,33 +32174,67 @@ export namespace Prisma {
     NOT?: WhatsAppSessionWhereInput | WhatsAppSessionWhereInput[]
     id?: StringFilter<"WhatsAppSession"> | string
     sessionId?: StringFilter<"WhatsAppSession"> | string
-    userId?: StringFilter<"WhatsAppSession"> | string
+    sessionName?: StringFilter<"WhatsAppSession"> | string
+    token?: StringFilter<"WhatsAppSession"> | string
+    userId?: StringNullableFilter<"WhatsAppSession"> | string | null
+    webhook?: StringNullableFilter<"WhatsAppSession"> | string | null
+    events?: StringNullableFilter<"WhatsAppSession"> | string | null
+    expiration?: IntFilter<"WhatsAppSession"> | number
+    connected?: BoolFilter<"WhatsAppSession"> | boolean
+    loggedIn?: BoolFilter<"WhatsAppSession"> | boolean
+    jid?: StringNullableFilter<"WhatsAppSession"> | string | null
+    qrcode?: StringNullableFilter<"WhatsAppSession"> | string | null
     status?: StringFilter<"WhatsAppSession"> | string
-    qr?: StringNullableFilter<"WhatsAppSession"> | string | null
-    isNotification?: BoolFilter<"WhatsAppSession"> | boolean
+    message?: StringNullableFilter<"WhatsAppSession"> | string | null
+    isSystemSession?: BoolFilter<"WhatsAppSession"> | boolean
+    proxyEnabled?: BoolFilter<"WhatsAppSession"> | boolean
+    proxyUrl?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3Enabled?: BoolFilter<"WhatsAppSession"> | boolean
+    s3Endpoint?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3Region?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3Bucket?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3AccessKey?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3SecretKey?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3PathStyle?: BoolFilter<"WhatsAppSession"> | boolean
+    s3PublicUrl?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3MediaDelivery?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3RetentionDays?: IntFilter<"WhatsAppSession"> | number
     createdAt?: DateTimeFilter<"WhatsAppSession"> | Date | string
     updatedAt?: DateTimeFilter<"WhatsAppSession"> | Date | string
-    aiConfig?: StringNullableFilter<"WhatsAppSession"> | string | null
-    message?: StringNullableFilter<"WhatsAppSession"> | string | null
-    sessionName?: StringNullableFilter<"WhatsAppSession"> | string | null
-    isTerminated?: BoolFilter<"WhatsAppSession"> | boolean
-    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    user?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     whatsappMessageStats?: WhatsAppMessageStatsListRelationFilter
   }
 
   export type WhatsAppSessionOrderByWithRelationInput = {
     id?: SortOrder
     sessionId?: SortOrder
-    userId?: SortOrder
+    sessionName?: SortOrder
+    token?: SortOrder
+    userId?: SortOrderInput | SortOrder
+    webhook?: SortOrderInput | SortOrder
+    events?: SortOrderInput | SortOrder
+    expiration?: SortOrder
+    connected?: SortOrder
+    loggedIn?: SortOrder
+    jid?: SortOrderInput | SortOrder
+    qrcode?: SortOrderInput | SortOrder
     status?: SortOrder
-    qr?: SortOrderInput | SortOrder
-    isNotification?: SortOrder
+    message?: SortOrderInput | SortOrder
+    isSystemSession?: SortOrder
+    proxyEnabled?: SortOrder
+    proxyUrl?: SortOrderInput | SortOrder
+    s3Enabled?: SortOrder
+    s3Endpoint?: SortOrderInput | SortOrder
+    s3Region?: SortOrderInput | SortOrder
+    s3Bucket?: SortOrderInput | SortOrder
+    s3AccessKey?: SortOrderInput | SortOrder
+    s3SecretKey?: SortOrderInput | SortOrder
+    s3PathStyle?: SortOrder
+    s3PublicUrl?: SortOrderInput | SortOrder
+    s3MediaDelivery?: SortOrderInput | SortOrder
+    s3RetentionDays?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    aiConfig?: SortOrderInput | SortOrder
-    message?: SortOrderInput | SortOrder
-    sessionName?: SortOrderInput | SortOrder
-    isTerminated?: SortOrder
     user?: UserOrderByWithRelationInput
     whatsappMessageStats?: WhatsAppMessageStatsOrderByRelationAggregateInput
   }
@@ -31913,39 +32242,75 @@ export namespace Prisma {
   export type WhatsAppSessionWhereUniqueInput = Prisma.AtLeast<{
     id?: string
     sessionId?: string
+    token?: string
     AND?: WhatsAppSessionWhereInput | WhatsAppSessionWhereInput[]
     OR?: WhatsAppSessionWhereInput[]
     NOT?: WhatsAppSessionWhereInput | WhatsAppSessionWhereInput[]
-    userId?: StringFilter<"WhatsAppSession"> | string
+    sessionName?: StringFilter<"WhatsAppSession"> | string
+    userId?: StringNullableFilter<"WhatsAppSession"> | string | null
+    webhook?: StringNullableFilter<"WhatsAppSession"> | string | null
+    events?: StringNullableFilter<"WhatsAppSession"> | string | null
+    expiration?: IntFilter<"WhatsAppSession"> | number
+    connected?: BoolFilter<"WhatsAppSession"> | boolean
+    loggedIn?: BoolFilter<"WhatsAppSession"> | boolean
+    jid?: StringNullableFilter<"WhatsAppSession"> | string | null
+    qrcode?: StringNullableFilter<"WhatsAppSession"> | string | null
     status?: StringFilter<"WhatsAppSession"> | string
-    qr?: StringNullableFilter<"WhatsAppSession"> | string | null
-    isNotification?: BoolFilter<"WhatsAppSession"> | boolean
+    message?: StringNullableFilter<"WhatsAppSession"> | string | null
+    isSystemSession?: BoolFilter<"WhatsAppSession"> | boolean
+    proxyEnabled?: BoolFilter<"WhatsAppSession"> | boolean
+    proxyUrl?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3Enabled?: BoolFilter<"WhatsAppSession"> | boolean
+    s3Endpoint?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3Region?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3Bucket?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3AccessKey?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3SecretKey?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3PathStyle?: BoolFilter<"WhatsAppSession"> | boolean
+    s3PublicUrl?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3MediaDelivery?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3RetentionDays?: IntFilter<"WhatsAppSession"> | number
     createdAt?: DateTimeFilter<"WhatsAppSession"> | Date | string
     updatedAt?: DateTimeFilter<"WhatsAppSession"> | Date | string
-    aiConfig?: StringNullableFilter<"WhatsAppSession"> | string | null
-    message?: StringNullableFilter<"WhatsAppSession"> | string | null
-    sessionName?: StringNullableFilter<"WhatsAppSession"> | string | null
-    isTerminated?: BoolFilter<"WhatsAppSession"> | boolean
-    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    user?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     whatsappMessageStats?: WhatsAppMessageStatsListRelationFilter
-  }, "id" | "sessionId">
+  }, "id" | "sessionId" | "token">
 
   export type WhatsAppSessionOrderByWithAggregationInput = {
     id?: SortOrder
     sessionId?: SortOrder
-    userId?: SortOrder
+    sessionName?: SortOrder
+    token?: SortOrder
+    userId?: SortOrderInput | SortOrder
+    webhook?: SortOrderInput | SortOrder
+    events?: SortOrderInput | SortOrder
+    expiration?: SortOrder
+    connected?: SortOrder
+    loggedIn?: SortOrder
+    jid?: SortOrderInput | SortOrder
+    qrcode?: SortOrderInput | SortOrder
     status?: SortOrder
-    qr?: SortOrderInput | SortOrder
-    isNotification?: SortOrder
+    message?: SortOrderInput | SortOrder
+    isSystemSession?: SortOrder
+    proxyEnabled?: SortOrder
+    proxyUrl?: SortOrderInput | SortOrder
+    s3Enabled?: SortOrder
+    s3Endpoint?: SortOrderInput | SortOrder
+    s3Region?: SortOrderInput | SortOrder
+    s3Bucket?: SortOrderInput | SortOrder
+    s3AccessKey?: SortOrderInput | SortOrder
+    s3SecretKey?: SortOrderInput | SortOrder
+    s3PathStyle?: SortOrder
+    s3PublicUrl?: SortOrderInput | SortOrder
+    s3MediaDelivery?: SortOrderInput | SortOrder
+    s3RetentionDays?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    aiConfig?: SortOrderInput | SortOrder
-    message?: SortOrderInput | SortOrder
-    sessionName?: SortOrderInput | SortOrder
-    isTerminated?: SortOrder
     _count?: WhatsAppSessionCountOrderByAggregateInput
+    _avg?: WhatsAppSessionAvgOrderByAggregateInput
     _max?: WhatsAppSessionMaxOrderByAggregateInput
     _min?: WhatsAppSessionMinOrderByAggregateInput
+    _sum?: WhatsAppSessionSumOrderByAggregateInput
   }
 
   export type WhatsAppSessionScalarWhereWithAggregatesInput = {
@@ -31954,16 +32319,33 @@ export namespace Prisma {
     NOT?: WhatsAppSessionScalarWhereWithAggregatesInput | WhatsAppSessionScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"WhatsAppSession"> | string
     sessionId?: StringWithAggregatesFilter<"WhatsAppSession"> | string
-    userId?: StringWithAggregatesFilter<"WhatsAppSession"> | string
+    sessionName?: StringWithAggregatesFilter<"WhatsAppSession"> | string
+    token?: StringWithAggregatesFilter<"WhatsAppSession"> | string
+    userId?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    webhook?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    events?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    expiration?: IntWithAggregatesFilter<"WhatsAppSession"> | number
+    connected?: BoolWithAggregatesFilter<"WhatsAppSession"> | boolean
+    loggedIn?: BoolWithAggregatesFilter<"WhatsAppSession"> | boolean
+    jid?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    qrcode?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
     status?: StringWithAggregatesFilter<"WhatsAppSession"> | string
-    qr?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
-    isNotification?: BoolWithAggregatesFilter<"WhatsAppSession"> | boolean
+    message?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    isSystemSession?: BoolWithAggregatesFilter<"WhatsAppSession"> | boolean
+    proxyEnabled?: BoolWithAggregatesFilter<"WhatsAppSession"> | boolean
+    proxyUrl?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    s3Enabled?: BoolWithAggregatesFilter<"WhatsAppSession"> | boolean
+    s3Endpoint?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    s3Region?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    s3Bucket?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    s3AccessKey?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    s3SecretKey?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    s3PathStyle?: BoolWithAggregatesFilter<"WhatsAppSession"> | boolean
+    s3PublicUrl?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    s3MediaDelivery?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
+    s3RetentionDays?: IntWithAggregatesFilter<"WhatsAppSession"> | number
     createdAt?: DateTimeWithAggregatesFilter<"WhatsAppSession"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"WhatsAppSession"> | Date | string
-    aiConfig?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
-    message?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
-    sessionName?: StringNullableWithAggregatesFilter<"WhatsAppSession"> | string | null
-    isTerminated?: BoolWithAggregatesFilter<"WhatsAppSession"> | boolean
   }
 
   export type TransactionWhereInput = {
@@ -34074,109 +34456,228 @@ export namespace Prisma {
   export type WhatsAppSessionCreateInput = {
     id?: string
     sessionId: string
-    status: string
-    qr?: string | null
-    isNotification?: boolean
+    sessionName: string
+    token: string
+    webhook?: string | null
+    events?: string | null
+    expiration?: number
+    connected?: boolean
+    loggedIn?: boolean
+    jid?: string | null
+    qrcode?: string | null
+    status?: string
+    message?: string | null
+    isSystemSession?: boolean
+    proxyEnabled?: boolean
+    proxyUrl?: string | null
+    s3Enabled?: boolean
+    s3Endpoint?: string | null
+    s3Region?: string | null
+    s3Bucket?: string | null
+    s3AccessKey?: string | null
+    s3SecretKey?: string | null
+    s3PathStyle?: boolean
+    s3PublicUrl?: string | null
+    s3MediaDelivery?: string | null
+    s3RetentionDays?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    aiConfig?: string | null
-    message?: string | null
-    sessionName?: string | null
-    isTerminated?: boolean
-    user: UserCreateNestedOneWithoutWhatsAppSessionsInput
+    user?: UserCreateNestedOneWithoutWhatsAppSessionsInput
     whatsappMessageStats?: WhatsAppMessageStatsCreateNestedManyWithoutSessionInput
   }
 
   export type WhatsAppSessionUncheckedCreateInput = {
     id?: string
     sessionId: string
-    userId: string
-    status: string
-    qr?: string | null
-    isNotification?: boolean
+    sessionName: string
+    token: string
+    userId?: string | null
+    webhook?: string | null
+    events?: string | null
+    expiration?: number
+    connected?: boolean
+    loggedIn?: boolean
+    jid?: string | null
+    qrcode?: string | null
+    status?: string
+    message?: string | null
+    isSystemSession?: boolean
+    proxyEnabled?: boolean
+    proxyUrl?: string | null
+    s3Enabled?: boolean
+    s3Endpoint?: string | null
+    s3Region?: string | null
+    s3Bucket?: string | null
+    s3AccessKey?: string | null
+    s3SecretKey?: string | null
+    s3PathStyle?: boolean
+    s3PublicUrl?: string | null
+    s3MediaDelivery?: string | null
+    s3RetentionDays?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    aiConfig?: string | null
-    message?: string | null
-    sessionName?: string | null
-    isTerminated?: boolean
     whatsappMessageStats?: WhatsAppMessageStatsUncheckedCreateNestedManyWithoutSessionInput
   }
 
   export type WhatsAppSessionUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
+    sessionName?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    webhook?: NullableStringFieldUpdateOperationsInput | string | null
+    events?: NullableStringFieldUpdateOperationsInput | string | null
+    expiration?: IntFieldUpdateOperationsInput | number
+    connected?: BoolFieldUpdateOperationsInput | boolean
+    loggedIn?: BoolFieldUpdateOperationsInput | boolean
+    jid?: NullableStringFieldUpdateOperationsInput | string | null
+    qrcode?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    qr?: NullableStringFieldUpdateOperationsInput | string | null
-    isNotification?: BoolFieldUpdateOperationsInput | boolean
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemSession?: BoolFieldUpdateOperationsInput | boolean
+    proxyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    proxyUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Enabled?: BoolFieldUpdateOperationsInput | boolean
+    s3Endpoint?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Region?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Bucket?: NullableStringFieldUpdateOperationsInput | string | null
+    s3AccessKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3SecretKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3PathStyle?: BoolFieldUpdateOperationsInput | boolean
+    s3PublicUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3MediaDelivery?: NullableStringFieldUpdateOperationsInput | string | null
+    s3RetentionDays?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    aiConfig?: NullableStringFieldUpdateOperationsInput | string | null
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    sessionName?: NullableStringFieldUpdateOperationsInput | string | null
-    isTerminated?: BoolFieldUpdateOperationsInput | boolean
-    user?: UserUpdateOneRequiredWithoutWhatsAppSessionsNestedInput
+    user?: UserUpdateOneWithoutWhatsAppSessionsNestedInput
     whatsappMessageStats?: WhatsAppMessageStatsUpdateManyWithoutSessionNestedInput
   }
 
   export type WhatsAppSessionUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
+    sessionName?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    webhook?: NullableStringFieldUpdateOperationsInput | string | null
+    events?: NullableStringFieldUpdateOperationsInput | string | null
+    expiration?: IntFieldUpdateOperationsInput | number
+    connected?: BoolFieldUpdateOperationsInput | boolean
+    loggedIn?: BoolFieldUpdateOperationsInput | boolean
+    jid?: NullableStringFieldUpdateOperationsInput | string | null
+    qrcode?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    qr?: NullableStringFieldUpdateOperationsInput | string | null
-    isNotification?: BoolFieldUpdateOperationsInput | boolean
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemSession?: BoolFieldUpdateOperationsInput | boolean
+    proxyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    proxyUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Enabled?: BoolFieldUpdateOperationsInput | boolean
+    s3Endpoint?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Region?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Bucket?: NullableStringFieldUpdateOperationsInput | string | null
+    s3AccessKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3SecretKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3PathStyle?: BoolFieldUpdateOperationsInput | boolean
+    s3PublicUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3MediaDelivery?: NullableStringFieldUpdateOperationsInput | string | null
+    s3RetentionDays?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    aiConfig?: NullableStringFieldUpdateOperationsInput | string | null
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    sessionName?: NullableStringFieldUpdateOperationsInput | string | null
-    isTerminated?: BoolFieldUpdateOperationsInput | boolean
     whatsappMessageStats?: WhatsAppMessageStatsUncheckedUpdateManyWithoutSessionNestedInput
   }
 
   export type WhatsAppSessionCreateManyInput = {
     id?: string
     sessionId: string
-    userId: string
-    status: string
-    qr?: string | null
-    isNotification?: boolean
+    sessionName: string
+    token: string
+    userId?: string | null
+    webhook?: string | null
+    events?: string | null
+    expiration?: number
+    connected?: boolean
+    loggedIn?: boolean
+    jid?: string | null
+    qrcode?: string | null
+    status?: string
+    message?: string | null
+    isSystemSession?: boolean
+    proxyEnabled?: boolean
+    proxyUrl?: string | null
+    s3Enabled?: boolean
+    s3Endpoint?: string | null
+    s3Region?: string | null
+    s3Bucket?: string | null
+    s3AccessKey?: string | null
+    s3SecretKey?: string | null
+    s3PathStyle?: boolean
+    s3PublicUrl?: string | null
+    s3MediaDelivery?: string | null
+    s3RetentionDays?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    aiConfig?: string | null
-    message?: string | null
-    sessionName?: string | null
-    isTerminated?: boolean
   }
 
   export type WhatsAppSessionUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
+    sessionName?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    webhook?: NullableStringFieldUpdateOperationsInput | string | null
+    events?: NullableStringFieldUpdateOperationsInput | string | null
+    expiration?: IntFieldUpdateOperationsInput | number
+    connected?: BoolFieldUpdateOperationsInput | boolean
+    loggedIn?: BoolFieldUpdateOperationsInput | boolean
+    jid?: NullableStringFieldUpdateOperationsInput | string | null
+    qrcode?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    qr?: NullableStringFieldUpdateOperationsInput | string | null
-    isNotification?: BoolFieldUpdateOperationsInput | boolean
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemSession?: BoolFieldUpdateOperationsInput | boolean
+    proxyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    proxyUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Enabled?: BoolFieldUpdateOperationsInput | boolean
+    s3Endpoint?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Region?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Bucket?: NullableStringFieldUpdateOperationsInput | string | null
+    s3AccessKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3SecretKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3PathStyle?: BoolFieldUpdateOperationsInput | boolean
+    s3PublicUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3MediaDelivery?: NullableStringFieldUpdateOperationsInput | string | null
+    s3RetentionDays?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    aiConfig?: NullableStringFieldUpdateOperationsInput | string | null
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    sessionName?: NullableStringFieldUpdateOperationsInput | string | null
-    isTerminated?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type WhatsAppSessionUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
+    sessionName?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    webhook?: NullableStringFieldUpdateOperationsInput | string | null
+    events?: NullableStringFieldUpdateOperationsInput | string | null
+    expiration?: IntFieldUpdateOperationsInput | number
+    connected?: BoolFieldUpdateOperationsInput | boolean
+    loggedIn?: BoolFieldUpdateOperationsInput | boolean
+    jid?: NullableStringFieldUpdateOperationsInput | string | null
+    qrcode?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    qr?: NullableStringFieldUpdateOperationsInput | string | null
-    isNotification?: BoolFieldUpdateOperationsInput | boolean
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemSession?: BoolFieldUpdateOperationsInput | boolean
+    proxyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    proxyUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Enabled?: BoolFieldUpdateOperationsInput | boolean
+    s3Endpoint?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Region?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Bucket?: NullableStringFieldUpdateOperationsInput | string | null
+    s3AccessKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3SecretKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3PathStyle?: BoolFieldUpdateOperationsInput | boolean
+    s3PublicUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3MediaDelivery?: NullableStringFieldUpdateOperationsInput | string | null
+    s3RetentionDays?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    aiConfig?: NullableStringFieldUpdateOperationsInput | string | null
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    sessionName?: NullableStringFieldUpdateOperationsInput | string | null
-    isTerminated?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type TransactionCreateInput = {
@@ -36463,54 +36964,142 @@ export namespace Prisma {
     _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
-  export type UserScalarRelationFilter = {
-    is?: UserWhereInput
-    isNot?: UserWhereInput
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
+  }
+
+  export type UserNullableScalarRelationFilter = {
+    is?: UserWhereInput | null
+    isNot?: UserWhereInput | null
   }
 
   export type WhatsAppSessionCountOrderByAggregateInput = {
     id?: SortOrder
     sessionId?: SortOrder
+    sessionName?: SortOrder
+    token?: SortOrder
     userId?: SortOrder
+    webhook?: SortOrder
+    events?: SortOrder
+    expiration?: SortOrder
+    connected?: SortOrder
+    loggedIn?: SortOrder
+    jid?: SortOrder
+    qrcode?: SortOrder
     status?: SortOrder
-    qr?: SortOrder
-    isNotification?: SortOrder
+    message?: SortOrder
+    isSystemSession?: SortOrder
+    proxyEnabled?: SortOrder
+    proxyUrl?: SortOrder
+    s3Enabled?: SortOrder
+    s3Endpoint?: SortOrder
+    s3Region?: SortOrder
+    s3Bucket?: SortOrder
+    s3AccessKey?: SortOrder
+    s3SecretKey?: SortOrder
+    s3PathStyle?: SortOrder
+    s3PublicUrl?: SortOrder
+    s3MediaDelivery?: SortOrder
+    s3RetentionDays?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    aiConfig?: SortOrder
-    message?: SortOrder
-    sessionName?: SortOrder
-    isTerminated?: SortOrder
+  }
+
+  export type WhatsAppSessionAvgOrderByAggregateInput = {
+    expiration?: SortOrder
+    s3RetentionDays?: SortOrder
   }
 
   export type WhatsAppSessionMaxOrderByAggregateInput = {
     id?: SortOrder
     sessionId?: SortOrder
+    sessionName?: SortOrder
+    token?: SortOrder
     userId?: SortOrder
+    webhook?: SortOrder
+    events?: SortOrder
+    expiration?: SortOrder
+    connected?: SortOrder
+    loggedIn?: SortOrder
+    jid?: SortOrder
+    qrcode?: SortOrder
     status?: SortOrder
-    qr?: SortOrder
-    isNotification?: SortOrder
+    message?: SortOrder
+    isSystemSession?: SortOrder
+    proxyEnabled?: SortOrder
+    proxyUrl?: SortOrder
+    s3Enabled?: SortOrder
+    s3Endpoint?: SortOrder
+    s3Region?: SortOrder
+    s3Bucket?: SortOrder
+    s3AccessKey?: SortOrder
+    s3SecretKey?: SortOrder
+    s3PathStyle?: SortOrder
+    s3PublicUrl?: SortOrder
+    s3MediaDelivery?: SortOrder
+    s3RetentionDays?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    aiConfig?: SortOrder
-    message?: SortOrder
-    sessionName?: SortOrder
-    isTerminated?: SortOrder
   }
 
   export type WhatsAppSessionMinOrderByAggregateInput = {
     id?: SortOrder
     sessionId?: SortOrder
+    sessionName?: SortOrder
+    token?: SortOrder
     userId?: SortOrder
+    webhook?: SortOrder
+    events?: SortOrder
+    expiration?: SortOrder
+    connected?: SortOrder
+    loggedIn?: SortOrder
+    jid?: SortOrder
+    qrcode?: SortOrder
     status?: SortOrder
-    qr?: SortOrder
-    isNotification?: SortOrder
+    message?: SortOrder
+    isSystemSession?: SortOrder
+    proxyEnabled?: SortOrder
+    proxyUrl?: SortOrder
+    s3Enabled?: SortOrder
+    s3Endpoint?: SortOrder
+    s3Region?: SortOrder
+    s3Bucket?: SortOrder
+    s3AccessKey?: SortOrder
+    s3SecretKey?: SortOrder
+    s3PathStyle?: SortOrder
+    s3PublicUrl?: SortOrder
+    s3MediaDelivery?: SortOrder
+    s3RetentionDays?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    aiConfig?: SortOrder
-    message?: SortOrder
-    sessionName?: SortOrder
-    isTerminated?: SortOrder
+  }
+
+  export type WhatsAppSessionSumOrderByAggregateInput = {
+    expiration?: SortOrder
+    s3RetentionDays?: SortOrder
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type DecimalNullableFilter<$PrismaModel = never> = {
@@ -36527,6 +37116,11 @@ export namespace Prisma {
   export type PaymentNullableScalarRelationFilter = {
     is?: PaymentWhereInput | null
     isNot?: PaymentWhereInput | null
+  }
+
+  export type UserScalarRelationFilter = {
+    is?: UserWhereInput
+    isNot?: UserWhereInput
   }
 
   export type VoucherNullableScalarRelationFilter = {
@@ -36633,17 +37227,6 @@ export namespace Prisma {
     _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
-  export type IntFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
-  }
-
   export type PackageNullableScalarRelationFilter = {
     is?: PackageWhereInput | null
     isNot?: PackageWhereInput | null
@@ -36693,22 +37276,6 @@ export namespace Prisma {
 
   export type TransactionProductSumOrderByAggregateInput = {
     quantity?: SortOrder
-  }
-
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type AddonScalarRelationFilter = {
@@ -38345,10 +38912,20 @@ export namespace Prisma {
     connect?: WhatsAppMessageStatsWhereUniqueInput | WhatsAppMessageStatsWhereUniqueInput[]
   }
 
-  export type UserUpdateOneRequiredWithoutWhatsAppSessionsNestedInput = {
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type UserUpdateOneWithoutWhatsAppSessionsNestedInput = {
     create?: XOR<UserCreateWithoutWhatsAppSessionsInput, UserUncheckedCreateWithoutWhatsAppSessionsInput>
     connectOrCreate?: UserCreateOrConnectWithoutWhatsAppSessionsInput
     upsert?: UserUpsertWithoutWhatsAppSessionsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutWhatsAppSessionsInput, UserUpdateWithoutWhatsAppSessionsInput>, UserUncheckedUpdateWithoutWhatsAppSessionsInput>
   }
@@ -38745,14 +39322,6 @@ export namespace Prisma {
     create?: XOR<TransactionCreateWithoutProductTransactionsInput, TransactionUncheckedCreateWithoutProductTransactionsInput>
     connectOrCreate?: TransactionCreateOrConnectWithoutProductTransactionsInput
     connect?: TransactionWhereUniqueInput
-  }
-
-  export type IntFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
   }
 
   export type PackageUpdateOneWithoutProductTransactionsNestedInput = {
@@ -39408,33 +39977,6 @@ export namespace Prisma {
     _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
-  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
-  }
-
-  export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedDecimalNullableFilter<$PrismaModel>
-    _sum?: NestedDecimalNullableFilter<$PrismaModel>
-    _min?: NestedDecimalNullableFilter<$PrismaModel>
-    _max?: NestedDecimalNullableFilter<$PrismaModel>
-  }
-
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -39460,6 +40002,33 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
+  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -39641,30 +40210,64 @@ export namespace Prisma {
   export type WhatsAppSessionCreateWithoutUserInput = {
     id?: string
     sessionId: string
-    status: string
-    qr?: string | null
-    isNotification?: boolean
+    sessionName: string
+    token: string
+    webhook?: string | null
+    events?: string | null
+    expiration?: number
+    connected?: boolean
+    loggedIn?: boolean
+    jid?: string | null
+    qrcode?: string | null
+    status?: string
+    message?: string | null
+    isSystemSession?: boolean
+    proxyEnabled?: boolean
+    proxyUrl?: string | null
+    s3Enabled?: boolean
+    s3Endpoint?: string | null
+    s3Region?: string | null
+    s3Bucket?: string | null
+    s3AccessKey?: string | null
+    s3SecretKey?: string | null
+    s3PathStyle?: boolean
+    s3PublicUrl?: string | null
+    s3MediaDelivery?: string | null
+    s3RetentionDays?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    aiConfig?: string | null
-    message?: string | null
-    sessionName?: string | null
-    isTerminated?: boolean
     whatsappMessageStats?: WhatsAppMessageStatsCreateNestedManyWithoutSessionInput
   }
 
   export type WhatsAppSessionUncheckedCreateWithoutUserInput = {
     id?: string
     sessionId: string
-    status: string
-    qr?: string | null
-    isNotification?: boolean
+    sessionName: string
+    token: string
+    webhook?: string | null
+    events?: string | null
+    expiration?: number
+    connected?: boolean
+    loggedIn?: boolean
+    jid?: string | null
+    qrcode?: string | null
+    status?: string
+    message?: string | null
+    isSystemSession?: boolean
+    proxyEnabled?: boolean
+    proxyUrl?: string | null
+    s3Enabled?: boolean
+    s3Endpoint?: string | null
+    s3Region?: string | null
+    s3Bucket?: string | null
+    s3AccessKey?: string | null
+    s3SecretKey?: string | null
+    s3PathStyle?: boolean
+    s3PublicUrl?: string | null
+    s3MediaDelivery?: string | null
+    s3RetentionDays?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    aiConfig?: string | null
-    message?: string | null
-    sessionName?: string | null
-    isTerminated?: boolean
     whatsappMessageStats?: WhatsAppMessageStatsUncheckedCreateNestedManyWithoutSessionInput
   }
 
@@ -39952,16 +40555,33 @@ export namespace Prisma {
     NOT?: WhatsAppSessionScalarWhereInput | WhatsAppSessionScalarWhereInput[]
     id?: StringFilter<"WhatsAppSession"> | string
     sessionId?: StringFilter<"WhatsAppSession"> | string
-    userId?: StringFilter<"WhatsAppSession"> | string
+    sessionName?: StringFilter<"WhatsAppSession"> | string
+    token?: StringFilter<"WhatsAppSession"> | string
+    userId?: StringNullableFilter<"WhatsAppSession"> | string | null
+    webhook?: StringNullableFilter<"WhatsAppSession"> | string | null
+    events?: StringNullableFilter<"WhatsAppSession"> | string | null
+    expiration?: IntFilter<"WhatsAppSession"> | number
+    connected?: BoolFilter<"WhatsAppSession"> | boolean
+    loggedIn?: BoolFilter<"WhatsAppSession"> | boolean
+    jid?: StringNullableFilter<"WhatsAppSession"> | string | null
+    qrcode?: StringNullableFilter<"WhatsAppSession"> | string | null
     status?: StringFilter<"WhatsAppSession"> | string
-    qr?: StringNullableFilter<"WhatsAppSession"> | string | null
-    isNotification?: BoolFilter<"WhatsAppSession"> | boolean
+    message?: StringNullableFilter<"WhatsAppSession"> | string | null
+    isSystemSession?: BoolFilter<"WhatsAppSession"> | boolean
+    proxyEnabled?: BoolFilter<"WhatsAppSession"> | boolean
+    proxyUrl?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3Enabled?: BoolFilter<"WhatsAppSession"> | boolean
+    s3Endpoint?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3Region?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3Bucket?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3AccessKey?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3SecretKey?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3PathStyle?: BoolFilter<"WhatsAppSession"> | boolean
+    s3PublicUrl?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3MediaDelivery?: StringNullableFilter<"WhatsAppSession"> | string | null
+    s3RetentionDays?: IntFilter<"WhatsAppSession"> | number
     createdAt?: DateTimeFilter<"WhatsAppSession"> | Date | string
     updatedAt?: DateTimeFilter<"WhatsAppSession"> | Date | string
-    aiConfig?: StringNullableFilter<"WhatsAppSession"> | string | null
-    message?: StringNullableFilter<"WhatsAppSession"> | string | null
-    sessionName?: StringNullableFilter<"WhatsAppSession"> | string | null
-    isTerminated?: BoolFilter<"WhatsAppSession"> | boolean
   }
 
   export type ServicesProductCustomersUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -44323,31 +44943,65 @@ export namespace Prisma {
   export type WhatsAppSessionCreateWithoutWhatsappMessageStatsInput = {
     id?: string
     sessionId: string
-    status: string
-    qr?: string | null
-    isNotification?: boolean
+    sessionName: string
+    token: string
+    webhook?: string | null
+    events?: string | null
+    expiration?: number
+    connected?: boolean
+    loggedIn?: boolean
+    jid?: string | null
+    qrcode?: string | null
+    status?: string
+    message?: string | null
+    isSystemSession?: boolean
+    proxyEnabled?: boolean
+    proxyUrl?: string | null
+    s3Enabled?: boolean
+    s3Endpoint?: string | null
+    s3Region?: string | null
+    s3Bucket?: string | null
+    s3AccessKey?: string | null
+    s3SecretKey?: string | null
+    s3PathStyle?: boolean
+    s3PublicUrl?: string | null
+    s3MediaDelivery?: string | null
+    s3RetentionDays?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    aiConfig?: string | null
-    message?: string | null
-    sessionName?: string | null
-    isTerminated?: boolean
-    user: UserCreateNestedOneWithoutWhatsAppSessionsInput
+    user?: UserCreateNestedOneWithoutWhatsAppSessionsInput
   }
 
   export type WhatsAppSessionUncheckedCreateWithoutWhatsappMessageStatsInput = {
     id?: string
     sessionId: string
-    userId: string
-    status: string
-    qr?: string | null
-    isNotification?: boolean
+    sessionName: string
+    token: string
+    userId?: string | null
+    webhook?: string | null
+    events?: string | null
+    expiration?: number
+    connected?: boolean
+    loggedIn?: boolean
+    jid?: string | null
+    qrcode?: string | null
+    status?: string
+    message?: string | null
+    isSystemSession?: boolean
+    proxyEnabled?: boolean
+    proxyUrl?: string | null
+    s3Enabled?: boolean
+    s3Endpoint?: string | null
+    s3Region?: string | null
+    s3Bucket?: string | null
+    s3AccessKey?: string | null
+    s3SecretKey?: string | null
+    s3PathStyle?: boolean
+    s3PublicUrl?: string | null
+    s3MediaDelivery?: string | null
+    s3RetentionDays?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    aiConfig?: string | null
-    message?: string | null
-    sessionName?: string | null
-    isTerminated?: boolean
   }
 
   export type WhatsAppSessionCreateOrConnectWithoutWhatsappMessageStatsInput = {
@@ -44452,31 +45106,65 @@ export namespace Prisma {
   export type WhatsAppSessionUpdateWithoutWhatsappMessageStatsInput = {
     id?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
+    sessionName?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    webhook?: NullableStringFieldUpdateOperationsInput | string | null
+    events?: NullableStringFieldUpdateOperationsInput | string | null
+    expiration?: IntFieldUpdateOperationsInput | number
+    connected?: BoolFieldUpdateOperationsInput | boolean
+    loggedIn?: BoolFieldUpdateOperationsInput | boolean
+    jid?: NullableStringFieldUpdateOperationsInput | string | null
+    qrcode?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    qr?: NullableStringFieldUpdateOperationsInput | string | null
-    isNotification?: BoolFieldUpdateOperationsInput | boolean
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemSession?: BoolFieldUpdateOperationsInput | boolean
+    proxyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    proxyUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Enabled?: BoolFieldUpdateOperationsInput | boolean
+    s3Endpoint?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Region?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Bucket?: NullableStringFieldUpdateOperationsInput | string | null
+    s3AccessKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3SecretKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3PathStyle?: BoolFieldUpdateOperationsInput | boolean
+    s3PublicUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3MediaDelivery?: NullableStringFieldUpdateOperationsInput | string | null
+    s3RetentionDays?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    aiConfig?: NullableStringFieldUpdateOperationsInput | string | null
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    sessionName?: NullableStringFieldUpdateOperationsInput | string | null
-    isTerminated?: BoolFieldUpdateOperationsInput | boolean
-    user?: UserUpdateOneRequiredWithoutWhatsAppSessionsNestedInput
+    user?: UserUpdateOneWithoutWhatsAppSessionsNestedInput
   }
 
   export type WhatsAppSessionUncheckedUpdateWithoutWhatsappMessageStatsInput = {
     id?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
+    sessionName?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    webhook?: NullableStringFieldUpdateOperationsInput | string | null
+    events?: NullableStringFieldUpdateOperationsInput | string | null
+    expiration?: IntFieldUpdateOperationsInput | number
+    connected?: BoolFieldUpdateOperationsInput | boolean
+    loggedIn?: BoolFieldUpdateOperationsInput | boolean
+    jid?: NullableStringFieldUpdateOperationsInput | string | null
+    qrcode?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    qr?: NullableStringFieldUpdateOperationsInput | string | null
-    isNotification?: BoolFieldUpdateOperationsInput | boolean
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemSession?: BoolFieldUpdateOperationsInput | boolean
+    proxyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    proxyUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Enabled?: BoolFieldUpdateOperationsInput | boolean
+    s3Endpoint?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Region?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Bucket?: NullableStringFieldUpdateOperationsInput | string | null
+    s3AccessKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3SecretKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3PathStyle?: BoolFieldUpdateOperationsInput | boolean
+    s3PublicUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3MediaDelivery?: NullableStringFieldUpdateOperationsInput | string | null
+    s3RetentionDays?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    aiConfig?: NullableStringFieldUpdateOperationsInput | string | null
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    sessionName?: NullableStringFieldUpdateOperationsInput | string | null
-    isTerminated?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type TransactionCreateManyUserInput = {
@@ -44522,15 +45210,32 @@ export namespace Prisma {
   export type WhatsAppSessionCreateManyUserInput = {
     id?: string
     sessionId: string
-    status: string
-    qr?: string | null
-    isNotification?: boolean
+    sessionName: string
+    token: string
+    webhook?: string | null
+    events?: string | null
+    expiration?: number
+    connected?: boolean
+    loggedIn?: boolean
+    jid?: string | null
+    qrcode?: string | null
+    status?: string
+    message?: string | null
+    isSystemSession?: boolean
+    proxyEnabled?: boolean
+    proxyUrl?: string | null
+    s3Enabled?: boolean
+    s3Endpoint?: string | null
+    s3Region?: string | null
+    s3Bucket?: string | null
+    s3AccessKey?: string | null
+    s3SecretKey?: string | null
+    s3PathStyle?: boolean
+    s3PublicUrl?: string | null
+    s3MediaDelivery?: string | null
+    s3RetentionDays?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    aiConfig?: string | null
-    message?: string | null
-    sessionName?: string | null
-    isTerminated?: boolean
   }
 
   export type ServicesProductCustomersCreateManyCustomerInput = {
@@ -44728,45 +45433,96 @@ export namespace Prisma {
   export type WhatsAppSessionUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
+    sessionName?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    webhook?: NullableStringFieldUpdateOperationsInput | string | null
+    events?: NullableStringFieldUpdateOperationsInput | string | null
+    expiration?: IntFieldUpdateOperationsInput | number
+    connected?: BoolFieldUpdateOperationsInput | boolean
+    loggedIn?: BoolFieldUpdateOperationsInput | boolean
+    jid?: NullableStringFieldUpdateOperationsInput | string | null
+    qrcode?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    qr?: NullableStringFieldUpdateOperationsInput | string | null
-    isNotification?: BoolFieldUpdateOperationsInput | boolean
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemSession?: BoolFieldUpdateOperationsInput | boolean
+    proxyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    proxyUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Enabled?: BoolFieldUpdateOperationsInput | boolean
+    s3Endpoint?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Region?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Bucket?: NullableStringFieldUpdateOperationsInput | string | null
+    s3AccessKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3SecretKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3PathStyle?: BoolFieldUpdateOperationsInput | boolean
+    s3PublicUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3MediaDelivery?: NullableStringFieldUpdateOperationsInput | string | null
+    s3RetentionDays?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    aiConfig?: NullableStringFieldUpdateOperationsInput | string | null
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    sessionName?: NullableStringFieldUpdateOperationsInput | string | null
-    isTerminated?: BoolFieldUpdateOperationsInput | boolean
     whatsappMessageStats?: WhatsAppMessageStatsUpdateManyWithoutSessionNestedInput
   }
 
   export type WhatsAppSessionUncheckedUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
+    sessionName?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    webhook?: NullableStringFieldUpdateOperationsInput | string | null
+    events?: NullableStringFieldUpdateOperationsInput | string | null
+    expiration?: IntFieldUpdateOperationsInput | number
+    connected?: BoolFieldUpdateOperationsInput | boolean
+    loggedIn?: BoolFieldUpdateOperationsInput | boolean
+    jid?: NullableStringFieldUpdateOperationsInput | string | null
+    qrcode?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    qr?: NullableStringFieldUpdateOperationsInput | string | null
-    isNotification?: BoolFieldUpdateOperationsInput | boolean
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemSession?: BoolFieldUpdateOperationsInput | boolean
+    proxyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    proxyUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Enabled?: BoolFieldUpdateOperationsInput | boolean
+    s3Endpoint?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Region?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Bucket?: NullableStringFieldUpdateOperationsInput | string | null
+    s3AccessKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3SecretKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3PathStyle?: BoolFieldUpdateOperationsInput | boolean
+    s3PublicUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3MediaDelivery?: NullableStringFieldUpdateOperationsInput | string | null
+    s3RetentionDays?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    aiConfig?: NullableStringFieldUpdateOperationsInput | string | null
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    sessionName?: NullableStringFieldUpdateOperationsInput | string | null
-    isTerminated?: BoolFieldUpdateOperationsInput | boolean
     whatsappMessageStats?: WhatsAppMessageStatsUncheckedUpdateManyWithoutSessionNestedInput
   }
 
   export type WhatsAppSessionUncheckedUpdateManyWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
+    sessionName?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    webhook?: NullableStringFieldUpdateOperationsInput | string | null
+    events?: NullableStringFieldUpdateOperationsInput | string | null
+    expiration?: IntFieldUpdateOperationsInput | number
+    connected?: BoolFieldUpdateOperationsInput | boolean
+    loggedIn?: BoolFieldUpdateOperationsInput | boolean
+    jid?: NullableStringFieldUpdateOperationsInput | string | null
+    qrcode?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
-    qr?: NullableStringFieldUpdateOperationsInput | string | null
-    isNotification?: BoolFieldUpdateOperationsInput | boolean
+    message?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemSession?: BoolFieldUpdateOperationsInput | boolean
+    proxyEnabled?: BoolFieldUpdateOperationsInput | boolean
+    proxyUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Enabled?: BoolFieldUpdateOperationsInput | boolean
+    s3Endpoint?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Region?: NullableStringFieldUpdateOperationsInput | string | null
+    s3Bucket?: NullableStringFieldUpdateOperationsInput | string | null
+    s3AccessKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3SecretKey?: NullableStringFieldUpdateOperationsInput | string | null
+    s3PathStyle?: BoolFieldUpdateOperationsInput | boolean
+    s3PublicUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    s3MediaDelivery?: NullableStringFieldUpdateOperationsInput | string | null
+    s3RetentionDays?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    aiConfig?: NullableStringFieldUpdateOperationsInput | string | null
-    message?: NullableStringFieldUpdateOperationsInput | string | null
-    sessionName?: NullableStringFieldUpdateOperationsInput | string | null
-    isTerminated?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type ServicesProductCustomersUpdateWithoutCustomerInput = {

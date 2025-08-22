@@ -160,7 +160,7 @@ export default function AdminSidebar({ open, setOpen, collapsed = false, setColl
       color: "text-green-600 dark:text-green-400"
     },
     {
-      title: "Package Management",
+      title: "WhatsApp Packages",
       href: "/admin/dashboard/whatsapp-packages",
       icon: Package,
       description: "Manage WhatsApp packages",
@@ -175,14 +175,14 @@ export default function AdminSidebar({ open, setOpen, collapsed = false, setColl
     },
     {
       title: "WhatsApp Sessions",
-      href: "/admin/dashboard/whatsapp-management",
+      href: "/admin/dashboard/whatsapp-sessions",
       icon: MessageSquare,
       description: "Manage active WhatsApp sessions",
       color: "text-green-600 dark:text-green-400"
     },
     {
-      title: "Service Management",
-      href: "/admin/dashboard/whatsapp-admin",
+      title: "Service Subscriptions",
+      href: "/admin/dashboard/whatsapp-subscriptions",
       icon: UserCheck,
       description: "Manage subscriptions & services",
       color: "text-blue-600 dark:text-blue-400"

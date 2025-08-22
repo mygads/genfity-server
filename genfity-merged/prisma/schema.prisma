@@ -122,21 +122,47 @@ model Package {
 
 model WhatsAppSession {
   id             String   @id @default(cuid())
-  sessionId      String   @unique
-  userId         String
-  status         String
-  qr             String?
-  isNotification Boolean  @default(false)
+  sessionId      String   @unique // External service session ID
+  sessionName    String   // Name of the session
+  token          String   @unique // Session token for external service
+  userId         String?  // Optional - null for system sessions
+  webhook        String?  // Webhook URL
+  events         String?  // Event types (All, Message, etc.)
+  expiration     Int      @default(0) // Session expiration
+  connected      Boolean  @default(false) // Connection status
+  loggedIn       Boolean  @default(false) // Login status  
+  jid            String?  // WhatsApp JID when connected
+  qrcode         String?  @db.Text // QR code for pairing
+  status         String   @default("disconnected") // Overall status
+  message        String?  // Status message
+  isSystemSession Boolean @default(false) // True for Genfity app system sessions
+  
+  // Proxy configuration
+  proxyEnabled   Boolean  @default(false)
+  proxyUrl       String?
+  
+  // S3 configuration  
+  s3Enabled      Boolean  @default(false)
+  s3Endpoint     String?
+  s3Region       String?
+  s3Bucket       String?
+  s3AccessKey    String?
+  s3SecretKey    String?
+  s3PathStyle    Boolean  @default(false)
+  s3PublicUrl    String?
+  s3MediaDelivery String? @default("base64")
+  s3RetentionDays Int     @default(30)
+  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  aiConfig       String?  @db.Text
-  message        String?
-  sessionName    String?
-  isTerminated   Boolean  @default(false)
-  user           User     @relation(fields: [userId], references: [id], map: "WhatsAppSession_user_fkey")
+  
+  user           User?    @relation(fields: [userId], references: [id], map: "WhatsAppSession_user_fkey")
   whatsappMessageStats WhatsAppMessageStats[]
 
   @@index([userId])
+  @@index([token])
+  @@index([connected])
+  @@index([isSystemSession])
 }
 
 model Transaction {
