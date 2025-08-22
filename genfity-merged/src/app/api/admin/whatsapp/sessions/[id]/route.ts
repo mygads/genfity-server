@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma';
 
 const WHATSAPP_SERVER_API = process.env.WHATSAPP_SERVER_API;
 const WHATSAPP_ADMIN_TOKEN = process.env.WHATSAPP_ADMIN_TOKEN;
-const WHATSAPP_USER_TOKEN = process.env.WHATSAPP_USER_TOKEN;
 
 // GET /api/admin/whatsapp/sessions/[id]
 export async function GET(

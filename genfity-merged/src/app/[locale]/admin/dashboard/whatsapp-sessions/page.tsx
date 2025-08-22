@@ -39,6 +39,7 @@ import {
   Zap,
   Settings,
   Phone,
+  Smartphone,
   ShieldCheck,
   UserPlus,
 } from 'lucide-react';
@@ -179,9 +180,14 @@ export default function WhatsAppSessionsPage() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [showConnectDialog, setShowConnectDialog] = useState(false);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [showQrDialog, setShowQrDialog] = useState(false);
+  const [showPairPhoneDialog, setShowPairPhoneDialog] = useState(false);
   const [selectedSession, setSelectedSession] = useState<WhatsAppSession | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<WhatsAppSession | null>(null);
   const [sessionToTransfer, setSessionToTransfer] = useState<WhatsAppSession | null>(null);
+  const [sessionToControl, setSessionToControl] = useState<WhatsAppSession | null>(null);
   
   // Form states
   const [createForm, setCreateForm] = useState<CreateSessionForm>({
@@ -216,6 +222,26 @@ export default function WhatsAppSessionsPage() {
   const [selectedTransferUserId, setSelectedTransferUserId] = useState<string>('');
   const [isTransferring, setIsTransferring] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  
+  // Session control states
+  const [connectForm, setConnectForm] = useState({
+    Subscribe: [] as string[],
+    Immediate: true
+  });
+  const [pairPhoneForm, setPairPhoneForm] = useState({
+    Phone: ''
+  });
+  const [sessionStatus, setSessionStatus] = useState<any>(null);
+  const [qrCode, setQrCode] = useState<string>('');
+  const [linkingCode, setLinkingCode] = useState<string>('');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isGettingStatus, setIsGettingStatus] = useState(false);
+  const [isGettingQR, setIsGettingQR] = useState(false);
+  const [isPairingPhone, setIsPairingPhone] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [statusPolling, setStatusPolling] = useState<NodeJS.Timeout | null>(null);
+  const [qrPolling, setQrPolling] = useState<NodeJS.Timeout | null>(null);
   
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -637,6 +663,405 @@ export default function WhatsAppSessionsPage() {
     setTransferUsers([]);
   };
 
+  // Session Control Functions
+  
+  // Connect Session
+  const handleConnectSession = (session: WhatsAppSession) => {
+    setSessionToControl(session);
+    
+    // Prepare Subscribe events from session's webhook events
+    let subscribeEvents: string[] = [];
+    
+    if (session.events === 'All' || !session.events) {
+      // If "All" events, use empty array (server understands this as all events)
+      subscribeEvents = [];
+    } else {
+      // Parse webhook events from database
+      const sessionEvents = session.events.split(',').map(e => e.trim()).filter(e => e);
+      subscribeEvents = [...sessionEvents];
+      
+      // Add "Message" only if not already present
+      if (!subscribeEvents.includes('Message')) {
+        subscribeEvents.push('Message');
+      }
+      
+      // Don't automatically add ReadReceipt - only use what's in webhook events
+    }
+    
+    setConnectForm({
+      Subscribe: subscribeEvents,
+      Immediate: true
+    });
+    
+    // Only show Connect dialog first
+    setShowConnectDialog(true);
+  };
+
+  const handleConfirmConnect = async () => {
+    if (!sessionToControl) return;
+
+    setIsConnecting(true);
+    try {
+      const token = SessionManager.getToken();
+      if (!token) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
+
+      const response = await fetch(`/api/admin/whatsapp/sessions/${sessionToControl.id}/connect`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(connectForm),
+      });
+
+      if (response.status === 401) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: 'Success',
+          description: 'Session connected successfully. QR code is now available for authentication.',
+        });
+        
+        // Close Connect dialog
+        setShowConnectDialog(false);
+        
+        // Refresh sessions list
+        fetchSessions();
+        
+        // NOW show QR dialog and start polling after successful connection
+        setQrCode('');
+        setSessionStatus(null);
+        setShowQrDialog(true);
+        
+        // Start QR polling after connection success
+        await fetchQRCode(sessionToControl.id);
+        await fetchSessionStatus(sessionToControl.id);
+        
+        // Status polling every 1 second
+        const statusInterval = setInterval(async () => {
+          await fetchSessionStatus(sessionToControl.id);
+        }, 1000);
+        setStatusPolling(statusInterval);
+        
+        // QR code polling every 2 seconds
+        const qrInterval = setInterval(async () => {
+          await fetchQRCode(sessionToControl.id);
+        }, 2000);
+        setQrPolling(qrInterval);
+        
+      } else {
+        throw new Error(data.error || 'Failed to connect session');
+      }
+    } catch (error) {
+      console.error('Error connecting session:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to connect session',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  // Get Session Status
+  const handleGetStatus = (session: WhatsAppSession) => {
+    setSessionToControl(session);
+    setSessionStatus(null);
+    setQrCode('');
+    setShowStatusDialog(true);
+    fetchSessionStatus(session.id);
+    
+    // Start polling for status updates every 3 seconds
+    const interval = setInterval(() => {
+      fetchSessionStatus(session.id);
+    }, 3000);
+    setStatusPolling(interval);
+  };
+
+  const fetchSessionStatus = async (sessionId: string) => {
+    try {
+      setIsGettingStatus(true);
+      const token = SessionManager.getToken();
+      if (!token) return;
+
+      const response = await fetch(`/api/admin/whatsapp/sessions/${sessionId}/status`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setSessionStatus(data.data);
+          setQrCode(data.data.qrcode || '');
+          
+          // Stop both status and QR polling if logged in
+          if (data.data.loggedIn) {
+            if (statusPolling) {
+              clearInterval(statusPolling);
+              setStatusPolling(null);
+            }
+            if (qrPolling) {
+              clearInterval(qrPolling);
+              setQrPolling(null);
+            }
+            
+            // Refresh sessions list to update UI
+            fetchSessions();
+            
+            // Show success message
+            toast({
+              title: 'Success',
+              description: 'WhatsApp session successfully authenticated!',
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching status:', error);
+    } finally {
+      setIsGettingStatus(false);
+    }
+  };
+
+  // Get QR Code
+  const handleGetQR = async (session: WhatsAppSession) => {
+    setSessionToControl(session);
+    setQrCode('');
+    setSessionStatus(null);
+    setShowQrDialog(true);
+    
+    // Initial fetch
+    await fetchQRCode(session.id);
+    await fetchSessionStatus(session.id);
+    
+    // Status polling every 1 second
+    const statusInterval = setInterval(async () => {
+      await fetchSessionStatus(session.id);
+    }, 1000);
+    setStatusPolling(statusInterval);
+    
+    // QR code polling every 2 seconds
+    const qrInterval = setInterval(async () => {
+      await fetchQRCode(session.id);
+    }, 2000);
+    setQrPolling(qrInterval);
+  };
+
+  const fetchQRCode = async (sessionId: string) => {
+    try {
+      setIsGettingQR(true);
+      const token = SessionManager.getToken();
+      if (!token) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
+
+      const response = await fetch(`/api/admin/whatsapp/sessions/${sessionId}/qr`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setQrCode(data.data.QRCode || '');
+      } else {
+        console.error('Failed to get QR:', data.error);
+      }
+    } catch (error) {
+      console.error('Error getting QR:', error);
+    } finally {
+      setIsGettingQR(false);
+    }
+  };
+
+  // Pair Phone
+  const handlePairPhone = (session: WhatsAppSession) => {
+    setSessionToControl(session);
+    setPairPhoneForm({ Phone: '' });
+    setLinkingCode('');
+    setShowPairPhoneDialog(true);
+  };
+
+  const handleConfirmPairPhone = async () => {
+    if (!sessionToControl || !pairPhoneForm.Phone) return;
+
+    setIsPairingPhone(true);
+    try {
+      const token = SessionManager.getToken();
+      if (!token) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
+
+      const response = await fetch(`/api/admin/whatsapp/sessions/${sessionToControl.id}/pairphone`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pairPhoneForm),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setLinkingCode(data.data.LinkingCode || '');
+        toast({
+          title: 'Success',
+          description: 'Linking code generated successfully',
+        });
+      } else {
+        throw new Error(data.error || 'Failed to generate pairing code');
+      }
+    } catch (error) {
+      console.error('Error pairing phone:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to generate pairing code',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPairingPhone(false);
+    }
+  };
+
+  // Disconnect Session
+  const handleDisconnectSession = async (session: WhatsAppSession) => {
+    setIsDisconnecting(true);
+    try {
+      const token = SessionManager.getToken();
+      if (!token) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
+
+      const response = await fetch(`/api/admin/whatsapp/sessions/${session.id}/disconnect`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: 'Success',
+          description: data.data.message || 'Session disconnected successfully',
+        });
+      } else {
+        toast({
+          title: 'Warning',
+          description: data.error || 'Disconnect feature has some issues but local status updated',
+          variant: 'destructive',
+        });
+      }
+      fetchSessions();
+    } catch (error) {
+      console.error('Error disconnecting session:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to disconnect session',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
+  // Logout Session
+  const handleLogoutSession = async (session: WhatsAppSession) => {
+    setIsLoggingOut(true);
+    try {
+      const token = SessionManager.getToken();
+      if (!token) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
+
+      const response = await fetch(`/api/admin/whatsapp/sessions/${session.id}/logout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: 'Success',
+          description: data.data.message || 'Successfully logged out from WhatsApp',
+        });
+        fetchSessions();
+      } else {
+        throw new Error(data.error || 'Failed to logout');
+      }
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to logout from WhatsApp',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  // Close dialogs and cleanup
+  const handleCloseStatusDialog = () => {
+    setShowStatusDialog(false);
+    setSessionToControl(null);
+    setSessionStatus(null);
+    setQrCode('');
+    if (statusPolling) {
+      clearInterval(statusPolling);
+      setStatusPolling(null);
+    }
+  };
+
+  const handleCloseQrDialog = () => {
+    setShowQrDialog(false);
+    setSessionToControl(null);
+    setQrCode('');
+    setSessionStatus(null);
+    if (qrPolling) {
+      clearInterval(qrPolling);
+      setQrPolling(null);
+    }
+  };
+
+  const handleClosePairPhoneDialog = () => {
+    setShowPairPhoneDialog(false);
+    setSessionToControl(null);
+    setPairPhoneForm({ Phone: '' });
+    setLinkingCode('');
+  };
+
+  const handleCloseConnectDialog = () => {
+    setShowConnectDialog(false);
+    setSessionToControl(null);
+    setConnectForm({
+      Subscribe: [],
+      Immediate: true
+    });
+  };
+
   // Get status badge variant
   const getStatusBadge = (session: WhatsAppSession) => {
     if (session.connected && session.loggedIn) {
@@ -677,6 +1102,18 @@ export default function WhatsAppSessionsPage() {
   useEffect(() => {
     fetchSessions();
   }, [fetchSessions]);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (statusPolling) {
+        clearInterval(statusPolling);
+      }
+      if (qrPolling) {
+        clearInterval(qrPolling);
+      }
+    };
+  }, [statusPolling, qrPolling]);
 
   return (
     <div className="space-y-6">
@@ -887,6 +1324,54 @@ export default function WhatsAppSessionsPage() {
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
+                          
+                          {/* Session Control Actions */}
+                          {!session.connected && (
+                            <DropdownMenuItem onClick={() => handleConnectSession(session)}>
+                              <Zap className="mr-2 h-4 w-4" />
+                              Connect Session
+                            </DropdownMenuItem>
+                          )}
+                          
+                          <DropdownMenuItem onClick={() => handleGetStatus(session)}>
+                            <Activity className="mr-2 h-4 w-4" />
+                            Monitor Status
+                          </DropdownMenuItem>
+                          
+                          {session.connected && !session.loggedIn && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleGetQR(session)}>
+                                <QrCode className="mr-2 h-4 w-4" />
+                                Show QR Code
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handlePairPhone(session)}>
+                                <Phone className="mr-2 h-4 w-4" />
+                                Pair Phone
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          
+                          {session.connected && (
+                            <DropdownMenuItem 
+                              onClick={() => handleDisconnectSession(session)}
+                              disabled={isDisconnecting}
+                            >
+                              <XCircle className="mr-2 h-4 w-4" />
+                              {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {session.loggedIn && (
+                            <DropdownMenuItem 
+                              onClick={() => handleLogoutSession(session)}
+                              disabled={isLoggingOut}
+                            >
+                              <Settings className="mr-2 h-4 w-4" />
+                              {isLoggingOut ? 'Logging out...' : 'Logout WhatsApp'}
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {/* Admin Actions */}
                           {!session.isSystemSession && (
                             <DropdownMenuItem onClick={() => handleTransferSession(session)}>
                               <UserPlus className="mr-2 h-4 w-4" />
@@ -1365,6 +1850,416 @@ export default function WhatsAppSessionsPage() {
               variant="destructive"
             >
               {isDeleting ? 'Deleting...' : 'Delete Session'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Connect Session Dialog */}
+      <Dialog open={showConnectDialog} onOpenChange={handleCloseConnectDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              Connect WhatsApp Session
+            </DialogTitle>
+            <DialogDescription>
+              Connect &ldquo;{sessionToControl?.name}&rdquo; to WhatsApp server. After connection, QR code will be available for authentication.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            {/* Current Session Info */}
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <Label className="text-sm font-medium">Session Configuration</Label>
+              <div className="mt-2 space-y-1 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Webhook Events:</span>
+                  <span className="ml-2 font-medium">
+                    {sessionToControl?.events || 'All'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Subscribe Events:</span>
+                  <span className="ml-2 font-medium">
+                    {connectForm.Subscribe.length === 0 ? 'All (default)' : connectForm.Subscribe.join(', ')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Connection Options */}
+            <div className="space-y-3">
+              <Label>Connection Options</Label>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="immediate-connect"
+                  checked={connectForm.Immediate}
+                  onCheckedChange={(checked) => setConnectForm(prev => ({ ...prev, Immediate: !!checked }))}
+                />
+                <Label htmlFor="immediate-connect" className="text-sm">Immediate Connection</Label>
+              </div>
+              
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• Subscribe events are automatically configured from your webhook settings</p>
+                <p>• QR code will be available immediately after connection</p>
+                <p>• Connection consumes server resources until disconnected</p>
+              </div>
+            </div>
+
+            {/* Next Steps Preview */}
+            <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-blue-800 text-sm font-medium mb-1">
+                <QrCode className="h-4 w-4" />
+                Next: QR Code Authentication
+              </div>
+              <p className="text-blue-700 text-xs">
+                After connecting, scan the QR code with WhatsApp to complete authentication
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseConnectDialog}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmConnect} 
+              disabled={isConnecting}
+            >
+              {isConnecting ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <Zap className="mr-2 h-4 w-4" />
+                  Connect & Show QR
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Monitor Dialog */}
+      <Dialog open={showStatusDialog} onOpenChange={handleCloseStatusDialog}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Session Status Monitor</DialogTitle>
+            <DialogDescription>
+              Real-time status for &ldquo;{sessionToControl?.name}&rdquo; - Updates every 3 seconds
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            {isGettingStatus && !sessionStatus && (
+              <div className="text-center py-8">
+                <RefreshCw className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+                <p className="mt-2 text-muted-foreground">Loading status...</p>
+              </div>
+            )}
+            
+            {sessionStatus && (
+              <div className="space-y-4">
+                {/* Status Overview */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Connection Status</Label>
+                    <div className="flex items-center gap-2">
+                      {sessionStatus.connected ? (
+                        <Badge variant="default" className="bg-green-100 text-green-800">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Connected
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-red-100 text-red-800">
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Disconnected
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Login Status</Label>
+                    <div className="flex items-center gap-2">
+                      {sessionStatus.loggedIn ? (
+                        <Badge variant="default" className="bg-green-100 text-green-800">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Logged In
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          <QrCode className="w-3 h-3 mr-1" />
+                          Login Required
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* WhatsApp Number */}
+                {sessionStatus.jid && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">WhatsApp Number</Label>
+                    <p className="text-sm font-mono bg-muted p-2 rounded">
+                      {sessionStatus.jid}
+                    </p>
+                  </div>
+                )}
+
+                {/* QR Code Display */}
+                {sessionStatus.qrcode && !sessionStatus.loggedIn && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">QR Code - Scan with WhatsApp</Label>
+                    <div className="flex justify-center p-4 bg-white rounded-lg border">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={sessionStatus.qrcode} 
+                        alt="WhatsApp QR Code" 
+                        className="max-w-[200px] max-h-[200px]"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      QR code updates automatically. Scan with WhatsApp to login.
+                    </p>
+                  </div>
+                )}
+
+                {/* Success Message */}
+                {sessionStatus.loggedIn && (
+                  <div className="bg-green-50 border border-green-200 p-4 rounded-lg text-center">
+                    <CheckCircle className="mx-auto h-8 w-8 text-green-600 mb-2" />
+                    <p className="text-green-800 font-medium">WhatsApp Connected Successfully!</p>
+                    <p className="text-green-600 text-sm">Session is ready to use.</p>
+                  </div>
+                )}
+
+                {/* Connection Required */}
+                {!sessionStatus.connected && (
+                  <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg text-center">
+                    <XCircle className="mx-auto h-8 w-8 text-amber-600 mb-2" />
+                    <p className="text-amber-800 font-medium">Session Disconnected</p>
+                    <p className="text-amber-600 text-sm">Connect the session first to get QR code.</p>
+                  </div>
+                )}
+
+                {/* Additional Info */}
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Events</Label>
+                    <p className="text-sm">{sessionStatus.events}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Session ID</Label>
+                    <p className="text-sm font-mono">{sessionStatus.id}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseStatusDialog}>
+              Close Monitor
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code Dialog */}
+      <Dialog open={showQrDialog} onOpenChange={handleCloseQrDialog}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" />
+              WhatsApp QR Authentication
+            </DialogTitle>
+            <DialogDescription>
+              Scan QR code or use phone pairing to authenticate &ldquo;{sessionToControl?.name}&rdquo;
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-6 py-4">
+            {/* Session Status */}
+            {sessionStatus && (
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-sm font-medium">Session Status</Label>
+                  {isGettingStatus && (
+                    <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Connected:</span>
+                    <span className={`ml-2 font-medium ${sessionStatus.connected ? 'text-green-600' : 'text-red-600'}`}>
+                      {sessionStatus.connected ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Logged In:</span>
+                    <span className={`ml-2 font-medium ${sessionStatus.loggedIn ? 'text-green-600' : 'text-orange-600'}`}>
+                      {sessionStatus.loggedIn ? 'Yes' : 'Pending'}
+                    </span>
+                  </div>
+                </div>
+                {sessionStatus.loggedIn && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+                    ✅ WhatsApp authentication successful! You can close this dialog.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* QR Code Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">QR Code Authentication</Label>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <RefreshCw className="h-3 w-3" />
+                  QR: every 2s, Status: every 1s
+                </div>
+              </div>
+              
+              {qrCode ? (
+                <div className="space-y-4">
+                  <div className="flex justify-center p-6 bg-white rounded-lg border">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      src={qrCode} 
+                      alt="WhatsApp QR Code" 
+                      className="max-w-[280px] max-h-[280px]"
+                    />
+                  </div>
+                  <div className="text-center space-y-2">
+                    <p className="text-sm font-medium">📱 Scan with WhatsApp</p>
+                    <p className="text-xs text-muted-foreground">
+                      Open WhatsApp → Settings → Linked Devices → Link a Device
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground border rounded-lg">
+                  {isGettingQR ? (
+                    <>
+                      <RefreshCw className="mx-auto h-8 w-8 animate-spin mb-2" />
+                      <p>Loading QR code...</p>
+                    </>
+                  ) : (
+                    <>
+                      <QrCode className="mx-auto h-12 w-12 text-muted-foreground/50 mb-2" />
+                      <p>QR code not available</p>
+                      <p className="text-xs">Session might not be ready for authentication</p>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Alternative: Phone Pairing */}
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-4">
+                <Label className="text-sm font-medium">Alternative: Phone Pairing</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    handleCloseQrDialog();
+                    if (sessionToControl) {
+                      handlePairPhone(sessionToControl);
+                    }
+                  }}
+                >
+                  <Phone className="mr-2 h-4 w-4" />
+                  Use Phone Pairing
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                If QR scanning doesn&rsquo;t work, you can use phone number pairing instead
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseQrDialog}>
+              Close
+            </Button>
+            {sessionStatus?.loggedIn && (
+              <Button onClick={() => {
+                handleCloseQrDialog();
+                fetchSessions();
+              }}>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Done
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pair Phone Dialog */}
+      <Dialog open={showPairPhoneDialog} onOpenChange={handleClosePairPhoneDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Pair Phone Number</DialogTitle>
+            <DialogDescription>
+              Link WhatsApp account for &ldquo;{sessionToControl?.name}&rdquo; using phone number
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone-number">Phone Number</Label>
+              <Input
+                id="phone-number"
+                value={pairPhoneForm.Phone}
+                onChange={(e) => setPairPhoneForm(prev => ({ ...prev, Phone: e.target.value }))}
+                placeholder="6281233784490"
+                maxLength={15}
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter phone number with country code (e.g., 62 for Indonesia). Do not include leading zero or + symbol.
+              </p>
+            </div>
+            
+            {linkingCode && (
+              <div className="space-y-3 bg-green-50 border border-green-200 p-4 rounded-lg">
+                <Label className="text-sm font-medium text-green-800">Linking Code Generated</Label>
+                <div className="text-center">
+                  <p className="text-2xl font-mono font-bold text-green-800 tracking-wider">
+                    {linkingCode}
+                  </p>
+                </div>
+                <div className="space-y-2 text-sm text-green-700">
+                  <p className="font-medium">Instructions:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-xs">
+                    <li>Open WhatsApp on your phone</li>
+                    <li>Go to Settings → Linked Devices</li>
+                    <li>Tap &ldquo;Link a Device&rdquo;</li>
+                    <li>Tap &ldquo;Link with Phone Number Instead&rdquo;</li>
+                    <li>Enter the linking code above</li>
+                  </ol>
+                </div>
+                <p className="text-xs text-green-600 italic">
+                  Note: This code can only be used once. Generate a new one if it fails.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClosePairPhoneDialog}>
+              Close
+            </Button>
+            <Button 
+              onClick={handleConfirmPairPhone} 
+              disabled={isPairingPhone || !pairPhoneForm.Phone}
+            >
+              {isPairingPhone ? 'Generating...' : 'Generate Code'}
             </Button>
           </DialogFooter>
         </DialogContent>
