@@ -1,10 +1,20 @@
 "use client";
 import React, { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { 
   CreditCard, 
   Search,
@@ -24,8 +34,11 @@ import {
   Activity,
   Eye,
   X,
-  Check
+  Check,
+  Info,
+  Copy
 } from "lucide-react";
+import { SessionManager } from '@/lib/storage';
 
 interface Transaction {
   id: string;
@@ -61,6 +74,7 @@ interface Transaction {
 }
 
 export default function WhatsAppTransactionsPage() {
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -69,6 +83,8 @@ export default function WhatsAppTransactionsPage() {
   const [sortBy, setSortBy] = useState<"date" | "amount" | "user">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
   // Stats
   const [stats, setStats] = useState({
     total: 0,
@@ -81,9 +97,27 @@ export default function WhatsAppTransactionsPage() {
   });
 
   const fetchTransactions = useCallback(async () => {
-    setLoading(true);
     try {
-      const res = await fetch("/api/whatsapp/management/transaction");
+      setLoading(true);
+      const token = SessionManager.getToken();
+      if (!token) {
+        router.push('/signin');
+        return;
+      }
+
+      const res = await fetch("/api/admin/whatsapp/transactions", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (res.status === 401) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
+      
       const data = await res.json();
       
       if (data.success) {
@@ -97,7 +131,7 @@ export default function WhatsAppTransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   function calculateStats(transactions: Transaction[]) {
     const now = new Date();
@@ -143,11 +177,11 @@ export default function WhatsAppTransactionsPage() {
     fetchTransactions();
   }, [fetchTransactions]);
 
-  // Auto refresh functionality
+  // Auto refresh functionality - more frequent like sessions page
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (autoRefresh) {
-      interval = setInterval(fetchTransactions, 30000); // Refresh every 30 seconds
+      interval = setInterval(fetchTransactions, 10000); // Refresh every 10 seconds for real-time monitoring
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -343,11 +377,26 @@ export default function WhatsAppTransactionsPage() {
   // Manual activation function
   const handleManualActivation = async (transactionId: string) => {
     try {
-      const res = await fetch(`/api/transactions/whatsapp/${transactionId}/status`, {
+      const token = SessionManager.getToken();
+      if (!token) {
+        router.push('/signin');
+        return;
+      }
+
+      const res = await fetch(`/api/admin/transactions/whatsapp/${transactionId}/status`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ action: 'delivered' }),
       });
+      
+      if (res.status === 401) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
       
       const data = await res.json();
       if (data.success) {
@@ -373,11 +422,26 @@ export default function WhatsAppTransactionsPage() {
     }
 
     try {
-      const res = await fetch(`/api/transactions/whatsapp/${transactionId}/status`, {
+      const token = SessionManager.getToken();
+      if (!token) {
+        router.push('/signin');
+        return;
+      }
+
+      const res = await fetch(`/api/admin/transactions/whatsapp/${transactionId}/status`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ action: 'failed' }),
       });
+      
+      if (res.status === 401) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
       
       const data = await res.json();
       if (data.success) {
@@ -392,359 +456,315 @@ export default function WhatsAppTransactionsPage() {
     }
   };
 
+  // Copy to clipboard function
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  // View transaction details
+  const viewTransactionDetails = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setShowDetailDialog(true);
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 dark:from-green-400 dark:to-blue-400 bg-clip-text text-transparent">
-          WhatsApp Transaction History
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-          Track and manage all WhatsApp API package transactions and payments
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">WhatsApp Transactions</h1>
+          <p className="text-muted-foreground">
+            Track and manage all WhatsApp API package transactions and payments from your customers.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => fetchTransactions()} disabled={loading} variant="outline">
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button
+            variant={autoRefresh ? "default" : "outline"}
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            disabled={loading}
+          >
+            <Activity className={`mr-2 h-4 w-4 ${autoRefresh ? 'animate-pulse' : ''}`} />
+            Auto-refresh {autoRefresh ? 'ON' : 'OFF'}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20 hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.total}</p>
-              </div>
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                <CreditCard className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total</CardTitle>
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">
+              All transactions
+            </p>
           </CardContent>
         </Card>
-
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20 hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Paid</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.paid}</p>
-              </div>
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
-                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Paid</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.paid}</div>
+            <p className="text-xs text-muted-foreground">
+              Payment completed
+            </p>
           </CardContent>
         </Card>
-
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20 hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Activated</p>
-                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.success}</p>
-              </div>
-              <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
-                <Activity className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-            </div>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Activated</CardTitle>
+            <Activity className="h-4 w-4 text-emerald-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-emerald-600">{stats.success}</div>
+            <p className="text-xs text-muted-foreground">
+              Services activated
+            </p>
           </CardContent>
         </Card>
-
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20 hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending</p>
-                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.pending}</p>
-              </div>
-              <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full">
-                <Clock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-              </div>
-            </div>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <Clock className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{stats.pending}</div>
+            <p className="text-xs text-muted-foreground">
+              Awaiting action
+            </p>
           </CardContent>
         </Card>
-
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20 hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Revenue</p>
-                <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
-                  {formatCurrency(stats.totalRevenue)}
-                </p>
-              </div>
-              <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-                <DollarSign className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">
+              {formatCurrency(stats.totalRevenue)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Total earned
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Main Transaction History Card */}
-      <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20">
-        <CardHeader className="border-b border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <CreditCard className="w-5 h-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <CardTitle className="text-xl text-gray-800 dark:text-gray-100">Transaction History</CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">
-                  All WhatsApp API package transactions ({filteredTransactions.length} total)
-                </CardDescription>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className="text-sm border">
-                {sortBy} {sortOrder === "asc" ? "↑" : "↓"}
-              </Badge>
-              <Button
-                variant={autoRefresh ? "default" : "outline"}
-                size="sm"
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                className="flex items-center gap-1"
-              >
-                <Activity className={`w-4 h-4 ${autoRefresh ? 'animate-pulse' : ''}`} />
-                Auto-refresh {autoRefresh ? 'ON' : 'OFF'}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={exportTransactions}
-                className="flex items-center gap-1"
-              >
-                <FileSpreadsheet className="w-4 h-4" />
-                Export CSV
-              </Button>
-            </div>
-          </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>WhatsApp Transaction History</CardTitle>
+          <CardDescription>
+            All WhatsApp API package transactions and payments from your customers ({filteredTransactions.length} total)
+          </CardDescription>
         </CardHeader>
-
-        <CardContent className="p-6">
+        <CardContent>
           {/* Search and Filter */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
-              <Input
-                type="search"
-                placeholder="Search by transaction ID, user name, email, or package..."
-                className="pl-10 border-gray-200 dark:border-gray-600 focus:border-green-400 dark:focus:border-green-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by transaction ID, user name, email, or package..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
             </div>
             <div className="flex gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[140px] border-gray-200 dark:border-gray-600 focus:border-green-400 dark:focus:border-green-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                  <SelectItem value="all" className="text-gray-900 dark:text-gray-100">All Status</SelectItem>
-                  <SelectItem value="paid" className="text-gray-900 dark:text-gray-100">Paid</SelectItem>
-                  <SelectItem value="pending" className="text-gray-900 dark:text-gray-100">Pending</SelectItem>
-                  <SelectItem value="created" className="text-gray-900 dark:text-gray-100">Created</SelectItem>
-                  <SelectItem value="in_progress" className="text-gray-900 dark:text-gray-100">In Progress</SelectItem>
-                  <SelectItem value="success" className="text-gray-900 dark:text-gray-100">Success</SelectItem>
-                  <SelectItem value="failed" className="text-gray-900 dark:text-gray-100">Failed</SelectItem>
-                  <SelectItem value="cancelled" className="text-gray-900 dark:text-gray-100">Cancelled</SelectItem>
-                  <SelectItem value="expired" className="text-gray-900 dark:text-gray-100">Expired</SelectItem>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="created">Created</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="success">Success</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger className="w-full sm:w-[140px] border-gray-200 dark:border-gray-600 focus:border-green-400 dark:focus:border-green-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue placeholder="Date" />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                  <SelectItem value="all" className="text-gray-900 dark:text-gray-100">All Time</SelectItem>
-                  <SelectItem value="today" className="text-gray-900 dark:text-gray-100">Today</SelectItem>
-                  <SelectItem value="week" className="text-gray-900 dark:text-gray-100">This Week</SelectItem>
-                  <SelectItem value="month" className="text-gray-900 dark:text-gray-100">This Month</SelectItem>
-                  <SelectItem value="year" className="text-gray-900 dark:text-gray-100">This Year</SelectItem>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                  <SelectItem value="year">This Year</SelectItem>
                 </SelectContent>
               </Select>
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="shrink-0 border-gray-200 dark:border-gray-600 hover:bg-green-50 dark:hover:bg-green-900/20 bg-white dark:bg-gray-700" 
                 onClick={fetchTransactions}
                 disabled={loading}
               >
-                <RefreshCw className={`h-4 w-4 text-gray-600 dark:text-gray-400 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={exportTransactions}
+                disabled={loading || filteredTransactions.length === 0}
+              >
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Export CSV
               </Button>
             </div>
           </div>
 
           {/* Transactions Table */}
-          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50/80 dark:bg-gray-700/50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      <button 
-                        onClick={() => handleSort("date")}
-                        className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-300"
-                      >
-                        Transaction
-                        <ArrowUpDown className="w-3 h-3" />
-                      </button>
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      <button 
-                        onClick={() => handleSort("user")}
-                        className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-300"
-                      >
-                        Customer
-                        <ArrowUpDown className="w-3 h-3" />
-                      </button>
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Package</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Duration</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      <button 
-                        onClick={() => handleSort("amount")}
-                        className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-300"
-                      >
-                        Amount
-                        <ArrowUpDown className="w-3 h-3" />
-                      </button>
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Payment Status</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Transaction Status</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {filteredTransactions.map((transaction) => (
-                    <tr key={transaction.id} className="hover:bg-green-50/50 dark:hover:bg-green-900/20 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100 font-mono">
-                            {transaction.id}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            User ID: {transaction.userId}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full">
-                            <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {transaction.user?.name || 'Unknown User'}
-                            </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {transaction.user?.email || 'No email'}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <Package className="w-4 h-4 text-gray-400" />
-                          <div className="flex flex-col gap-1">
-                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {transaction.whatsappTransaction?.whatsappPackage?.name || 'Unknown Package'}
-                            </span>
-                            {transaction.whatsappTransaction?.whatsappPackage?.maxSession && (
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                Max {transaction.whatsappTransaction.whatsappPackage.maxSession} sessions
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">                        <Badge className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
-                          {transaction.whatsappTransaction?.duration === 'year' ? '1 Year' : '1 Month'}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          {formatCurrency(Number(transaction.amount))}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(transaction.payment?.status || 'pending')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getTransactionStatusBadge(transaction.whatsappTransaction?.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-sm text-gray-900 dark:text-gray-100">
-                            {new Date(transaction.createdAt).toLocaleDateString()}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(transaction.createdAt).toLocaleTimeString()}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex gap-2">
-                          {transaction.payment?.status === 'paid' && 
-                           (transaction.whatsappTransaction?.status === 'pending' || transaction.whatsappTransaction?.status === 'failed') && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleManualActivation(transaction.id)}
-                                className="flex items-center gap-1 text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-600 dark:hover:bg-green-900/20"
-                              >
-                                <Check className="w-3 h-3" />
-                                Activate
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleMarkAsFailed(transaction.id)}
-                                className="flex items-center gap-1 text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"
-                              >
-                                <X className="w-3 h-3" />
-                                Failed
-                              </Button>
-                            </>
-                          )}
-                          {transaction.whatsappTransaction?.status === 'success' && (
-                            <span className="text-sm text-gray-500 dark:text-gray-400">Completed</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {filteredTransactions.length === 0 && (
-                <div className="text-center py-12">
-                  <CreditCard className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">No transactions found</p>
-                  <p className="text-sm text-gray-400 dark:text-gray-500">
-                    {search || statusFilter !== 'all' || dateFilter !== 'all' 
-                      ? 'Try adjusting your search or filters' 
-                      : 'Transactions will appear here once customers make purchases'
-                    }
-                  </p>
-                </div>
-              )}
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>Loading transactions...</span>
+              </div>
             </div>
-          </div>
+          ) : filteredTransactions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <CreditCard className="mx-auto h-12 w-12 text-muted-foreground/50" />
+              <p className="mt-2">No transactions found matching your criteria.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Transaction</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Package</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Payment Status</TableHead>
+                  <TableHead>Transaction Status</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTransactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium text-sm font-mono">{transaction.id}</div>
+                        <div className="text-xs text-muted-foreground">User: {transaction.userId}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium">{transaction.user?.name || 'Unknown User'}</div>
+                        <div className="text-xs text-muted-foreground">{transaction.user?.email || 'No email'}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium">{transaction.whatsappTransaction?.whatsappPackage?.name || 'Unknown Package'}</div>
+                        {transaction.whatsappTransaction?.whatsappPackage?.maxSession && (
+                          <div className="text-xs text-muted-foreground">
+                            Max {transaction.whatsappTransaction.whatsappPackage.maxSession} sessions
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {transaction.whatsappTransaction?.duration === 'year' ? '1 Year' : '1 Month'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-semibold">
+                        {formatCurrency(Number(transaction.amount))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(transaction.payment?.status || 'pending')}
+                    </TableCell>
+                    <TableCell>
+                      {getTransactionStatusBadge(transaction.whatsappTransaction?.status)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="text-sm">{new Date(transaction.createdAt).toLocaleDateString()}</div>
+                        <div className="text-xs text-muted-foreground">{new Date(transaction.createdAt).toLocaleTimeString()}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => viewTransactionDetails(transaction)}
+                        >
+                          <Eye className="w-3 h-3 mr-1" />
+                          View
+                        </Button>
+                        {transaction.payment?.status === 'paid' && 
+                         (transaction.whatsappTransaction?.status === 'pending' || transaction.whatsappTransaction?.status === 'failed') && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleManualActivation(transaction.id)}
+                              className="text-green-600 border-green-300 hover:bg-green-50"
+                            >
+                              <Check className="w-3 h-3 mr-1" />
+                              Activate
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleMarkAsFailed(transaction.id)}
+                              className="text-red-600 border-red-300 hover:bg-red-50"
+                            >
+                              <X className="w-3 h-3 mr-1" />
+                              Failed
+                            </Button>
+                          </>
+                        )}
+                        {transaction.whatsappTransaction?.status === 'success' && (
+                          <span className="text-sm text-muted-foreground">Completed</span>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
 
           {/* Footer Stats */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 pt-6 border-t">
+            <div className="text-sm text-muted-foreground">
               Showing <strong>{filteredTransactions.length}</strong> of <strong>{transactions.length}</strong> transactions
             </div>
             <div className="flex items-center gap-4 text-sm">
-              <div className="text-gray-600 dark:text-gray-400">
-                This Month Revenue: <span className="font-semibold text-green-600 dark:text-green-400">
+              <div className="text-muted-foreground">
+                This Month Revenue: <span className="font-semibold text-green-600">
                   {formatCurrency(stats.monthlyRevenue)}
                 </span>
               </div>
-              <div className="text-gray-600 dark:text-gray-400">
-                Total Revenue: <span className="font-semibold text-purple-600 dark:text-purple-400">
+              <div className="text-muted-foreground">
+                Total Revenue: <span className="font-semibold text-purple-600">
                   {formatCurrency(stats.totalRevenue)}
                 </span>
               </div>
@@ -752,6 +772,249 @@ export default function WhatsAppTransactionsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Transaction Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-2xl bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+              <Info className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              Transaction Details
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedTransaction && (
+            <div className="space-y-6">
+              {/* Transaction Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Transaction ID</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm font-mono text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                        {selectedTransaction.id}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyToClipboard(selectedTransaction.id)}
+                        className="p-1 h-6 w-6"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">User ID</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm font-mono text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                        {selectedTransaction.userId}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyToClipboard(selectedTransaction.userId)}
+                        className="p-1 h-6 w-6"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Amount</label>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1">
+                      {formatCurrency(Number(selectedTransaction.amount))}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
+                      {new Date(selectedTransaction.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Customer</label>
+                    <div className="mt-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {selectedTransaction.user?.name || 'Unknown User'}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {selectedTransaction.user?.email || 'No email'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Payment Status</label>
+                    <div className="mt-1">
+                      {getStatusBadge(selectedTransaction.payment?.status || 'pending')}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Transaction Status</label>
+                    <div className="mt-1">
+                      {getTransactionStatusBadge(selectedTransaction.whatsappTransaction?.status)}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Updated Date</label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
+                      {new Date(selectedTransaction.updatedAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* WhatsApp Package Info */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">WhatsApp Package Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Package Name</label>
+                    <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
+                      {selectedTransaction.whatsappTransaction?.whatsappPackage?.name || 'Unknown Package'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Duration</label>
+                    <div className="mt-1">
+                      <Badge className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
+                        {selectedTransaction.whatsappTransaction?.duration === 'year' ? '1 Year' : '1 Month'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {selectedTransaction.whatsappTransaction?.whatsappPackage?.maxSession && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Max Sessions</label>
+                      <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
+                        {selectedTransaction.whatsappTransaction.whatsappPackage.maxSession}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedTransaction.whatsappTransaction?.whatsappPackage?.description && (
+                    <div className="md:col-span-2">
+                      <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Description</label>
+                      <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
+                        {selectedTransaction.whatsappTransaction.whatsappPackage.description}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Payment Info */}
+              {selectedTransaction.payment && (
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Payment Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Payment ID</label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-sm font-mono text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                          {selectedTransaction.payment.id}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(selectedTransaction.payment!.id)}
+                          className="p-1 h-6 w-6"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {selectedTransaction.payment.method && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Payment Method</label>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
+                          {selectedTransaction.payment.method}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedTransaction.payment.createdAt && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Payment Created</label>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
+                          {new Date(selectedTransaction.payment.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedTransaction.payment.expiresAt && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Payment Expires</label>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">
+                          {new Date(selectedTransaction.payment.expiresAt).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Transaction Notes */}
+              {selectedTransaction.notes && (
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Transaction Notes</label>
+                  <p className="text-sm text-gray-900 dark:text-gray-100 mt-1 bg-gray-50 dark:bg-gray-700 p-3 rounded">
+                    {selectedTransaction.notes}
+                  </p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex gap-2 justify-end">
+                {selectedTransaction.payment?.status === 'paid' && 
+                 (selectedTransaction.whatsappTransaction?.status === 'pending' || selectedTransaction.whatsappTransaction?.status === 'failed') && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        handleManualActivation(selectedTransaction.id);
+                        setShowDetailDialog(false);
+                      }}
+                      className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Check className="w-4 h-4" />
+                      Activate Service
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        handleMarkAsFailed(selectedTransaction.id);
+                        setShowDetailDialog(false);
+                      }}
+                      className="flex items-center gap-1 text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"
+                    >
+                      <X className="w-4 h-4" />
+                      Mark as Failed
+                    </Button>
+                  </>
+                )}
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowDetailDialog(false)}
+                  className="border-gray-300 dark:border-gray-600"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
