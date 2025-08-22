@@ -9,7 +9,7 @@ const WHATSAPP_USER_TOKEN = process.env.WHATSAPP_USER_TOKEN;
 // GET /api/admin/whatsapp/sessions/[id]
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const adminAuth = await getAdminAuth(request);
@@ -17,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Find session in database first
     const dbSession = await prisma.whatsAppSession.findUnique({
@@ -94,7 +94,7 @@ export async function GET(
 // DELETE /api/admin/whatsapp/sessions/[id]
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const adminAuth = await getAdminAuth(request);
@@ -109,7 +109,7 @@ export async function DELETE(
       }, { status: 500 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check if session exists and get details
     const dbSession = await prisma.whatsAppSession.findUnique({

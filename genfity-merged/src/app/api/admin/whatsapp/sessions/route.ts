@@ -207,8 +207,13 @@ export async function GET(request: NextRequest) {
       isSystemSession: session.isSystemSession,
       label: session.isSystemSession ? 'System (Genfity App)' : 'User Session',
       statusDisplay: session.status,
-      userName: session.user?.name || session.user?.email || 'System',
-      userRole: session.user?.role || 'system',
+      userName: session.isSystemSession 
+        ? 'System (Genfity App)' 
+        : session.user?.name || session.user?.email || 'Admin (Unassigned)',
+      userRole: session.isSystemSession 
+        ? 'system' 
+        : session.user?.role || 'admin',
+      userId: session.userId, // Add userId for transfer functionality
       createdAt: session.createdAt,
       updatedAt: session.updatedAt
     }));

@@ -40,6 +40,7 @@ import {
   Settings,
   Phone,
   ShieldCheck,
+  UserPlus,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { SessionManager } from '@/lib/storage';
@@ -116,6 +117,7 @@ interface WhatsAppSession {
   statusDisplay: string;
   userName: string;
   userRole: string;
+  userId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -125,6 +127,16 @@ interface SessionStats {
   connectedSessions: number;
   disconnectedSessions: number;
   qrRequiredSessions: number;
+}
+
+interface TransferUser {
+  id: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  _count: {
+    whatsAppSessions: number;
+  };
 }
 
 interface CreateSessionForm {
@@ -166,8 +178,10 @@ export default function WhatsAppSessionsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [selectedSession, setSelectedSession] = useState<WhatsAppSession | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<WhatsAppSession | null>(null);
+  const [sessionToTransfer, setSessionToTransfer] = useState<WhatsAppSession | null>(null);
   
   // Form states
   const [createForm, setCreateForm] = useState<CreateSessionForm>({
@@ -196,6 +210,12 @@ export default function WhatsAppSessionsPage() {
   // Events selection state
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
   const [isAllEvents, setIsAllEvents] = useState(true);
+  
+  // Transfer states
+  const [transferUsers, setTransferUsers] = useState<TransferUser[]>([]);
+  const [selectedTransferUserId, setSelectedTransferUserId] = useState<string>('');
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -483,6 +503,140 @@ export default function WhatsAppSessionsPage() {
     setShowDetailsDialog(true);
   };
 
+  // Fetch available users for transfer
+  const fetchTransferUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+      const token = SessionManager.getToken();
+      if (!token) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
+
+      const response = await fetch('/api/admin/whatsapp/sessions/transfer-users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setTransferUsers(data.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching transfer users:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load users list',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  // Handle transfer session
+  const handleTransferSession = (session: WhatsAppSession) => {
+    if (session.isSystemSession) {
+      toast({
+        title: 'Cannot Transfer',
+        description: 'System sessions cannot be transferred to users',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setSessionToTransfer(session);
+    
+    // Set default selection based on current ownership
+    if (session.userId) {
+      // Session is currently assigned to a user
+      setSelectedTransferUserId(session.userId);
+    } else {
+      // Session is currently admin-owned (unassigned)
+      setSelectedTransferUserId('unassign');
+    }
+    
+    setShowTransferDialog(true);
+    fetchTransferUsers();
+  };
+
+  // Execute session transfer
+  const handleConfirmTransfer = async () => {
+    if (!sessionToTransfer) return;
+
+    setIsTransferring(true);
+    try {
+      const token = SessionManager.getToken();
+      if (!token) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
+
+      const response = await fetch(`/api/admin/whatsapp/sessions/${sessionToTransfer.id}/transfer`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: selectedTransferUserId === 'unassign' ? null : selectedTransferUserId || null
+        }),
+      });
+
+      if (response.status === 401) {
+        SessionManager.clearSession();
+        router.push('/signin');
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to transfer session');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: 'Success',
+          description: data.message || 'Session transferred successfully',
+        });
+        fetchSessions();
+        setShowTransferDialog(false);
+        setSessionToTransfer(null);
+        setSelectedTransferUserId('');
+      } else {
+        throw new Error(data.error || 'Failed to transfer session');
+      }
+    } catch (error) {
+      console.error('Error transferring session:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to transfer WhatsApp session',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsTransferring(false);
+    }
+  };
+
+  // Close transfer dialog
+  const handleCloseTransferDialog = () => {
+    setShowTransferDialog(false);
+    setSessionToTransfer(null);
+    setSelectedTransferUserId('');
+    setTransferUsers([]);
+  };
+
   // Get status badge variant
   const getStatusBadge = (session: WhatsAppSession) => {
     if (session.connected && session.loggedIn) {
@@ -733,6 +887,12 @@ export default function WhatsAppSessionsPage() {
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
+                          {!session.isSystemSession && (
+                            <DropdownMenuItem onClick={() => handleTransferSession(session)}>
+                              <UserPlus className="mr-2 h-4 w-4" />
+                              Transfer Session
+                            </DropdownMenuItem>
+                          )}
                           {!session.isSystemSession && (
                             <DropdownMenuItem
                               onClick={() => handleDeleteClick(session)}
@@ -1073,6 +1233,115 @@ export default function WhatsAppSessionsPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Transfer Session Dialog */}
+      <Dialog open={showTransferDialog} onOpenChange={handleCloseTransferDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Transfer Session</DialogTitle>
+            <DialogDescription>
+              Transfer the WhatsApp session &ldquo;{sessionToTransfer?.name}&rdquo; to a customer. 
+              The customer will gain full control and ownership of this session.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            {/* Current Session Info */}
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <Label className="text-sm font-medium">Session to Transfer</Label>
+              <div className="mt-2 space-y-1">
+                <p className="text-sm font-medium">{sessionToTransfer?.name}</p>
+                <p className="text-xs text-muted-foreground font-mono">
+                  ID: {sessionToTransfer?.id}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Current Owner: {sessionToTransfer?.userName || 'Admin (Unassigned)'}
+                </p>
+              </div>
+            </div>
+
+            {/* User Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="transfer-user">Select Customer</Label>
+              <Select 
+                value={selectedTransferUserId} 
+                onValueChange={setSelectedTransferUserId}
+                disabled={isLoadingUsers}
+              >
+                <SelectTrigger id="transfer-user">
+                  <SelectValue placeholder={
+                    isLoadingUsers ? "Loading customers..." : "Choose a customer to transfer to"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassign">
+                    🏢 Admin (Remove assignment)
+                  </SelectItem>
+                  {transferUsers.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      <div className="flex items-center justify-between w-full">
+                        <div>
+                          <span className="font-medium">
+                            {user.name || user.email}
+                          </span>
+                          {user.name && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              {user.email}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          ({user._count.whatsAppSessions} sessions)
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {transferUsers.length === 0 && !isLoadingUsers && (
+                <p className="text-xs text-muted-foreground">
+                  No customers available for transfer. Only users with &apos;customer&apos; role can receive sessions.
+                </p>
+              )}
+            </div>
+
+            {/* Warning Note */}
+            <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-amber-800">
+                    Important Notice
+                  </h3>
+                  <div className="mt-1 text-sm text-amber-700">
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>The customer will gain full control of this session</li>
+                      <li>The session will appear in their customer dashboard</li>
+                      <li>This action can be reversed by transferring back to admin</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseTransferDialog}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmTransfer} 
+              disabled={isTransferring || !selectedTransferUserId}
+            >
+              {isTransferring ? 'Transferring...' : 'Transfer Session'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
