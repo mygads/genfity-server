@@ -1,40 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
-import jwt from 'jsonwebtoken';
-
-// Helper function to verify admin JWT token
-async function verifyAdminToken(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.split(" ")[1];
-  
-  if (!token) {
-    return null;
-  }
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
-    if (decoded.role !== 'admin') {
-      return null;
-    }
-    return decoded;
-  } catch (error) {
-    return null;
-  }
-}
+import { withRoleAuthentication } from "@/lib/request-auth";
 
 // GET /api/admin/whatsapp/subscriptions - Get all WhatsApp subscriptions
-export async function GET(request: NextRequest) {
-  try {
-    const adminUser = await verifyAdminToken(request);
-    if (!adminUser) {
-      return withCORS(NextResponse.json(
-        { success: false, error: "Admin access required" },
-        { status: 403 }
-      ));
-    }
+export async function GET(req: NextRequest) {
+  return withRoleAuthentication(req, ['admin'], async (user) => {
 
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const status = searchParams.get('status'); // 'active', 'expired', or 'all'
@@ -50,12 +23,14 @@ export async function GET(request: NextRequest) {
       where.expiredAt = { gt: now };
     } else if (status === 'expired') {
       where.expiredAt = { lte: now };
-    }    if (search) {
+    }
+
+    if (search) {
       where.customer = {
         OR: [
-          { name: { contains: search } },
-          { email: { contains: search } },
-          { phone: { contains: search } },
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
         ],
       };
     }
@@ -90,8 +65,10 @@ export async function GET(request: NextRequest) {
         skip: offset,
       }),
       prisma.servicesWhatsappCustomers.count({ where }),
-    ]);    // Get session counts for each user
-    const userIds = subscriptions.map(sub => sub.customerId);
+    ]);
+
+    // Get session counts for each user
+    const userIds = subscriptions.map(sub => sub.customerId).filter(id => id !== null);
     const sessionCounts = await prisma.whatsAppSession.groupBy({
       by: ['userId'],
       where: { userId: { in: userIds } },
@@ -99,7 +76,9 @@ export async function GET(request: NextRequest) {
     });
 
     const sessionCountMap = sessionCounts.reduce((acc, item) => {
-      acc[item.userId] = item._count.id;
+      if (item.userId) {
+        acc[item.userId] = item._count.id;
+      }
       return acc;
     }, {} as Record<string, number>);
 
@@ -112,9 +91,9 @@ export async function GET(request: NextRequest) {
       createdAt: subscription.createdAt,
       isActive: subscription.expiredAt > now,
       daysUntilExpiry: Math.ceil((subscription.expiredAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
-      currentSessions: sessionCountMap[subscription.customerId] || 0,
-      maxSessions: subscription.package.maxSession,
-      sessionUtilization: Math.round(((sessionCountMap[subscription.customerId] || 0) / subscription.package.maxSession) * 100),
+      currentSessions: sessionCountMap[subscription.customerId || ''] || 0,
+      maxSessions: subscription.package?.maxSession || 0,
+      sessionUtilization: Math.round(((sessionCountMap[subscription.customerId || ''] || 0) / (subscription.package?.maxSession || 1)) * 100),
     }));
 
     // Get statistics
@@ -142,13 +121,7 @@ export async function GET(request: NextRequest) {
         },
       },
     }));
-  } catch (error) {
-    console.error("[ADMIN_WHATSAPP_SUBSCRIPTIONS_GET]", error);
-    return withCORS(NextResponse.json(
-      { success: false, error: "Failed to fetch subscriptions" },
-      { status: 500 }
-    ));
-  }
+  });
 }
 
 export async function OPTIONS() {

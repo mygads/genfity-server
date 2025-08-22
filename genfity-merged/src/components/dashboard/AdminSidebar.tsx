@@ -181,7 +181,7 @@ export default function AdminSidebar({ open, setOpen, collapsed = false, setColl
       color: "text-green-600 dark:text-green-400"
     },
     {
-      title: "Service Subscriptions",
+      title: "WhatsApp Subscriptions",
       href: "/admin/dashboard/whatsapp-subscriptions",
       icon: UserCheck,
       description: "Manage subscriptions & services",
