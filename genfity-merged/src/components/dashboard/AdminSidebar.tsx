@@ -160,32 +160,18 @@ export default function AdminSidebar({ open, setOpen, collapsed = false, setColl
       color: "text-green-600 dark:text-green-400"
     },
     {
+      title: "Analytics",
+      href: "/admin/dashboard/whatsapp-analytics",
+      icon: BarChart3,
+      description: "Service usage analytics",
+      color: "text-indigo-600 dark:text-indigo-400"
+    },
+    {
       title: "WhatsApp Packages",
       href: "/admin/dashboard/whatsapp-packages",
       icon: Package,
       description: "Manage WhatsApp packages",
       color: "text-orange-600 dark:text-orange-400"
-    },
-    {
-      title: "WhatsApp Playground",
-      href: "/admin/dashboard/whatsapp-playground",
-      icon: Settings,
-      description: "Test & manage WhatsApp API",
-      color: "text-emerald-600 dark:text-emerald-400"
-    },
-    {
-      title: "WhatsApp Sessions",
-      href: "/admin/dashboard/whatsapp-sessions",
-      icon: MessageSquare,
-      description: "Manage active WhatsApp sessions",
-      color: "text-green-600 dark:text-green-400"
-    },
-    {
-      title: "WhatsApp Subscriptions",
-      href: "/admin/dashboard/whatsapp-subscriptions",
-      icon: UserCheck,
-      description: "Manage subscriptions & services",
-      color: "text-blue-600 dark:text-blue-400"
     },
     {
       title: "WhatsApp Transactions", 
@@ -195,12 +181,26 @@ export default function AdminSidebar({ open, setOpen, collapsed = false, setColl
       color: "text-purple-600 dark:text-purple-400"
     },
     {
-      title: "Analytics",
-      href: "/admin/dashboard/whatsapp-analytics",
-      icon: BarChart3,
-      description: "Service usage analytics",
-      color: "text-indigo-600 dark:text-indigo-400"
-    }
+      title: "WhatsApp Subscriptions",
+      href: "/admin/dashboard/whatsapp-subscriptions",
+      icon: UserCheck,
+      description: "Manage subscriptions & services",
+      color: "text-blue-600 dark:text-blue-400"
+    },
+    {
+      title: "WhatsApp Sessions",
+      href: "/admin/dashboard/whatsapp-sessions",
+      icon: MessageSquare,
+      description: "Manage active WhatsApp sessions",
+      color: "text-green-600 dark:text-green-400"
+    },
+    {
+      title: "WhatsApp Playground",
+      href: "/admin/dashboard/whatsapp-playground",
+      icon: Settings,
+      description: "Test & manage WhatsApp API",
+      color: "text-emerald-600 dark:text-emerald-400"
+    },
   ]
 
   return (

@@ -41,7 +41,6 @@ export async function GET(request: NextRequest) {
     const activeSessions = await prisma.whatsAppSession.count({
       where: {
         status: 'connected',
-        isTerminated: false,
       },
     });
 
