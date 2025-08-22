@@ -1,548 +1,529 @@
 "use client";
-
 import React, { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { 
-  BarChart3, 
-  TrendingUp, 
   Users, 
-  MessageSquare, 
-  DollarSign,
-  Activity,
-  Clock,
-  Zap,
+  Search,
   RefreshCw,
-  Calendar,
-  Filter,
-  Target,
+  Activity,
   CheckCircle,
-  XCircle,
-  ArrowUpRight,
-  ArrowDownRight,
-  Package,
-  Crown,
-  Award,
-  Wifi,
-  WifiOff,
-  TrendingDown,
-  AlertTriangle,
-  Globe,
-  MessageCircle,
-  UserCheck
+  Clock,
+  AlertCircle,
+  Download,
+  Eye,
+  TrendingUp,
+  BarChart3,
+  Send,
+  XCircle
 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SessionManager } from '@/lib/storage';
 
-interface TopUser {
+interface UserAnalytics {
+  userId: string;
+  totalSent: number;
+  totalFailed: number;
   user: {
     id: string;
-    name: string | null;
-    email: string | null;
-  };
-  totalMessagesSent: number;
-  totalMessagesFailed: number;
-  totalMessages: number;
+    name: string;
+    email: string;
+    phone?: string;
+  } | null;
 }
 
-interface TopPackage {
-  id: string;
-  name: string;
-  description: string | null;
-  priceMonth: number;
-  priceYear: number;
-  maxSession: number;
-  purchaseCount: number;
-}
-
-interface DailyStats {
-  date: string;
+interface RecentActivity {
+  userId: string;
   totalMessagesSent: number;
   totalMessagesFailed: number;
+  lastMessageSentAt: string;
+  user: {
+    name: string;
+    email: string;
+  } | null;
 }
 
 interface AnalyticsData {
-  // Core messaging stats
+  totalUsers: number;
+  totalSessions: number;
+  totalMessageStats: number;
   totalMessagesSent: number;
   totalMessagesFailed: number;
-  totalMessages: number;
-  topUsers: TopUser[];
-  activeSessions: number;
-  
-  // Additional stats from dashboard
-  totalSubscribers: number;
-  totalWhatsAppUsers: number;
-  totalUsers: number;
-  totalRevenue: number;
-  avgSessionDuration: number;
-  overallSuccessRate: string;
-  todayMessagesSent: number;
-  todayMessagesFailed: number;
-  todayTotalMessages: number;
-  todaySuccessRate: string;
-  topPackages: TopPackage[];
-  metrics: {
-    subscriberGrowthRate: string;
-    messageVolumeGrowth: string;
-    revenueGrowth: string;
-  };
-  
-  // Daily stats for charts
-  dailyStats: DailyStats[];
+  sessionStats: Record<string, number>;
+  topUsers: UserAnalytics[];
+  recentActivity: RecentActivity[];
+}
+
+interface ApiResponse {
+  success: boolean;
+  data: AnalyticsData;
+  error?: string;
 }
 
 export default function WhatsAppAnalyticsPage() {
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState("30");
+  const router = useRouter();
+  const [analytics, setAnalytics] = useState<AnalyticsData>({
+    totalUsers: 0,
+    totalSessions: 0,
+    totalMessageStats: 0,
+    totalMessagesSent: 0,
+    totalMessagesFailed: 0,
+    sessionStats: {},
+    topUsers: [],
+    recentActivity: []
+  });
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserAnalytics | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
 
+  // Fetch analytics data using the correct API endpoint
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
-    setError(null);
-    
     try {
-      // Fetch analytics data from the API
-      const analyticsResponse = await fetch(`/api/admin/whatsapp/analytics?days=${timeRange}`);
-      if (!analyticsResponse.ok) {
-        throw new Error('Failed to fetch analytics data');
+      const token = SessionManager.getToken();
+      if (!token) {
+        router.push('/signin');
+        return;
       }
-      const analyticsResult = await analyticsResponse.json();
       
-      // Fetch dashboard data for additional metrics
-      const dashboardResponse = await fetch('/api/admin/whatsapp/dashboard');
-      if (!dashboardResponse.ok) {
-        throw new Error('Failed to fetch dashboard data');
-      }
-      const dashboardResult = await dashboardResponse.json();
-      
-      // Combine the data
-      setAnalytics({
-        ...analyticsResult.data,
-        ...dashboardResult.data,
+      const res = await fetch("/api/admin/whatsapp/analytics", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
       
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const data: ApiResponse = await res.json();
+      
+      if (data.success) {
+        setAnalytics(data.data);
+      } else {
+        console.error("Error fetching analytics:", data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
     } finally {
       setLoading(false);
     }
-  }, [timeRange]);
+  }, [router]);
 
+  // Initial load and auto refresh effects
   useEffect(() => {
     fetchAnalytics();
   }, [fetchAnalytics]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(amount);
+  // Auto refresh functionality - more frequent like sessions page
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (autoRefresh) {
+      interval = setInterval(fetchAnalytics, 10000); // Refresh every 10 seconds for real-time monitoring
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [autoRefresh, fetchAnalytics]);
+
+  // View user details
+  const viewUserDetails = (user: UserAnalytics) => {
+    setSelectedUser(user);
+    setShowDetailDialog(true);
   };
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('id-ID').format(num);
+  // Export function
+  const exportAnalytics = () => {
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "User ID,User Name,User Email,Messages Sent,Messages Failed,Success Rate\n" +
+      filteredTopUsers.map(u => {
+        const successRate = u.totalSent > 0 ? ((u.totalSent / (u.totalSent + u.totalFailed)) * 100).toFixed(2) : '0';
+        return `${u.userId},"${u.user?.name || 'Unknown'}","${u.user?.email || 'Unknown'}",${u.totalSent},${u.totalFailed},${successRate}%`;
+      }).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `whatsapp_analytics_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const calculateSuccessRate = (sent: number, failed: number) => {
+  const filteredTopUsers = analytics.topUsers.filter(user => {
+    const matchesSearch = (user.user?.name && user.user.name.toLowerCase().includes(search.toLowerCase())) || 
+                         (user.user?.email && user.user.email.toLowerCase().includes(search.toLowerCase())) ||
+                         (user.userId && user.userId.toLowerCase().includes(search.toLowerCase()));
+    
+    return matchesSearch;
+  });
+
+  const getSuccessRate = (sent: number, failed: number) => {
     const total = sent + failed;
-    return total > 0 ? ((sent / total) * 100).toFixed(1) : '0.0';
+    if (total === 0) return "0";
+    return ((sent / total) * 100).toFixed(2);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="w-8 h-8 animate-spin text-indigo-600" />
-          <p className="text-gray-600 dark:text-gray-300">Loading analytics data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card className="p-8 text-center">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Error Loading Analytics</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
-          <Button onClick={fetchAnalytics} className="bg-indigo-600 hover:bg-indigo-700">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Try Again
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!analytics) return null;
+  const getSuccessRateBadge = (sent: number, failed: number) => {
+    const rate = parseFloat(getSuccessRate(sent, failed));
+    
+    if (rate >= 90) {
+      return (
+        <Badge className="bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border-green-200 dark:border-green-700">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Excellent ({rate}%)
+        </Badge>
+      );
+    } else if (rate >= 70) {
+      return (
+        <Badge className="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700">
+          <Clock className="w-3 h-3 mr-1" />
+          Good ({rate}%)
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge className="bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700">
+          <AlertCircle className="w-3 h-3 mr-1" />
+          Poor ({rate}%)
+        </Badge>
+      );
+    }
+  };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent">
-            WhatsApp Analytics
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">
-            Comprehensive insights into WhatsApp API service performance and messaging analytics
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Select range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Last 7 days</SelectItem>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="90">Last 3 months</SelectItem>
-              <SelectItem value="365">Last year</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={fetchAnalytics}
-            disabled={loading}
-            className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">WhatsApp Analytics</h1>
+        <p className="text-muted-foreground">
+          Monitor WhatsApp usage statistics and user activity
+        </p>
       </div>
 
-      {/* Key Performance Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total Messages */}
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20 hover:shadow-xl transition-all duration-300">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Messages</p>
-                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{formatNumber(analytics.totalMessages)}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary" className="text-xs">
-                    <TrendingUp className="w-3 h-3 mr-1" />
-                    {analytics.overallSuccessRate}% success
-                  </Badge>
-                </div>
-              </div>
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                <MessageSquare className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <div className="flex items-center">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <div className="ml-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                <p className="text-2xl font-bold">{analytics.totalUsers}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Active Sessions */}
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20 hover:shadow-xl transition-all duration-300">
+        <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Sessions</p>
-                <p className="text-3xl font-bold text-green-600 dark:text-green-400">{formatNumber(analytics.activeSessions)}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary" className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
-                    <Wifi className="w-3 h-3 mr-1" />
-                    Online
-                  </Badge>
-                </div>
-              </div>
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
-                <Activity className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <div className="flex items-center">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              <div className="ml-2">
+                <p className="text-sm font-medium text-muted-foreground">Active Sessions</p>
+                <p className="text-2xl font-bold">{analytics.totalSessions}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Total Subscribers */}
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20 hover:shadow-xl transition-all duration-300">
+        <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Subscribers</p>
-                <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{formatNumber(analytics.totalSubscribers)}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary" className="text-xs">
-                    <ArrowUpRight className="w-3 h-3 mr-1" />
-                    {analytics.metrics.subscriberGrowthRate}
-                  </Badge>
-                </div>
-              </div>
-              <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-                <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <div className="flex items-center">
+              <Send className="h-4 w-4 text-green-600" />
+              <div className="ml-2">
+                <p className="text-sm font-medium text-muted-foreground">Messages Sent</p>
+                <p className="text-2xl font-bold text-green-600">{analytics.totalMessagesSent}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Total Revenue */}
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20 hover:shadow-xl transition-all duration-300">
+        <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
-                <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(analytics.totalRevenue)}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary" className="text-xs">
-                    <TrendingUp className="w-3 h-3 mr-1" />
-                    {analytics.metrics.revenueGrowth}
-                  </Badge>
-                </div>
+            <div className="flex items-center">
+              <XCircle className="h-4 w-4 text-red-600" />
+              <div className="ml-2">
+                <p className="text-sm font-medium text-muted-foreground">Messages Failed</p>
+                <p className="text-2xl font-bold text-red-600">{analytics.totalMessagesFailed}</p>
               </div>
-              <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
-                <DollarSign className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+              <div className="ml-2">
+                <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {getSuccessRate(analytics.totalMessagesSent, analytics.totalMessagesFailed)}%
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Today's Performance */}
-      <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20">
-        <CardHeader className="border-b border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <Clock className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            </div>
-            <div>
-              <CardTitle className="text-xl text-gray-800 dark:text-gray-100">Today&apos;s Performance</CardTitle>
-              <CardDescription className="text-gray-600 dark:text-gray-400">Real-time messaging statistics for today</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg mb-3">
-                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400 mx-auto" />
-              </div>
-              <h3 className="text-2xl font-bold text-green-600 dark:text-green-400">{formatNumber(analytics.todayMessagesSent)}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Messages Sent</p>
-            </div>
-            <div className="text-center">
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg mb-3">
-                <XCircle className="w-8 h-8 text-red-600 dark:text-red-400 mx-auto" />
-              </div>
-              <h3 className="text-2xl font-bold text-red-600 dark:text-red-400">{formatNumber(analytics.todayMessagesFailed)}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Messages Failed</p>
-            </div>
-            <div className="text-center">
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-3">
-                <Target className="w-8 h-8 text-blue-600 dark:text-blue-400 mx-auto" />
-              </div>
-              <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400">{analytics.todaySuccessRate}%</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Success Rate</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Daily Message Trends */}
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20">
-          <CardHeader className="border-b border-gray-100 dark:border-gray-700">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <div>
-                <CardTitle className="text-xl text-gray-800 dark:text-gray-100">Daily Message Trends</CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">Message volume over time</CardDescription>
-              </div>
-            </div>
+      {/* Session Status Overview */}
+      {Object.keys(analytics.sessionStats).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Session Status Overview
+            </CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
-            {analytics.dailyStats && analytics.dailyStats.length > 0 ? (
-              <div className="space-y-4">
-                {analytics.dailyStats.slice(0, 7).map((day, index) => {
-                  const total = day.totalMessagesSent + day.totalMessagesFailed;
-                  const maxTotal = Math.max(...analytics.dailyStats.map(d => d.totalMessagesSent + d.totalMessagesFailed));
-                  return (
-                    <div key={day.date} className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-20">
-                        {new Date(day.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                      </span>
-                      <div className="flex items-center gap-3 flex-1 mx-4">
-                        <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                          <div 
-                            className="bg-gradient-to-r from-green-500 to-blue-600 h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${maxTotal > 0 ? (total / maxTotal) * 100 : 0}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-right min-w-0">
-                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                            {formatNumber(total)}
-                          </span>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {calculateSuccessRate(day.totalMessagesSent, day.totalMessagesFailed)}% success
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">No daily data available</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Top Users */}
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20">
-          <CardHeader className="border-b border-gray-100 dark:border-gray-700">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <UserCheck className="w-5 h-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <CardTitle className="text-xl text-gray-800 dark:text-gray-100">Top Active Users</CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">Users with highest message volume</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            {analytics.topUsers && analytics.topUsers.length > 0 ? (
-              <div className="space-y-4">
-                {analytics.topUsers.slice(0, 5).map((userStat, index) => (
-                  <div key={userStat.user.id} className="flex items-center justify-between p-3 bg-gray-50/50 dark:bg-gray-700/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                        index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : 'bg-orange-500'
-                      }`}>
-                        {index + 1}
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-gray-100">
-                          {userStat.user.name || userStat.user.email || 'Unknown User'}
-                        </h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {calculateSuccessRate(userStat.totalMessagesSent, userStat.totalMessagesFailed)}% success rate
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-gray-900 dark:text-gray-100">{formatNumber(userStat.totalMessages)}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">messages</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">No user data available</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Top Performing Packages */}
-      <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20">
-        <CardHeader className="border-b border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <Package className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            </div>
-            <div>
-              <CardTitle className="text-xl text-gray-800 dark:text-gray-100">Top Performing Packages</CardTitle>
-              <CardDescription className="text-gray-600 dark:text-gray-400">Most popular WhatsApp API packages</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          {analytics.topPackages && analytics.topPackages.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {analytics.topPackages.map((pkg, index) => (
-                <div key={pkg.id} className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/30 dark:to-gray-800/30 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                      index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : 'bg-orange-500'
-                    }`}>
-                      {index + 1}
-                    </div>
-                    {index === 0 && <Crown className="w-5 h-5 text-yellow-500" />}
-                  </div>
-                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{pkg.name}</h4>
-                  {pkg.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{pkg.description}</p>
-                  )}
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Purchases:</span>
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">{formatNumber(pkg.purchaseCount)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Price/Month:</span>
-                      <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(pkg.priceMonth)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Max Sessions:</span>
-                      <span className="font-semibold text-blue-600 dark:text-blue-400">{pkg.maxSession}</span>
-                    </div>
-                  </div>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(analytics.sessionStats).map(([status, count]) => (
+                <div key={status} className="text-center p-4 border rounded-lg">
+                  <p className="text-2xl font-bold">{count}</p>
+                  <p className="text-sm text-muted-foreground capitalize">{status}</p>
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">No package data available</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Top Users Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Top Users by Message Activity
+              </CardTitle>
+              <CardDescription>
+                Users with highest WhatsApp message activity
+              </CardDescription>
             </div>
-          )}
+            <div className="flex flex-col space-y-2 md:flex-row md:items-center md:space-y-0 md:space-x-2">
+              <div className="flex items-center space-x-2">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full md:w-64"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchAnalytics}
+                  disabled={loading}
+                  className="whitespace-nowrap"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+                
+                <Button
+                  variant={autoRefresh ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setAutoRefresh(!autoRefresh)}
+                  className="whitespace-nowrap"
+                >
+                  <Activity className="h-4 w-4 mr-2" />
+                  Auto Refresh
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportAnalytics}
+                  className="whitespace-nowrap"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Messages Sent</TableHead>
+                <TableHead>Messages Failed</TableHead>
+                <TableHead>Success Rate</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTopUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    {loading ? "Loading analytics..." : "No user activity found"}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredTopUsers.map((user) => (
+                  <TableRow key={user.userId}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{user.user?.name || 'Unknown User'}</div>
+                        <div className="text-sm text-muted-foreground">{user.user?.email || 'No email'}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Send className="h-4 w-4 text-green-600" />
+                        <span className="font-medium text-green-600">{user.totalSent}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <XCircle className="h-4 w-4 text-red-600" />
+                        <span className="font-medium text-red-600">{user.totalFailed}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {getSuccessRateBadge(user.totalSent, user.totalFailed)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => viewUserDetails(user)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
-      {/* Additional Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20">
-          <CardContent className="p-6 text-center">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full w-fit mx-auto mb-4">
-              <Globe className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{formatNumber(analytics.totalWhatsAppUsers)}</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">WhatsApp Users</p>
-            <Badge variant="outline" className="mt-2">
-              {((analytics.totalWhatsAppUsers / analytics.totalUsers) * 100).toFixed(1)}% of total
-            </Badge>
-          </CardContent>
-        </Card>
+      {/* Recent Activity Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Recent Activity (Last 30 Days)
+          </CardTitle>
+          <CardDescription>
+            Latest WhatsApp messaging activity from users
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Messages Sent</TableHead>
+                <TableHead>Messages Failed</TableHead>
+                <TableHead>Last Activity</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {analytics.recentActivity.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    No recent activity found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                analytics.recentActivity.map((activity, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{activity.user?.name || 'Unknown User'}</div>
+                        <div className="text-sm text-muted-foreground">{activity.user?.email || 'No email'}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-green-600 font-medium">{activity.totalMessagesSent}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-red-600 font-medium">{activity.totalMessagesFailed}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(activity.lastMessageSentAt).toLocaleDateString()} {new Date(activity.lastMessageSentAt).toLocaleTimeString()}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20">
-          <CardContent className="p-6 text-center">
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full w-fit mx-auto mb-4">
-              <Clock className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+      {/* User Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              User Analytics Details
+            </DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm font-medium text-muted-foreground">User Name</p>
+                    <p className="text-lg font-semibold">{selectedUser.user?.name || 'Unknown'}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm font-medium text-muted-foreground">Email</p>
+                    <p className="text-lg font-semibold">{selectedUser.user?.email || 'No email'}</p>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm font-medium text-muted-foreground">Messages Sent</p>
+                    <p className="text-2xl font-bold text-green-600">{selectedUser.totalSent}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm font-medium text-muted-foreground">Messages Failed</p>
+                    <p className="text-2xl font-bold text-red-600">{selectedUser.totalFailed}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {getSuccessRate(selectedUser.totalSent, selectedUser.totalFailed)}%
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{analytics.avgSessionDuration}</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Avg Session Duration (min)</p>
-            <Badge variant="outline" className="mt-2">
-              Active tracking
-            </Badge>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg dark:shadow-gray-900/20">
-          <CardContent className="p-6 text-center">
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full w-fit mx-auto mb-4">
-              <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{analytics.metrics.messageVolumeGrowth}</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Message Volume Growth</p>
-            <Badge variant="outline" className="mt-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300">
-              Monthly trend
-            </Badge>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
