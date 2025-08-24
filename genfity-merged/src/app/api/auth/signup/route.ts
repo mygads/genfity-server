@@ -40,11 +40,12 @@ export async function POST(request: Request) {
       }, { status: 400 }));
     }
 
-    // Validasi format nomor WhatsApp (mandatory)
-    if (!/^(\+?62|0)8[1-9][0-9]{6,10}$/.test(phone)) {
+    // Validasi format nomor WhatsApp (mandatory) - International format with country code
+    const phoneRegex = /^(\+\d{1,3})?[0-9\s\-\(\)]{7,15}$/;
+    if (!phoneRegex.test(phone)) {
       return withCORS(NextResponse.json({ 
         success: false,
-        message: 'Invalid WhatsApp number format. Use format: 08xxxxxxxxx, +628xxxxxxxxx, or 628xxxxxxxxx',
+        message: 'Invalid WhatsApp number format. Use international format with country code: +62812345678, +1234567890, +61412345678, etc.',
         error: 'INVALID_PHONE_FORMAT'
       }, { status: 400 }));
     }
@@ -72,26 +73,47 @@ export async function POST(request: Request) {
     });
 
     if (existingUser) {
-      let message = '';
-      let errorCode = '';
-      if (existingUser.phone === normalizedPhone && email && existingUser.email === email) {
-        message = 'WhatsApp number and email already registered';
-        errorCode = 'DUPLICATE_PHONE_AND_EMAIL';
-      } else if (existingUser.phone === normalizedPhone) {
-        message = 'WhatsApp number already registered';
-        errorCode = 'DUPLICATE_PHONE';
+      // Check if phone number matches (primary concern)
+      if (existingUser.phone === normalizedPhone) {
+        // If user already verified, return error
+        if (existingUser.phoneVerified) {
+          return withCORS(NextResponse.json({ 
+            success: false,
+            message: 'WhatsApp number already registered and verified',
+            error: 'DUPLICATE_PHONE_VERIFIED'
+          }, { status: 409 }));
+        }
+        
+        // Check if unverified user should be cleaned up
+        const now = new Date();
+        const otpExpired = existingUser.otpExpires ? new Date(existingUser.otpExpires) < now : true;
+        const deadlinePassed = existingUser.otpVerificationDeadline ? new Date(existingUser.otpVerificationDeadline) < now : true;
+        
+        if (otpExpired || deadlinePassed) {
+          // Delete expired unverified user and continue with new signup
+          const cleanupReason = otpExpired ? 'OTP_EXPIRED' : 'DEADLINE_PASSED';
+          console.log(`[IMMEDIATE-CLEANUP] Deleting expired unverified user: ${normalizedPhone}, reason: ${cleanupReason}, otpExpired: ${otpExpired}, deadlinePassed: ${deadlinePassed}`);
+          await prisma.user.delete({ where: { id: existingUser.id } });
+        } else {
+          // OTP still valid - user should use existing registration
+          return withCORS(NextResponse.json({ 
+            success: false,
+            message: 'Registration already in progress. Please verify your OTP or wait for it to expire.',
+            error: 'REGISTRATION_IN_PROGRESS'
+          }, { status: 409 }));
+        }
       } else if (email && existingUser.email === email) {
-        message = 'Email already registered';
-        errorCode = 'DUPLICATE_EMAIL';
+        // Email duplicate (when phone is different)
+        return withCORS(NextResponse.json({ 
+          success: false,
+          message: 'Email already registered',
+          error: 'DUPLICATE_EMAIL'
+        }, { status: 409 }));
       }
-      return withCORS(NextResponse.json({ 
-        success: false,
-        message,
-        error: errorCode
-      }, { status: 409 }));    }
+    }
     let hashedPassword: string | null = null;
     const otp: string = generateOTP();
-    const otpExpires: Date = new Date(Date.now() + 1 * 60 * 60 * 1000); // OTP berlaku 1 jam
+    const otpExpires: Date = new Date(Date.now() + 10 * 60 * 1000); // OTP berlaku 10 menit
     const otpVerificationDeadline: Date = new Date(Date.now() + 1 * 60 * 60 * 1000); // Batas verifikasi 1 jam
     let emailVerificationToken: string | null = null;
     let emailVerificationTokenExpires: Date | null = null;
@@ -109,7 +131,8 @@ export async function POST(request: Request) {
     }
 
     // Generate API key for the new user
-    const apiKey = generateApiKey();    const newUser = await prisma.user.create({
+    const apiKey = generateApiKey();    
+    const newUser = await prisma.user.create({
       data: {
         name,
         email: email || null, // Email is optional
@@ -125,7 +148,7 @@ export async function POST(request: Request) {
       },
     });
 
-    let responseMessage = 'Pengguna berhasil dibuat.';
+    let responseMessage = 'User created successfully.';
     let nextStep = '';    // Always send OTP via WhatsApp since phone is mandatory
     const message = `Your OTP *${otp}* 
 

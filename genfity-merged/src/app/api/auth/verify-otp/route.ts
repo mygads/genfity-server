@@ -5,20 +5,7 @@ import { randomBytes } from 'crypto';
 import { sendWhatsAppMessage } from '@/lib/whatsapp'; // Import baru
 import { withCORS, corsOptionsResponse } from "@/lib/cors";
 import { generateUserSession } from '@/lib/jwt-session-manager';
-
-// Fungsi untuk normalisasi nomor telepon (konsisten dengan signup)
-function normalizePhoneNumber(phone: string): string {
-    if (!phone) return '';
-    if (phone.startsWith('0')) {
-        return '62' + phone.substring(1);
-    } else if (phone.startsWith('+62')) {
-        return phone.substring(1); // Simpan sebagai 62...
-    } else if (phone.startsWith('62')) {
-        return phone;
-    }
-    // Jika tidak ada prefix umum, tambahkan 62 (sesuaikan jika perlu)
-    return '62' + phone.replace(/\D/g, ''); // Hapus non-digit juga
-}
+import { normalizePhoneNumber } from '@/lib/auth'; // Import from centralized location
 
 // Fungsi untuk menghasilkan password acak
 function generateRandomPassword(length: number = 8): string {
