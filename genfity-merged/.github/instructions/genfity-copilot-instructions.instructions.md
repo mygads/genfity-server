@@ -34,6 +34,22 @@ Genfity is a Next.js 15 full-stack application providing multi-service platform 
 - **Auth helpers**: Use `getUserFromToken()` from `src/lib/auth-helpers.ts` for universal auth
 - **Middleware**: `src/middleware.ts` handles route protection and JWT validation
 
+### Registration & Phone Verification System
+- **International Phone Support**: WhatsApp numbers from any country with country code (+62, +61, +1, +44, etc.)
+- **Phone Validation**: Regex `/^(\+\d{1,3})?[0-9\s\-\(\)]{7,15}$/` supports international formats
+- **Phone Normalization**: `normalizePhoneNumber()` converts all formats to consistent storage (removes +, handles local Indonesian 08xxx)
+- **Dual OTP Expiry System**:
+  - **OTP Code**: 10 minutes (security for the code itself)
+  - **Verification Deadline**: 1 hour (account cleanup deadline)
+- **Email vs Phone Expiry**:
+  - **Phone OTP**: 10 min expiry + 1 hour cleanup (mandatory for account activation)
+  - **Email Token**: 1 hour expiry (optional verification, no account deletion)
+- **Immediate Cleanup Strategy**: Expired unverified users deleted automatically during new signup attempts
+- **Supported Formats**: 
+  - `+628123456789` (Indonesia), `+61412345678` (Australia), `+15551234567` (USA)
+  - `08123456789` (Indonesian local - auto-converted to +62)
+  - `+62 812-345-6789` (formatted input - spaces/dashes removed)
+
 ### Internationalization & Routing
 - **Auto-locale Detection**: IP-based geolocation + browser language detection
 - **Indonesian IP Ranges**: Define specific IP ranges for Indonesia detection
@@ -107,13 +123,15 @@ docker-compose --profile prod up   # Production mode
 - **Authentication**: Use `withAuthentication()` or `withRoleAuthentication()` from `src/lib/request-auth.ts`
 - **Error handling**: Return consistent `{ success: false, error: string }` format
 - **Validation**: Use Zod schemas for input validation
+- **Phone Validation**: Use international format regex `/^(\+\d{1,3})?[0-9\s\-\(\)]{7,15}$/` for WhatsApp numbers
+- **Immediate Cleanup**: Signup endpoint automatically cleans up expired unverified users (no cron dependency)
 - **Route Organization**:
   - `/api/customer/*` - Customer dashboard features
   - `/api/admin/*` - Admin panel operations
   - `/api/public/*` - Global/unauthenticated access
 
 ### Key Libraries & Utilities
-- **Phone normalization**: `normalizePhoneNumber()` from `src/lib/auth.ts`
+- **Phone normalization**: `normalizePhoneNumber()` from `src/lib/auth.ts` - Supports international formats with country codes (+62, +61, +1, etc.)
 - **Payment expiration**: `PaymentExpirationService` from `src/lib/payment-expiration.ts`
 - **Transaction status**: `TransactionStatusManager` from `src/lib/transaction-status-manager.ts`
 - **Prisma client**: Always import from `src/lib/prisma.ts`
@@ -180,6 +198,8 @@ docker-compose --profile prod up   # Production mode
 - **✅ WhatsApp API**: Customer sessions + Public messaging API (WHATSAPP_API_FINAL_SUMMARY.md)
 - **✅ Server Monitoring**: DigitalOcean integration with live metrics (server-monitoring-summary.md)
 - **✅ Service Tables**: Restructured for proper separation (TABLE_RESTRUCTURING_COMPLETE.md)
+- **✅ Registration System**: International phone support with immediate cleanup (SIGNUP_CLEANUP_IMPLEMENTATION.md)
+- **✅ Phone Normalization**: Global WhatsApp format support (WHATSAPP_GLOBAL_FORMAT_IMPLEMENTATION.md)
 
 
 ## Important Notes
@@ -188,6 +208,8 @@ docker-compose --profile prod up   # Production mode
 - **Internationalization**: next-intl configured for multi-language support
 - **Containerized**: Production uses Docker with health checks
 - **Multi-service**: Backend integrates with separate WhatsApp Go service
+- **Phone Number Format**: Supports international WhatsApp numbers with country codes (+62, +61, +1, +44, etc.)
+- **Registration System**: Immediate cleanup strategy for expired unverified users (replaces cron-based cleanup)
 - **UI/UX Standards**:
   - Shared design system between customer and admin dashboards
   - Dark mode support - ensure all UI components work in dark theme
