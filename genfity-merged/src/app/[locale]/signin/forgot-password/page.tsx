@@ -154,18 +154,18 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <section className="relative z-10 overflow-hidden pb-16 pt-36 md:pb-20 lg:pb-28 lg:pt-[180px]">
+    <section className="relative z-10 overflow-hidden py-16 pt-24 md:py-20 lg:py-28">
       <div className="container">
         <div className="-mx-4 flex flex-wrap">          
           <div className="w-full px-4">
             <div className="mx-auto max-w-[500px] relative rounded-xl bg-white px-6 py-10 shadow-2xl dark:bg-dark sm:p-[60px]">
               <ShineBorder shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]} />
-              <h3 className="mb-3 text-center text-2xl font-bold text-black dark:text-white sm:text-3xl">
+              <h3 className="mb-2 text-center text-2xl font-bold text-black dark:text-white sm:text-3xl">
                 {step === "request" && t('steps.request.title')}
                 {step === "verify" && t('steps.verify.title')}
                 {step === "success" && t('steps.success.title')}
               </h3>
-              <p className="mb-11 text-center text-base font-medium text-gray-600 dark:text-gray-400">
+              <p className="mb-4 text-center text-base font-medium text-gray-600 dark:text-gray-400">
                 {step === "request" && t('steps.request.description')}
                 {step === "verify" && `${t('steps.verify.description')} ${isEmail ? "email" : "WhatsApp"} Anda`}
               </p>

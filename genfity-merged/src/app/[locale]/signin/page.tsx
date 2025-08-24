@@ -25,7 +25,6 @@ export default function SigninPage() {
   const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isResending, setIsResending] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
@@ -208,7 +207,7 @@ export default function SigninPage() {
 
   return (
     <SigninRedirectHandler redirectTo={redirectTo}>
-      <section className="relative z-10 overflow-hidden pb-16 pt-36 md:pb-20 lg:pb-28 lg:pt-[180px]">
+      <section className="relative z-10 overflow-hidden py-16 pt-24 md:py-20 lg:py-28">
         <div className="container">
           <div className="flex flex-wrap">            
             <div className="w-full px-4">

@@ -45,7 +45,8 @@
     "companyProfileDesc": "Attractive and informative company profile.",
     "corporateBranding": "Corporate Branding",
     "corporateBrandingDesc": "Build your company's brand identity.",
-    "techSupport": "Tech Support",    "techSupportDesc": "Technical assistance for smooth business operations."
+    "techSupport": "Tech Support",    
+    "techSupportDesc": "Technical assistance for smooth business operations."
   },
   "HowToOrder": {
     "title": "How to Order",
@@ -210,8 +211,10 @@
         "namePlaceholder": "Enter your full name",
         "email": "Email Address",
         "emailPlaceholder": "Enter your email address",
-        "phone": "Phone Number",
-        "phonePlaceholder": "Enter your phone number",
+        "phone": "WhatsApp Number",
+        "phonePlaceholder": "+62812345678, 081234567890",
+        "phoneHelper": "Supports international WhatsApp numbers: +62 (Indonesia), +1 (USA), +44 (UK), +61 (Australia), etc.",
+        "phoneValid": "✓ Valid WhatsApp number format",
         "password": "Password",
         "passwordPlaceholder": "Enter your password",
         "signUpButton": "Sign Up",
@@ -220,18 +223,28 @@
       "verification": {
         "title": "Verify Your Phone Number",
         "description": "We've sent a verification code to",
+        "continueDescription": "Continue your registration by verifying the code sent to",
         "enterCode": "Enter the 4-digit code",
         "resendCode": "Resend Code",
         "resendIn": "Resend in",
         "seconds": "seconds",
         "back": "Back to Sign Up",
+        "backToForm": "Change Information",
         "verify": "Verify & Complete Registration"
       },
       "errors": {
         "signupFailed": "Failed to sign up. Please try again.",
         "unexpectedError": "An unexpected error occurred. Please try again.",
         "invalidOtp": "Invalid OTP. Please try again.",
-        "resendFailed": "Failed to resend code. Please try again."
+        "resendFailed": "Failed to resend code. Please try again.",
+        "invalidPhone": "Please enter a valid WhatsApp number with country code (e.g., +62812345678, 081234567890)",
+        "emailExists": "An account with this email already exists. Please use a different email or sign in.",
+        "phoneExists": "An account with this WhatsApp number already exists. Please use a different number or sign in.",
+        "userExists": "An account with this information already exists. Please sign in instead.",
+        "otpExpired": "The verification code has expired. Please request a new one.",
+        "verificationExpired": "The verification deadline has passed. Please register again.",
+        "generalError": "Registration failed. Please check your information and try again.",
+        "registrationInProgress": "Registration already in progress. Please verify your OTP or wait for it to expire."
       },
       "links": {
         "hasAccount": "Already have an account?",
